@@ -19,8 +19,8 @@ export const registerValidation = [
     body('age')
         .notEmpty()
         .withMessage('Age is required')
-        .isInt({ min: 5, max: 13 })
-        .withMessage('Age must be between 5 and 13'),
+        .isInt({ min: 5, max: 15 })
+        .withMessage('Age must be between 5 and 15'),
     
     body('email')
         .notEmpty()
@@ -73,8 +73,8 @@ export const profileUpdateValidation = [
     
     body('age')
         .optional()
-        .isInt({ min: 5, max: 13 })
-        .withMessage('Age must be between 5 and 13'),
+        .isInt({ min: 5, max: 15 })
+        .withMessage('Age must be between 5 and 15'),
     
     body('email')
         .optional()
