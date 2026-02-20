@@ -15,7 +15,18 @@ app.use(express.urlencoded({extended: true}));
 
 //DB
 connectDB();
+
 //ROUTES
+
+//kaveesha
+import testSecurityRoutes from './controllers/testSecurityRoutes.js';
+
+app.use('/api/test', testSecurityRoutes);
+
+import testPasswordValidationRoutes from "./controllers/testPasswordValidationRoutes.js";
+
+app.use("/api/test", testPasswordValidationRoutes);
+
 
 
 //APP PORT AND LISTEN
