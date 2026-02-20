@@ -16,7 +16,9 @@ app.use(express.urlencoded({extended: true}));
 //DB
 connectDB();
 //ROUTES
+import userRoutes from './routes/dushani-userRoutes.js';
 
+app.use('/api/users', userRoutes);
 
 //APP PORT AND LISTEN
 app.get('/', (req,res) => {
