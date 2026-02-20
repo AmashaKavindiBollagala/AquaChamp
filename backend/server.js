@@ -3,36 +3,28 @@ import cors from 'cors';
 import 'dotenv/config';
 import { connectDB } from './config/db.js';
 
-
 const app = express();
 const port = 4000;
 
-//MIDDLEWEARES
+// MIDDLEWARES
 app.use(cors());
 app.use(express.json());
-app.use(express.urlencoded({extended: true}));
+app.use(express.urlencoded({ extended: true }));
 
-
-//DB
+// DB
 connectDB();
 
-//ROUTES
-
-//kaveesha
-import testSecurityRoutes from './controllers/testSecurityRoutes.js';
-
-app.use('/api/test', testSecurityRoutes);
-
-import testPasswordValidationRoutes from "./controllers/testPasswordValidationRoutes.js";
-
-app.use("/api/test", testPasswordValidationRoutes);
+// ROUTES
+import userRoutes from './routes/dushani-userRoutes.js';
 
 
+// use routes
+app.use('/api/users', userRoutes);
 
-//APP PORT AND LISTEN
-app.get('/', (req,res) => {
+
+// APP PORT AND LISTEN
+app.get('/', (req, res) => {
     res.send('API WORKING');
-
 });
 
 app.listen(port, () => {
