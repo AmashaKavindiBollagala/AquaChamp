@@ -11,11 +11,17 @@ import {
     profileUpdateValidation,
     handleValidationErrors
 } from '../middleware/dushani-validation.js';
+import verifyJWT from '../middleware/amasha-verifyJWT.js';
 
 const router = express.Router();
 
+
+
+
 // User registration
 router.post('/register', registerValidation, handleValidationErrors, registerUser);
+
+router.use(verifyJWT)
 
 // Get user profile by ID
 router.get('/profile/:id', getUserProfile);
