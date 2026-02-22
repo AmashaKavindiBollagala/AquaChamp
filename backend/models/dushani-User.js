@@ -63,6 +63,22 @@ const userSchema = new mongoose.Schema(
 // Hash password before saving, but skip if already hashed
 userSchema.pre("save", async function () {
   if (!this.isModified("password")) return;
+        type: String,
+        required: [true, 'Password is required'],
+        minlength: [6, 'Password must be at least 6 characters']
+    },
+
+     roles: {
+        type: [String],
+        default: ['User']
+    },
+    active: {
+        type: Boolean,
+        default: true
+    }
+}, {
+    timestamps: true
+});
 
   // Skip hashing if password already looks like a bcrypt hash
   if (!this.password.startsWith("$2b$")) {
