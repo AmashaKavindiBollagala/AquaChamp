@@ -18,6 +18,14 @@ connectDB();
 import userRoutes from './routes/dushani-userRoutes.js';
 
 
+//kaveesha routes
+import securityRoutes from "./routes/securityRoutes.js";
+
+
+//kaveesha use routes
+app.use("/api/security", securityRoutes);
+
+
 // use routes
 app.use('/api/users', userRoutes);
 
