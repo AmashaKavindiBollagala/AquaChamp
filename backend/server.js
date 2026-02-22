@@ -8,7 +8,6 @@ import authRoutes from './routes/amasha-authRoutes.js';
 import notesRoutes from './routes/amasha-noteRoutes.js';
 import userRoutes from './routes/dushani-userRoutes.js';
 
-
 const app = express();
 const port = 4000;
 
@@ -27,15 +26,28 @@ app.use('/api/users', userRoutes);
 
 
 
-//DB
+// DB
 connectDB();
-//ROUTES
+
+// ROUTES
+import userRoutes from './routes/dushani-userRoutes.js';
 
 
-//APP PORT AND LISTEN
-app.get('/', (req,res) => {
+//kaveesha routes
+import securityRoutes from "./routes/securityRoutes.js";
+
+
+//kaveesha use routes
+app.use("/api/security", securityRoutes);
+
+
+// use routes
+app.use('/api/users', userRoutes);
+
+
+// APP PORT AND LISTEN
+app.get('/', (req, res) => {
     res.send('API WORKING');
-
 });
 
 app.listen(port, () => {
