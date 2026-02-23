@@ -29,8 +29,6 @@ app.use('/api/users', userRoutes);
 // DB
 connectDB();
 
-// ROUTES
-import userRoutes from './routes/dushani-userRoutes.js';
 
 
 //kaveesha routes
