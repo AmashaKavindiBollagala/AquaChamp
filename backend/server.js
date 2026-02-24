@@ -10,7 +10,6 @@ import userRoutes from './routes/dushani-userRoutes.js';
 //dilshara
 import adminRoutes from './routes/dilshara-adminRoutes.js';
 
-
 const app = express();
 const port = 4000;
 
@@ -31,15 +30,26 @@ app.use('/api/admin', adminRoutes);
 
 
 
-//DB
+// DB
 connectDB();
-//ROUTES
 
 
-//APP PORT AND LISTEN
-app.get('/', (req,res) => {
+
+//kaveesha routes
+import securityRoutes from "./routes/securityRoutes.js";
+
+
+//kaveesha use routes
+app.use("/api/security", securityRoutes);
+
+
+// use routes
+app.use('/api/users', userRoutes);
+
+
+// APP PORT AND LISTEN
+app.get('/', (req, res) => {
     res.send('API WORKING');
-
 });
 
 app.listen(port, () => {
