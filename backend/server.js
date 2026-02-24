@@ -7,6 +7,8 @@ import { logger } from './middleware/amasha-logger.js';
 import authRoutes from './routes/amasha-authRoutes.js';
 import notesRoutes from './routes/amasha-noteRoutes.js';
 import userRoutes from './routes/dushani-userRoutes.js';
+//dilshara
+import adminRoutes from './routes/dilshara-adminRoutes.js';
 
 
 const app = express();
@@ -19,11 +21,13 @@ app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 app.use(cookieParser()); 
 
-+
+
 //Routes
 app.use('/auth', authRoutes);
 app.use('/notes', notesRoutes);
 app.use('/api/users', userRoutes);
+//dilshara
+app.use('/api/admin', adminRoutes);
 
 
 
