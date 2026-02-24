@@ -6,16 +6,25 @@ const securityPasswordOTPSchema = new mongoose.Schema({
     ref: "User",
     required: true,
   },
+
   otp: {
     type: String,
     required: true,
   },
-  createdAt: {
+
+  attempts: {
+    type: Number,
+    default: 0, // number of wrong tries
+  },
+
+  expiresAt: {
     type: Date,
-    default: Date.now,
-    expires: 300 // OTP expires in 5 minutes
+    required: true,
   }
 });
+
+// automatically remove expired OTPs
+securityPasswordOTPSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 export default mongoose.model(
   "SecurityPasswordOTP",
