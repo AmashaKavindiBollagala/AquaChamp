@@ -40,7 +40,7 @@ router.post("/forgot-password/verify-otp", verifyResetPasswordOTP);
 // ------------------ Email Verification ------------------
 router.get("/verify-email/:token", verifyEmail);
 
-// ------------------ Login (if you have it later) ------------------
+// ------------------ Login ------------------
 // router.post("/login", loginUser);
 
 export default router;
