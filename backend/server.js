@@ -26,8 +26,7 @@ import waterRoutes from './routes/amasha-waterRoutes.js';
 import amashapointsRoutes from './routes/amasha-pointsRoutes.js';
 
 
-//kaveesha routes
-import securityRoutes from "./routes/securityRoutes.js";
+
 
 import topicRoutes from "./routes/kaveesha-topicRoutes.js";
 import subtopicRoutes from "./routes/kaveesha-subtopicRoutes.js";
@@ -42,6 +41,8 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+app.use("/uploads", express.static("uploads"));
 
 //  Routes
 app.use('/auth', authRoutes);
@@ -71,10 +72,6 @@ app.use("/api/topics", topicRoutes);
 app.use("/api/subtopics", subtopicRoutes);
 app.use("/api/kaveesha-miniquiz", kaveeshaMiniQuizRoutes);
 
-
-
-// use routes
-app.use('/api/users', userRoutes);
 
 
 // APP PORT AND LISTEN

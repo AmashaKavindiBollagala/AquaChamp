@@ -2,6 +2,8 @@ import Subtopic from "../models/kaveesha-subtopicModel.js";
 import MiniQuiz from "../models/kaveesha-miniquizModel.js";
 import KaveeshaLessonsProgress from "../models/kaveesha-lessonsProgressModel.js";
 import mongoose from "mongoose";
+import fs from "fs";
+import path from "path";
 
 // ------------------ SUBTOPIC CRUD ------------------
 
@@ -13,11 +15,9 @@ export const createSubtopic = async (req, res) => {
     // Check if same title already exists under the same topic and age group
     const existing = await Subtopic.findOne({ title, topicId, ageGroup });
     if (existing) {
-      return res
-        .status(400)
-        .json({
-          message: `Subtopic '${title}' already exists for age group ${ageGroup}.`,
-        });
+      return res.status(400).json({
+        message: `Subtopic '${title}' already exists for age group ${ageGroup}.`,
+      });
     }
 
     const subtopic = await Subtopic.create(req.body);
@@ -109,12 +109,9 @@ export const deleteSubtopic = async (req, res) => {
       (subtopic.images && subtopic.images.length > 0) ||
       hasMiniQuiz
     ) {
-      return res
-        .status(400)
-        .json({
-          message:
-            "Cannot delete subtopic with content. Delete contents first.",
-        });
+      return res.status(400).json({
+        message: "Cannot delete subtopic with content. Delete contents first.",
+      });
     }
 
     await Subtopic.findByIdAndDelete(subtopic._id);
@@ -149,7 +146,6 @@ export const getLessonsByUserAge = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
 
 // ------------------ UPDATE CONTENT ------------------
 
@@ -212,12 +208,53 @@ export const deleteText = async (req, res) => {
 // Update images
 export const updateImages = async (req, res) => {
   try {
-    const subtopic = await Subtopic.findByIdAndUpdate(
-      req.params.id,
-      { images: req.body.images },
-      { new: true },
-    );
-    res.json(subtopic);
+    const subtopic = await Subtopic.findById(req.params.id);
+
+    if (!subtopic) {
+      return res.status(404).json({ message: "Subtopic not found" });
+    }
+
+    // Delete old images from uploads folder
+    if (subtopic.images && subtopic.images.length > 0) {
+      subtopic.images.forEach((imgPath) => {
+        if (imgPath.startsWith("/uploads/images/")) {
+          const filePath = path.join("uploads/images", path.basename(imgPath));
+          if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        }
+      });
+    }
+
+    let imagePaths = [];
+
+    // Images uploaded from device
+    if (req.files && req.files.length > 0) {
+      const uploadedImages = req.files.map(
+        (file) => `/uploads/images/${file.originalname}`, // use originalname
+      );
+      imagePaths = [...imagePaths, ...uploadedImages];
+    }
+
+    // Images pasted as URLs
+    if (req.body.imageUrls) {
+      const urls = Array.isArray(req.body.imageUrls)
+        ? req.body.imageUrls
+        : [req.body.imageUrls];
+      imagePaths = [...imagePaths, ...urls];
+    }
+
+    if (imagePaths.length === 0) {
+      return res.status(400).json({
+        message: "No images provided (upload file or paste URL)",
+      });
+    }
+
+    subtopic.images = imagePaths;
+    await subtopic.save();
+
+    res.json({
+      message: "Images updated successfully",
+      images: subtopic.images,
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -226,17 +263,28 @@ export const updateImages = async (req, res) => {
 // Delete images
 export const deleteImages = async (req, res) => {
   try {
-    const subtopic = await Subtopic.findByIdAndUpdate(
-      req.params.id,
-      { images: [] },
-      { new: true },
-    );
-    res.json({ message: "Images deleted", subtopic });
+    const subtopic = await Subtopic.findById(req.params.id);
+    if (!subtopic)
+      return res.status(404).json({ message: "Subtopic not found" });
+
+    // Delete files from disk
+    if (subtopic.images && subtopic.images.length > 0) {
+      subtopic.images.forEach((imgPath) => {
+        if (imgPath.startsWith("/uploads/images/")) {
+          const filePath = path.join("uploads/images", path.basename(imgPath));
+          if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        }
+      });
+    }
+
+    subtopic.images = [];
+    await subtopic.save();
+
+    res.json({ message: "Images deleted successfully", subtopic });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
-
 
 // ------------------ PROGRESSION & LOCKING ------------------
 
@@ -328,7 +376,6 @@ export const completeSubtopicContent = async (req, res) => {
   }
 };
 
-
 // ------------------ PROGRESS PERCENTAGES ------------------
 
 // Subtopic % completion
@@ -356,12 +403,10 @@ export const getSubtopicProgress = async (req, res) => {
       subtopicId,
     });
     if (!progress) {
-      return res
-        .status(404)
-        .json({
-          message:
-            "User has no progress for this subtopic or user does not exist",
-        });
+      return res.status(404).json({
+        message:
+          "User has no progress for this subtopic or user does not exist",
+      });
     }
 
     const totalItems = 4; // video, text, images, miniQuiz
