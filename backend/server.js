@@ -38,9 +38,19 @@ connectDB();
 //kaveesha routes
 import securityRoutes from "./routes/securityRoutes.js";
 
+import topicRoutes from "./routes/kaveesha-topicRoutes.js";
+import subtopicRoutes from "./routes/kaveesha-subtopicRoutes.js";
+import kaveeshaMiniQuizRoutes from "./routes/kaveesha-miniquizRoutes.js";
+
+
 
 //kaveesha use routes
 app.use("/api/security", securityRoutes);
+
+app.use("/api/topics", topicRoutes);
+app.use("/api/subtopics", subtopicRoutes);
+app.use("/api/kaveesha-miniquiz", kaveeshaMiniQuizRoutes);
+
 
 
 // use routes
