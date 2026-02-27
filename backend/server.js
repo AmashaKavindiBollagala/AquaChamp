@@ -19,7 +19,7 @@ import securityRoutes from "./routes/securityRoutes.js";
 // Component 4 — Hygiene & Water Tracker (Dushani)
 import activityRoutes from './routes/amasha-activityRoutes.js';
 import waterRoutes from './routes/amasha-waterRoutes.js';
-import pointsRoutes from './routes/amasha-pointsRoutes.js';
+import amashapointsRoutes from './routes/amasha-pointsRoutes.js';
 
 const app = express();
 const port = 4000;
@@ -55,8 +55,7 @@ connectDB();
 //  Health check 
 
 
-//kaveesha routes
-import securityRoutes from "./routes/securityRoutes.js";
+
 
 
 //kaveesha use routes
