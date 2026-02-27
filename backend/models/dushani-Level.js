@@ -10,23 +10,17 @@ const levelSchema = new mongoose.Schema({
   minPoints: {
     type: Number,
     required: [true, 'Minimum points required'],
-    min: [0, 'Minimum points cannot be negative'],
-    validate: {
-      validator: function(value) {
-        return value < this.maxPoints;
-      },
-      message: 'Minimum points must be less than maximum points'
-    }
+    min: [0, 'Minimum points cannot be negative']
   },
   maxPoints: {
     type: Number,
-    required: [true, 'Maximum points required'],
-    min: [1, 'Maximum points must be positive'],
+    default: null, // null means unlimited (Level 5)
     validate: {
-      validator: function(value) {
-        return value > this.minPoints;
+      validator: function (value) {
+        if (value === null) return true; // allow unlimited
+        return value >= this.minPoints; // Allow maxPoints to equal minPoints
       },
-      message: 'Maximum points must be greater than minimum points'
+      message: 'Maximum points must be greater than or equal to minimum points'
     }
   },
   description: {
@@ -42,52 +36,57 @@ const levelSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
   }
-});
+}, { timestamps: true });
 
-// Update timestamps
-levelSchema.pre('save', function() {
-  this.updatedAt = Date.now();
-});
 
-// Ensure no overlapping level ranges
-levelSchema.statics.validateLevelRanges = async function(excludeId = null) {
+   //Validate No Overlapping Ranges
+
+levelSchema.statics.validateLevelRanges = async function (excludeId = null) {
   const levels = await this.find(
     excludeId ? { _id: { $ne: excludeId } } : {}
   ).sort({ minPoints: 1 });
 
   for (let i = 0; i < levels.length - 1; i++) {
-    if (levels[i].maxPoints >= levels[i + 1].minPoints) {
-      throw new Error(`Level ranges overlap between ${levels[i].levelName} and ${levels[i + 1].levelName}`);
+    const currentMax = levels[i].maxPoints ?? Infinity;
+    const nextMin = levels[i + 1].minPoints;
+
+    if (currentMax >= nextMin) {
+      throw new Error(
+        `Level ranges overlap between ${levels[i].levelName} and ${levels[i + 1].levelName}`
+      );
     }
   }
 };
 
-// Get level by points
-levelSchema.statics.getLevelByPoints = async function(points) {
-  const level = await this.findOne({
+
+   //Get Level By Points
+
+levelSchema.statics.getLevelByPoints = async function (points) {
+
+  // 0 points = No level
+  if (points <= 0) return null;
+
+  return await this.findOne({
     minPoints: { $lte: points },
-    maxPoints: { $gte: points },
+    $or: [
+      { maxPoints: { $gte: points } },
+      { maxPoints: null } // unlimited level
+    ],
     isActive: true
   });
-  
-  return level;
 };
 
-// Get all active levels
-levelSchema.statics.getActiveLevels = async function() {
+
+   //Get All Active Levels
+
+levelSchema.statics.getActiveLevels = async function () {
   return await this.find({ isActive: true }).sort({ minPoints: 1 });
 };
 
-// Index for better query performance
+
+  // Indexes
+
 levelSchema.index({ minPoints: 1 });
 levelSchema.index({ maxPoints: 1 });
 levelSchema.index({ isActive: 1 });

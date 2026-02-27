@@ -1,6 +1,9 @@
 import DailyLogin from '../models/dushani-points.js';
 import StudentProgress from '../models/dushani-StudentProgress.js';
 import User from '../models/dushani-User.js';
+import UserPoints from '../models/amasha-userPoints.js';
+import TrueFalseResult from '../models/dilshara-TrueFalseResult.js';
+import QuizResult from '../models/dilshara-QuizResult.js';
 import mongoose from 'mongoose';
 
 // Helper: get current user and id from username in JWT
@@ -374,6 +377,756 @@ export const getAllStudentsPoints = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Internal server error'
+    });
+  }
+};
+
+// Reset points by recalculating from actual quiz and true/false results only (removes test points) - POST /api/points/reset-test-points
+export const resetTestPoints = async (req, res) => {
+  try {
+    console.log('Starting reset of test points by recalculating from actual results...');
+
+    // Get all unique users from TrueFalseResult
+    const trueFalseResults = await TrueFalseResult.aggregate([
+      {
+        $group: {
+          _id: '$userId',
+          totalTrueFalsePoints: { $sum: '$pointsEarned' }
+        }
+      }
+    ]);
+
+    console.log(`Found ${trueFalseResults.length} users with TrueFalse results`);
+
+    // Get all unique users from QuizResult
+    const quizResults = await QuizResult.aggregate([
+      {
+        $group: {
+          _id: '$userId',
+          totalQuizPoints: { $sum: '$score' }
+        }
+      }
+    ]);
+
+    console.log(`Found ${quizResults.length} users with Quiz results`);
+
+    // Combine the results by userId
+    const combinedResults = {};
+    
+    // Add TrueFalse points
+    trueFalseResults.forEach(result => {
+      if (!combinedResults[result._id]) {
+        combinedResults[result._id] = { totalTrueFalsePoints: 0, totalQuizPoints: 0 };
+      }
+      combinedResults[result._id].totalTrueFalsePoints = result.totalTrueFalsePoints;
+    });
+
+    // Add Quiz points
+    quizResults.forEach(result => {
+      if (!combinedResults[result._id]) {
+        combinedResults[result._id] = { totalTrueFalsePoints: 0, totalQuizPoints: 0 };
+      }
+      combinedResults[result._id].totalQuizPoints = result.totalQuizPoints;
+    });
+
+    console.log(`Recalculating points for ${Object.keys(combinedResults).length} users...`);
+
+    // Get all student progress records to reset
+    const allStudentProgress = await StudentProgress.find();
+    let resetCount = 0;
+
+    for (const studentProgress of allStudentProgress) {
+      const userIdStr = studentProgress.userId.toString();
+      
+      // Look for this user in the combined results
+      const pointsData = combinedResults[userIdStr] || { totalTrueFalsePoints: 0, totalQuizPoints: 0 };
+      
+      // Calculate total points from actual results only (removing any test points)
+      const totalActualPoints = pointsData.totalTrueFalsePoints + pointsData.totalQuizPoints;
+      
+      const originalTotal = studentProgress.totalPoints;
+      
+      // Set the total points to only what was earned from actual quizzes and true/false questions
+      studentProgress.totalPoints = totalActualPoints;
+      
+      // Recalculate the level based on the new points
+      studentProgress.currentLevel = await studentProgress.calculateLevel();
+      
+      await studentProgress.save();
+      
+      console.log(`Reset user ${userIdStr}: Original total: ${originalTotal}, New total (actual results only): ${studentProgress.totalPoints}`);
+      resetCount++;
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Successfully reset test points for ${resetCount} students, keeping only actual quiz/true-false results`,
+      studentsReset: resetCount
+    });
+
+  } catch (error) {
+    console.error('Reset test points error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error during test points reset',
+      error: error.message
+    });
+  }
+};
+
+// Aggregate points from userPoints table and add them to each student's total points - POST /api/points/aggregate-user-points
+export const aggregateUserPoints = async (req, res) => {
+  try {
+    console.log('Starting aggregation of points from userPoints table...');
+
+    // Get all user points records
+    const userPointsRecords = await UserPoints.find();
+
+    console.log(`Found ${userPointsRecords.length} user points records to aggregate...`);
+
+    let aggregatedCount = 0;
+    
+    for (const userPointRecord of userPointsRecords) {
+      // Get the user ID from the userPoints record
+      const userId = userPointRecord.userId;
+      
+      // Get or create student progress for this user
+      let studentProgress = await StudentProgress.findOne({ userId });
+      if (!studentProgress) {
+        studentProgress = new StudentProgress({ 
+          userId: userId,
+          totalPoints: 0
+        });
+      }
+
+      // Get the total points from the userPoints record
+      const pointsFromUserPoints = userPointRecord.totalPoints;
+
+      // Only add points if they haven't been added before or if there are additional points
+      // We'll add the difference between userPoints total and current StudentProgress total
+      const currentTotalPoints = studentProgress.totalPoints;
+      const pointsToAdd = Math.max(0, pointsFromUserPoints); // Only add positive points
+      
+      if (pointsToAdd > 0) {
+        await studentProgress.addPoints(pointsToAdd);
+        await studentProgress.save();
+        
+        console.log(`Updated user ${userId}: Added ${pointsToAdd} points from userPoints table. Previous total: ${currentTotalPoints}, New total: ${studentProgress.totalPoints}`);
+        aggregatedCount++;
+      } else {
+        console.log(`User ${userId} had ${pointsFromUserPoints} points in userPoints, current total: ${currentTotalPoints}. No points added.`);
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Successfully aggregated points from userPoints table for ${aggregatedCount} students`,
+      usersAggregated: aggregatedCount
+    });
+
+  } catch (error) {
+    console.error('Aggregate user points error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error during user points aggregation',
+      error: error.message
+    });
+  }
+};
+
+// Consolidate all points from all sources (daily login, quizzes, userpoints, truefalse) - POST /api/points/consolidate-all-points
+export const consolidateAllPoints = async (req, res) => {
+  try {
+    console.log('Starting consolidation of all points from all sources...');
+
+    // Get all TrueFalseResult records
+    const allTrueFalseResults = await TrueFalseResult.find();
+    console.log(`Found ${allTrueFalseResults.length} TrueFalse result records`);
+
+    // Get all QuizResult records
+    const allQuizResults = await QuizResult.find();
+    console.log(`Found ${allQuizResults.length} Quiz result records`);
+
+    // Get all user points records
+    const userPointsRecords = await UserPoints.find();
+    console.log(`Found ${userPointsRecords.length} user points records`);
+
+    // Get all daily login records
+    const dailyLoginRecords = await DailyLogin.find();
+    console.log(`Found ${dailyLoginRecords.length} daily login records`);
+
+    // Create a map to consolidate points for each user
+    const consolidatedPoints = {};
+
+    // Group TrueFalse points by userId (stored as string in the model)
+    for (const result of allTrueFalseResults) {
+      const userIdStr = result.userId; // This is already a string
+      
+      if (!consolidatedPoints[userIdStr]) {
+        consolidatedPoints[userIdStr] = {
+          totalTrueFalsePoints: 0,
+          totalQuizPoints: 0,
+          totalUserPoints: 0,
+          totalDailyLoginPoints: 0
+        };
+      }
+      consolidatedPoints[userIdStr].totalTrueFalsePoints += result.pointsEarned;
+    }
+
+    // Group Quiz points by userId (stored as string in the model)
+    for (const result of allQuizResults) {
+      const userIdStr = result.userId; // This is already a string
+      
+      if (!consolidatedPoints[userIdStr]) {
+        consolidatedPoints[userIdStr] = {
+          totalTrueFalsePoints: 0,
+          totalQuizPoints: 0,
+          totalUserPoints: 0,
+          totalDailyLoginPoints: 0
+        };
+      }
+      consolidatedPoints[userIdStr].totalQuizPoints += result.score;
+    }
+
+    // Add UserPoints (userId is stored as ObjectId)
+    for (const record of userPointsRecords) {
+      const userIdStr = record.userId.toString(); // Convert ObjectId to string
+      
+      if (!consolidatedPoints[userIdStr]) {
+        consolidatedPoints[userIdStr] = {
+          totalTrueFalsePoints: 0,
+          totalQuizPoints: 0,
+          totalUserPoints: 0,
+          totalDailyLoginPoints: 0
+        };
+      }
+      consolidatedPoints[userIdStr].totalUserPoints = record.totalPoints;
+    }
+
+    // Add Daily Login points (userId is stored as ObjectId)
+    for (const record of dailyLoginRecords) {
+      const userIdStr = record.userId.toString(); // Convert ObjectId to string
+      
+      if (!consolidatedPoints[userIdStr]) {
+        consolidatedPoints[userIdStr] = {
+          totalTrueFalsePoints: 0,
+          totalQuizPoints: 0,
+          totalUserPoints: 0,
+          totalDailyLoginPoints: 0
+        };
+      }
+      if (record.pointsAwarded) {
+        consolidatedPoints[userIdStr].totalDailyLoginPoints += record.pointsAwarded;
+      } else {
+        consolidatedPoints[userIdStr].totalDailyLoginPoints += 10; // default daily login points
+      }
+    }
+
+    console.log(`Consolidating points for ${Object.keys(consolidatedPoints).length} users...`);
+
+    let consolidatedCount = 0;
+
+    // Process each user and update their total points
+    for (const userIdStr in consolidatedPoints) {
+      const pointsData = consolidatedPoints[userIdStr];
+
+      // Look for user by username first (handles TrueFalseResult and QuizResult entries)
+      let user = await User.findOne({ username: userIdStr });
+      
+      if (!user) {
+        // If not found by username, try to find by ObjectId (handles UserPoints and DailyLogin entries)
+        try {
+          user = await User.findById(userIdStr);
+        } catch (e) {
+          // Invalid ObjectId format, try to find by username that might look like an ObjectId
+          // Check if the userIdStr could be someone's username that happens to look like an ObjectId
+          user = await User.findOne({ username: userIdStr });
+        }
+      }
+      
+      if (user) {
+        // Get or create student progress for this user
+        let studentProgress = await StudentProgress.findOne({ userId: user._id });
+        if (!studentProgress) {
+          studentProgress = new StudentProgress({ 
+            userId: user._id,
+            totalPoints: 0
+          });
+        }
+
+        // Calculate total points from all sources
+        const totalAllPoints = 
+          pointsData.totalTrueFalsePoints +
+          pointsData.totalQuizPoints +
+          pointsData.totalUserPoints +
+          pointsData.totalDailyLoginPoints;
+
+        const originalTotal = studentProgress.totalPoints;
+
+        // Set the total points to the sum of all sources
+        studentProgress.totalPoints = totalAllPoints;
+
+        // Recalculate the level based on the new points
+        studentProgress.currentLevel = await studentProgress.calculateLevel();
+
+        await studentProgress.save();
+
+        console.log(`Consolidated points for user ${user.username}:`);
+        console.log(`  TrueFalse: ${pointsData.totalTrueFalsePoints}`);
+        console.log(`  Quiz: ${pointsData.totalQuizPoints}`);
+        console.log(`  UserPoints: ${pointsData.totalUserPoints}`);
+        console.log(`  Daily Login: ${pointsData.totalDailyLoginPoints}`);
+        console.log(`  Total: ${totalAllPoints} (Previous: ${originalTotal})`);
+
+        consolidatedCount++;
+      } else {
+        console.log(`User not found for userId/username: ${userIdStr}`);
+      }
+    }
+
+    // Additionally, ensure all users in User collection have StudentProgress records
+    const allUsers = await User.find();
+    for (const user of allUsers) {
+      // Check if user has any points in any of the source collections
+      const hasTrueFalsePoints = allTrueFalseResults.some(result => result.userId === user.username);
+      const hasQuizPoints = allQuizResults.some(result => result.userId === user.username);
+      const hasUserPoints = userPointsRecords.some(record => record.userId.toString() === user._id.toString());
+      const hasDailyLoginPoints = dailyLoginRecords.some(record => record.userId.toString() === user._id.toString());
+
+      if (hasTrueFalsePoints || hasQuizPoints || hasUserPoints || hasDailyLoginPoints) {
+        // This user has points but may not have been processed above due to mismatched IDs
+        let studentProgress = await StudentProgress.findOne({ userId: user._id });
+        if (!studentProgress) {
+          // Create a new student progress record with calculated points
+          const userTrueFalsePoints = allTrueFalseResults
+            .filter(result => result.userId === user.username)
+            .reduce((sum, result) => sum + result.pointsEarned, 0);
+          
+          const userQuizPoints = allQuizResults
+            .filter(result => result.userId === user.username)
+            .reduce((sum, result) => sum + result.score, 0);
+          
+          const userUserPointsRecord = userPointsRecords.find(record => record.userId.toString() === user._id.toString());
+          const userUserPoints = userUserPointsRecord ? userUserPointsRecord.totalPoints : 0;
+          
+          const userDailyLoginPoints = dailyLoginRecords
+            .filter(record => record.userId.toString() === user._id.toString())
+            .reduce((sum, record) => sum + (record.pointsAwarded || 10), 0);
+
+          const totalCalculatedPoints = userTrueFalsePoints + userQuizPoints + userUserPoints + userDailyLoginPoints;
+
+          studentProgress = new StudentProgress({ 
+            userId: user._id,
+            totalPoints: totalCalculatedPoints
+          });
+
+          await studentProgress.save();
+          console.log(`Created new StudentProgress for user ${user.username} with ${totalCalculatedPoints} points`);
+          consolidatedCount++;
+        }
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Successfully consolidated all points from all sources for ${consolidatedCount} students`,
+      usersConsolidated: consolidatedCount,
+      summary: {
+        trueFalseRecords: allTrueFalseResults.length,
+        quizRecords: allQuizResults.length,
+        userPointsRecords: userPointsRecords.length,
+        dailyLoginRecords: dailyLoginRecords.length
+      }
+    });
+
+  } catch (error) {
+    console.error('Consolidate all points error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error during points consolidation',
+      error: error.message
+    });
+  }
+};
+
+// Aggregate points from TrueFalseResult and QuizResult collections - POST /api/points/aggregate-results-points
+export const aggregateResultsPoints = async (req, res) => {
+  try {
+    console.log('Starting aggregation of points from TrueFalseResult and QuizResult collections...');
+    
+    // Get all unique users from TrueFalseResult
+    const trueFalseResults = await TrueFalseResult.aggregate([
+      {
+        $group: {
+          _id: '$userId',
+          totalTrueFalsePoints: { $sum: '$pointsEarned' }
+        }
+      }
+    ]);
+
+    console.log(`Found ${trueFalseResults.length} users with TrueFalse results`);
+
+    // Get all unique users from QuizResult
+    const quizResults = await QuizResult.aggregate([
+      {
+        $group: {
+          _id: '$userId',
+          totalQuizPoints: { $sum: '$score' }
+        }
+      }
+    ]);
+
+    console.log(`Found ${quizResults.length} users with Quiz results`);
+
+    // Combine the results by userId
+    const combinedResults = {};
+    
+    // Add TrueFalse points
+    trueFalseResults.forEach(result => {
+      if (!combinedResults[result._id]) {
+        combinedResults[result._id] = { totalTrueFalsePoints: 0, totalQuizPoints: 0 };
+      }
+      combinedResults[result._id].totalTrueFalsePoints = result.totalTrueFalsePoints;
+    });
+
+    // Add Quiz points
+    quizResults.forEach(result => {
+      if (!combinedResults[result._id]) {
+        combinedResults[result._id] = { totalTrueFalsePoints: 0, totalQuizPoints: 0 };
+      }
+      combinedResults[result._id].totalQuizPoints = result.totalQuizPoints;
+    });
+
+    console.log(`Processing points for ${Object.keys(combinedResults).length} unique users...`);
+
+    // Process each user
+    for (const userIdStr in combinedResults) {
+      const pointsData = combinedResults[userIdStr];
+      
+      // Convert userId string to ObjectId if needed
+      // First check if this userId exists as an ObjectId in our User collection
+      let user = await User.findOne({ _id: userIdStr });
+      
+      // If not found as ObjectId, try to find by username (since some collections use string userId)
+      if (!user) {
+        user = await User.findOne({ username: userIdStr });
+      }
+      
+      if (user) {
+        // Get or create student progress for this user
+        let studentProgress = await StudentProgress.findOne({ userId: user._id });
+        if (!studentProgress) {
+          studentProgress = new StudentProgress({ 
+            userId: user._id,
+            totalPoints: 0
+          });
+        }
+
+        // Calculate total points from results
+        const totalPointsFromResults = pointsData.totalTrueFalsePoints + pointsData.totalQuizPoints;
+
+        // Only add the points if they haven't been added before
+        // We'll calculate the sum of points from results and compare with current total
+        const currentTotalPoints = studentProgress.totalPoints;
+        
+        // We'll add the difference between calculated points and current points
+        const pointsToAdd = totalPointsFromResults;
+        
+        if (pointsToAdd > 0) {
+          await studentProgress.addPoints(pointsToAdd);
+          await studentProgress.save();
+          
+          console.log(`Updated user ${user.username}: Added ${pointsToAdd} points (TrueFalse: ${pointsData.totalTrueFalsePoints}, Quiz: ${pointsData.totalQuizPoints}). New total: ${studentProgress.totalPoints}`);
+        } else {
+          console.log(`User ${user.username} already has equal or higher points. Current: ${currentTotalPoints}, Calculated from results: ${totalPointsFromResults}`);
+        }
+      } else {
+        console.log(`User not found for userId: ${userIdStr}`);
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Successfully aggregated points from TrueFalseResult and QuizResult collections',
+      usersProcessed: Object.keys(combinedResults).length
+    });
+
+  } catch (error) {
+    console.error('Aggregate results points error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error during points aggregation',
+      error: error.message
+    });
+  }
+};
+
+// Diagnostic function to check points distribution for a specific user - GET /api/points/diagnostic/:username
+export const getPointsDiagnostic = async (req, res) => {
+  try {
+    const { username } = req.params;
+    
+    console.log(`Getting points diagnostic for user: ${username}`);
+
+    // Find the user in the User collection
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: `User with username ${username} not found`
+      });
+    }
+
+    // Get points from TrueFalseResult for this user
+    const trueFalseResults = await TrueFalseResult.find({ userId: username });
+    const totalTrueFalsePoints = trueFalseResults.reduce((sum, result) => sum + result.pointsEarned, 0);
+
+    // Get points from QuizResult for this user
+    const quizResults = await QuizResult.find({ userId: username });
+    const totalQuizPoints = quizResults.reduce((sum, result) => sum + result.score, 0);
+
+    // Get points from UserPoints for this user
+    const userPoints = await UserPoints.findOne({ userId: user._id });
+    
+    // Get points from DailyLogin for this user
+    const dailyLoginRecords = await DailyLogin.find({ userId: user._id });
+    const totalDailyLoginPoints = dailyLoginRecords.reduce((sum, record) => sum + (record.pointsAwarded || 10), 0);
+
+    // Calculate total points
+    const totalAllPoints = totalTrueFalsePoints + totalQuizPoints + (userPoints?.totalPoints || 0) + totalDailyLoginPoints;
+
+    // Get the user's progress from StudentProgress
+    let studentProgress = await StudentProgress.findOne({ userId: user._id });
+
+    if (!studentProgress) {
+      // If student progress doesn't exist, create it with calculated points
+      studentProgress = new StudentProgress({ 
+        userId: user._id,
+        totalPoints: totalAllPoints
+      });
+      
+      await studentProgress.save();
+      console.log(`Created new StudentProgress for user ${username} with ${totalAllPoints} points during diagnostic`);
+    } else {
+      // If student progress exists but doesn't match calculated total, update it
+      if (studentProgress.totalPoints !== totalAllPoints) {
+        console.log(`Updating student progress for ${username} during diagnostic: ${studentProgress.totalPoints} -> ${totalAllPoints}`);
+        studentProgress.totalPoints = totalAllPoints;
+        studentProgress.currentLevel = await studentProgress.calculateLevel();
+        await studentProgress.save();
+        
+        // Check for milestone badges after updating points
+        await checkAndAwardMilestoneBadges(studentProgress);
+        
+        // Refresh to ensure we have the updated data
+        studentProgress = await StudentProgress.findOne({ userId: user._id });
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      user: {
+        userId: user._id,
+        username: user.username,
+        firstName: user.firstName,
+        lastName: user.lastName
+      },
+      pointsBreakdown: {
+        currentTotalInStudentProgress: studentProgress?.totalPoints || 0,
+        trueFalsePoints: totalTrueFalsePoints,
+        quizPoints: totalQuizPoints,
+        userPoints: userPoints?.totalPoints || 0,
+        dailyLoginPoints: totalDailyLoginPoints
+      },
+      potentialTotal: totalAllPoints,
+      studentProgressExists: !!studentProgress,
+      calculatedTotal: totalAllPoints
+    });
+
+  } catch (error) {
+    console.error('Get points diagnostic error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error during points diagnostic',
+      error: error.message
+    });
+  }
+};
+
+// Specific diagnostic function to check student progress - GET /api/points/check-progress/:username
+export const checkStudentProgress = async (req, res) => {
+  try {
+    const { username } = req.params;
+    
+    console.log(`Checking student progress for user: ${username}`);
+
+    // Find the user in the User collection
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: `User with username ${username} not found`
+      });
+    }
+
+    // Get points from TrueFalseResult for this user
+    const trueFalseResults = await TrueFalseResult.find({ userId: username });
+    const totalTrueFalsePoints = trueFalseResults.reduce((sum, result) => sum + result.pointsEarned, 0);
+
+    // Get points from QuizResult for this user
+    const quizResults = await QuizResult.find({ userId: username });
+    const totalQuizPoints = quizResults.reduce((sum, result) => sum + result.score, 0);
+
+    // Get points from UserPoints for this user
+    const userPoints = await UserPoints.findOne({ userId: user._id });
+    
+    // Get points from DailyLogin for this user
+    const dailyLoginRecords = await DailyLogin.find({ userId: user._id });
+    const totalDailyLoginPoints = dailyLoginRecords.reduce((sum, record) => sum + (record.pointsAwarded || 10), 0);
+
+    // Calculate total points
+    const totalAllPoints = totalTrueFalsePoints + totalQuizPoints + (userPoints?.totalPoints || 0) + totalDailyLoginPoints;
+
+    // Get the user's progress from StudentProgress
+    let studentProgress = await StudentProgress.findOne({ userId: user._id });
+
+    if (!studentProgress) {
+      // If student progress doesn't exist, create it with calculated points
+      studentProgress = new StudentProgress({ 
+        userId: user._id,
+        totalPoints: totalAllPoints
+      });
+      
+      await studentProgress.save();
+      console.log(`Created new StudentProgress for user ${username} with ${totalAllPoints} points`);
+      
+      // Check for milestone badges after creating the record
+      await checkAndAwardMilestoneBadges(studentProgress);
+    } else {
+      // If student progress exists, update it with the calculated points to ensure accuracy
+      // This ensures that the stored value matches the actual calculated total from all sources
+      if (studentProgress.totalPoints !== totalAllPoints) {
+        console.log(`Updating student progress for ${username}: ${studentProgress.totalPoints} -> ${totalAllPoints}`);
+        studentProgress.totalPoints = totalAllPoints;
+        studentProgress.currentLevel = await studentProgress.calculateLevel();
+        
+        // Save the updated student progress
+        await studentProgress.save();
+        
+        // Check for milestone badges after updating points
+        await checkAndAwardMilestoneBadges(studentProgress);
+        
+        // Verify the save was successful by fetching again
+        studentProgress = await StudentProgress.findOne({ userId: user._id });
+        console.log(`Verified saved StudentProgress for ${username} has ${studentProgress.totalPoints} points`);
+      } else {
+        console.log(`StudentProgress for ${username} already has correct points: ${studentProgress.totalPoints}`);
+        // Even if points haven't changed, check for badges in case badge criteria have changed
+        await checkAndAwardMilestoneBadges(studentProgress);
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      user: {
+        userId: user._id,
+        username: user.username
+      },
+      studentProgress: studentProgress,
+      hasStudentProgress: !!studentProgress,
+      recalculatedTotal: totalAllPoints,
+      pointsBreakdown: {
+        trueFalsePoints: totalTrueFalsePoints,
+        quizPoints: totalQuizPoints,
+        userPoints: userPoints?.totalPoints || 0,
+        dailyLoginPoints: totalDailyLoginPoints,
+        calculatedTotal: totalAllPoints
+      }
+    });
+
+  } catch (error) {
+    console.error('Check student progress error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error during student progress check',
+      error: error.message
+    });
+  }
+};
+
+// Update points for a specific user - PUT /api/points/update-user-points/:username
+export const updateUserPoints = async (req, res) => {
+  try {
+    const { username } = req.params;
+    
+    console.log(`Updating points for user: ${username}`);
+
+    // Find the user in the User collection
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: `User with username ${username} not found`
+      });
+    }
+
+    // Get points from TrueFalseResult for this user
+    const trueFalseResults = await TrueFalseResult.find({ userId: username });
+    const totalTrueFalsePoints = trueFalseResults.reduce((sum, result) => sum + result.pointsEarned, 0);
+
+    // Get points from QuizResult for this user
+    const quizResults = await QuizResult.find({ userId: username });
+    const totalQuizPoints = quizResults.reduce((sum, result) => sum + result.score, 0);
+
+    // Get points from UserPoints for this user
+    const userPointsRecord = await UserPoints.findOne({ userId: user._id });
+    const userPoints = userPointsRecord ? userPointsRecord.totalPoints : 0;
+    
+    // Get points from DailyLogin for this user
+    const dailyLoginRecords = await DailyLogin.find({ userId: user._id });
+    const totalDailyLoginPoints = dailyLoginRecords.reduce((sum, record) => sum + (record.pointsAwarded || 10), 0);
+
+    // Calculate total points
+    const totalAllPoints = totalTrueFalsePoints + totalQuizPoints + userPoints + totalDailyLoginPoints;
+
+    // Get or create student progress for this user
+    let studentProgress = await StudentProgress.findOne({ userId: user._id });
+    if (!studentProgress) {
+      studentProgress = new StudentProgress({ 
+        userId: user._id,
+        totalPoints: totalAllPoints
+      });
+    } else {
+      // Update existing record
+      studentProgress.totalPoints = totalAllPoints;
+      studentProgress.currentLevel = await studentProgress.calculateLevel();
+    }
+
+    await studentProgress.save();
+
+    res.status(200).json({
+      success: true,
+      message: `Successfully updated points for user ${username}`,
+      user: {
+        userId: user._id,
+        username: user.username
+      },
+      pointsBreakdown: {
+        trueFalsePoints: totalTrueFalsePoints,
+        quizPoints: totalQuizPoints,
+        userPoints: userPoints,
+        dailyLoginPoints: totalDailyLoginPoints,
+        totalAllPoints: totalAllPoints
+      },
+      updatedStudentProgress: studentProgress
+    });
+
+  } catch (error) {
+    console.error('Update user points error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error during user points update',
+      error: error.message
     });
   }
 };
