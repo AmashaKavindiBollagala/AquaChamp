@@ -9,6 +9,10 @@ import notesRoutes from './routes/amasha-noteRoutes.js';
 import userRoutes from './routes/dushani-userRoutes.js';
 //dilshara
 import adminRoutes from './routes/dilshara-adminRoutes.js';
+import gameRoutes from './routes/dilshara-gameRoutes.js';
+import quizRoutes from './routes/dilshara-quizRoutes.js';
+import trueFalseRoutes from './routes/dilshara-trueFalseRoutes.js';
+
 
 const app = express();
 const port = 4000;
@@ -27,7 +31,9 @@ app.use('/notes', notesRoutes);
 app.use('/api/users', userRoutes);
 //dilshara
 app.use('/api/admin', adminRoutes);
-
+app.use('/games', gameRoutes);
+app.use('/quizzes', quizRoutes);
+app.use('/truefalse', trueFalseRoutes);
 
 
 // DB
