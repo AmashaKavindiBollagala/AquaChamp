@@ -14,6 +14,10 @@ import levelRoutes from './routes/dushani-levelRoutes.js';
 import badgeNotificationRoutes from './routes/dushani-badgeNotificationRoutes.js';
 //dilshara
 import adminRoutes from './routes/dilshara-adminRoutes.js';
+import gameRoutes from './routes/dilshara-gameRoutes.js';
+import quizRoutes from './routes/dilshara-quizRoutes.js';
+import trueFalseRoutes from './routes/dilshara-trueFalseRoutes.js';
+
 import securityRoutes from "./routes/securityRoutes.js";
 
 // Component 4 — Hygiene & Water Tracker (Dushani)
@@ -42,6 +46,9 @@ app.use('/api/levels', levelRoutes);
 app.use('/api/badge-notifications', badgeNotificationRoutes);
 //dilshara
 app.use('/api/admin', adminRoutes);
+app.use('/games', gameRoutes);
+app.use('/quizzes', quizRoutes);
+app.use('/truefalse', trueFalseRoutes);
 app.use('/api/security', securityRoutes);
 
 // Component 4 routes
@@ -51,16 +58,6 @@ app.use('/api/amasha-points', amashapointsRoutes);
 
 //  DB 
 connectDB();
-
-//  Health check 
-
-
-
-
-
-//kaveesha use routes
-app.use("/api/security", securityRoutes);
-
 
 // APP PORT AND LISTEN
 app.get('/', (req, res) => {
