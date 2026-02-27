@@ -25,9 +25,6 @@ import activityRoutes from './routes/amasha-activityRoutes.js';
 import waterRoutes from './routes/amasha-waterRoutes.js';
 import amashapointsRoutes from './routes/amasha-pointsRoutes.js';
 
-
-
-
 import topicRoutes from "./routes/kaveesha-topicRoutes.js";
 import subtopicRoutes from "./routes/kaveesha-subtopicRoutes.js";
 import kaveeshaMiniQuizRoutes from "./routes/kaveesha-miniquizRoutes.js";
@@ -71,7 +68,6 @@ connectDB();
 app.use("/api/topics", topicRoutes);
 app.use("/api/subtopics", subtopicRoutes);
 app.use("/api/kaveesha-miniquiz", kaveeshaMiniQuizRoutes);
-
 
 
 // APP PORT AND LISTEN
