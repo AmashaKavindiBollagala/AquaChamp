@@ -25,10 +25,6 @@ import activityRoutes from './routes/amasha-activityRoutes.js';
 import waterRoutes from './routes/amasha-waterRoutes.js';
 import amashapointsRoutes from './routes/amasha-pointsRoutes.js';
 
-
-//kaveesha routes
-import securityRoutes from "./routes/securityRoutes.js";
-
 import topicRoutes from "./routes/kaveesha-topicRoutes.js";
 import subtopicRoutes from "./routes/kaveesha-subtopicRoutes.js";
 import kaveeshaMiniQuizRoutes from "./routes/kaveesha-miniquizRoutes.js";
