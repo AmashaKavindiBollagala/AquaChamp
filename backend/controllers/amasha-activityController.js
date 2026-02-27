@@ -44,7 +44,7 @@ export const createCustomActivity = async (req, res) => {
       name,
       description,
       icon: icon || "⭐",
-      points: points || 10,
+      points: 10, 
       source: "custom",
     });
 
