@@ -68,11 +68,6 @@ app.use("/api/subtopics", subtopicRoutes);
 app.use("/api/kaveesha-miniquiz", kaveeshaMiniQuizRoutes);
 
 
-
-// use routes
-app.use('/api/users', userRoutes);
-
-
 // APP PORT AND LISTEN
 app.get('/', (req, res) => {
     res.send('API WORKING');
