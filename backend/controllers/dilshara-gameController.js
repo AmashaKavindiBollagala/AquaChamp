@@ -4,7 +4,7 @@ import asyncHandler from 'express-async-handler';
 
 
 
-// create game
+// create  a game
 export const createGame = asyncHandler(async (req, res) => {
     const { title, description, lessonTopic, difficulty, maxScore } = req.body;
 
