@@ -10,6 +10,48 @@ const getCurrentUserId = async (req) => {
   return user ? user._id : null;
 };
 
+// Admin: Get count for specific user (for testing)
+export const getCountForUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    console.log(`Getting badge notification count for specific userId: ${userId}`);
+
+    const unreadCount = await BadgeNotification.countDocuments({
+      userId,
+      isRead: false
+    });
+
+    const untriggeredCount = await BadgeNotification.countDocuments({
+      userId,
+      animationTriggered: false
+    });
+    
+    console.log(`Unread: ${unreadCount}, Untriggered: ${untriggeredCount}`);
+    
+    // Get all notifications for debugging
+    const allNotifications = await BadgeNotification.find({ userId });
+    console.log(`Total notifications in DB: ${allNotifications.length}`);
+    allNotifications.forEach(n => {
+      console.log(`  - Badge: ${n.badgeDetails.badgeName}, isRead: ${n.isRead}, animationTriggered: ${n.animationTriggered}`);
+    });
+
+    res.status(200).json({
+      success: true,
+      counts: {
+        unread: unreadCount,
+        untriggered: untriggeredCount
+      }
+    });
+  } catch (error) {
+    console.error('Get count for user error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
 // Get badge notifications for current user
 export const getBadgeNotifications = async (req, res) => {
   try {
@@ -155,6 +197,8 @@ export const getNotificationDetails = async (req, res) => {
 export const getNotificationCount = async (req, res) => {
   try {
     const userId = await getCurrentUserId(req);
+    
+    console.log(`Getting badge notification count for userId: ${userId}`);
 
     const unreadCount = await BadgeNotification.countDocuments({
       userId,
@@ -164,6 +208,15 @@ export const getNotificationCount = async (req, res) => {
     const untriggeredCount = await BadgeNotification.countDocuments({
       userId,
       animationTriggered: false
+    });
+    
+    console.log(`Unread: ${unreadCount}, Untriggered: ${untriggeredCount}`);
+    
+    // Get all notifications for debugging
+    const allNotifications = await BadgeNotification.find({ userId });
+    console.log(`Total notifications in DB: ${allNotifications.length}`);
+    allNotifications.forEach(n => {
+      console.log(`  - Badge: ${n.badgeDetails.badgeName}, isRead: ${n.isRead}, animationTriggered: ${n.animationTriggered}`);
     });
 
     res.status(200).json({
