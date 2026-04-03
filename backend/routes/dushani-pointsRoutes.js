@@ -12,7 +12,8 @@ import {
   consolidateAllPoints,
   getPointsDiagnostic,
   checkStudentProgress,
-  updateUserPoints
+  updateUserPoints,
+  cleanupInactiveBadges
 } from '../controllers/dushani-PointsController.js';
 import verifyJWT from '../middleware/amasha-verifyJWT.js';
 
@@ -59,5 +60,8 @@ router.get('/check-progress/:username', checkStudentProgress);
 
 // Update points for a specific user (admin)
 router.put('/update-user-points/:username', updateUserPoints);
+
+// Cleanup inactive badges from all student progress (admin)
+router.post('/cleanup-inactive-badges', cleanupInactiveBadges);
 
 export default router;

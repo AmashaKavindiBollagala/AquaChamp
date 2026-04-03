@@ -249,6 +249,60 @@ const checkAndAwardMilestoneBadges = async (studentProgress) => {
   }
 };
 
+// Clean up inactive badges from student progress
+export const cleanupInactiveBadges = async (req, res) => {
+  try {
+    const StudentProgress = (await import('../models/dushani-StudentProgress.js')).default;
+    const Badge = (await import('../models/dushani-Badge.js')).default;
+    
+    // Get all inactive badges
+    const inactiveBadges = await Badge.find({ status: 'Inactive' });
+    const inactiveBadgeIds = inactiveBadges.map(badge => badge._id);
+    
+    if (inactiveBadgeIds.length === 0) {
+      return res.status(200).json({
+        success: true,
+        message: 'No inactive badges found',
+        studentsUpdated: 0
+      });
+    }
+    
+    // Find all students with inactive badges
+    const affectedStudents = await StudentProgress.find({
+      'badgesEarned.badgeId': { $in: inactiveBadgeIds }
+    });
+    
+    let updatedCount = 0;
+    for (const student of affectedStudents) {
+      const originalLength = student.badgesEarned.length;
+      
+      // Filter out inactive badges
+      student.badgesEarned = student.badgesEarned.filter(
+        b => !inactiveBadgeIds.some(id => id.equals(b.badgeId))
+      );
+      
+      if (student.badgesEarned.length < originalLength) {
+        await student.save();
+        updatedCount++;
+      }
+    }
+    
+    res.status(200).json({
+      success: true,
+      message: `Cleaned up ${inactiveBadges.length} inactive badges from ${updatedCount} students`,
+      inactiveBadgesRemoved: inactiveBadges.length,
+      studentsUpdated: updatedCount
+    });
+  } catch (error) {
+    console.error('Cleanup inactive badges error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error during badge cleanup',
+      error: error.message
+    });
+  }
+};
+
 // Helper function to get next login time
 const getNextLoginTime = () => {
   const tomorrow = new Date();

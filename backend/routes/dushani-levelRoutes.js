@@ -7,6 +7,7 @@ import {
   deleteLevel,
   getStudentProgressMonitoring,
   getStudentDetails,
+  recalculateAllStudentLevels,
 } from "../controllers/dushani-LevelController.js";
 
 import verifyJWT from "../middleware/amasha-verifyJWT.js";
@@ -28,5 +29,8 @@ router.get("/", getAllLevels);
 router.get("/:id", getLevelById);
 router.put("/:id", updateLevel);
 router.delete("/:id", deleteLevel);
+
+//UTILITY ROUTES
+router.post("/recalculate-all", recalculateAllStudentLevels);
 
 export default router;

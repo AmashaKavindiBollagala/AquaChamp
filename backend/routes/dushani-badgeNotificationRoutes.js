@@ -5,7 +5,8 @@ import {
   markNotificationAsRead,
   markAnimationAsTriggered,
   getNotificationDetails,
-  getNotificationCount
+  getNotificationCount,
+  getCountForUser
 } from '../controllers/dushani-BadgeNotificationController.js';
 import verifyJWT from '../middleware/amasha-verifyJWT.js';
 
@@ -22,6 +23,9 @@ router.get('/animations', getBadgeAnimations);
 
 // Get notification count (for badges indicator)
 router.get('/count', getNotificationCount);
+
+// Admin: Get count for specific user (for testing)
+router.get('/count/:userId', getCountForUser);
 
 // Get specific notification details
 router.get('/:notificationId', getNotificationDetails);

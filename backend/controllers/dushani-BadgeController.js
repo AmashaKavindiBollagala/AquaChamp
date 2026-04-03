@@ -66,7 +66,8 @@ export const createBadge = async (req, res) => {
 // Admin: Get all badges with statistics
 export const getAllBadges = async (req, res) => {
   try {
-    const badges = await Badge.find().sort({ createdAt: -1 });
+    // Only get active badges
+    const badges = await Badge.find({ status: 'Active' }).sort({ createdAt: -1 });
     
     // Add earned count statistics
     const badgesWithStats = await Promise.all(badges.map(async (badge) => {
@@ -215,7 +216,7 @@ export const updateBadge = async (req, res) => {
   }
 };
 
-// Admin: Delete badge (soft delete by setting status to Inactive)
+// Admin: Delete badge (Permanent - removes from DB and updates all students)
 export const deleteBadge = async (req, res) => {
   try {
     const { id } = req.params;
@@ -228,13 +229,25 @@ export const deleteBadge = async (req, res) => {
       });
     }
 
-    // Soft delete - set status to Inactive
-    badge.status = 'Inactive';
-    await badge.save();
+    // Permanently delete the badge from database
+    await Badge.findByIdAndDelete(id);
+
+    // Remove this badge from ALL student progress records
+    const StudentProgress = (await import('../models/dushani-StudentProgress.js')).default;
+    const allStudents = await StudentProgress.find();
+    
+    for (const student of allStudents) {
+      // Filter out the deleted badge from badgesEarned array
+      student.badgesEarned = student.badgesEarned.filter(
+        b => b.badgeId.toString() !== id.toString()
+      );
+      await student.save();
+    }
 
     res.status(200).json({
       success: true,
-      message: 'Badge deactivated successfully'
+      message: 'Badge deleted successfully',
+      studentsUpdated: allStudents.length
     });
   } catch (error) {
     console.error('Delete badge error:', error);
