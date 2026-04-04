@@ -1,5 +1,6 @@
 import React, { useState, memo, useCallback } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const FEATURES = [
   {
@@ -146,6 +147,7 @@ export default function UserRegistration() {
   const [showCpw, setShowCpw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const navigate = useNavigate();
   const [passwordStrength, setPasswordStrength] = useState({
     hasMinLength: false,
     hasUppercase: false,
@@ -694,12 +696,13 @@ export default function UserRegistration() {
 
                   <p className="text-center text-sm font-semibold text-slate-500">
                     Already a hero?{" "}
-                    <a
-                      href="#"
-                      className="font-extrabold text-sky-700 hover:underline"
-                    >
-                      Sign In
-                    </a>
+                     <button
+                          type="button"
+                           onClick={() => navigate("/login")}
+                          className="font-extrabold text-sky-700 hover:underline"
+                      >
+                       Sign In 
+                     </button>
                   </p>
 
                   <div className="flex justify-center gap-5 text-[11px] font-bold text-slate-400">

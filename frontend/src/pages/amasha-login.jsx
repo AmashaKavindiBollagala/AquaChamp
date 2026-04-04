@@ -504,12 +504,13 @@ export default function UserLogin() {
 
                     <p className="text-center text-sm font-semibold text-slate-500">
                       New to AquaChamp?{" "}
-                      <a
-                        href="#"
-                        className="font-extrabold text-sky-700 hover:underline"
+                      <button
+                          type="button"
+                          onClick={() => navigate("/register")}
+                          className="font-extrabold text-sky-700 hover:underline"
                       >
-                        Create Account
-                      </a>
+                       Create Account
+                     </button>
                     </p>
 
                     <div className="flex justify-center gap-5 text-[11px] font-bold text-slate-400">
