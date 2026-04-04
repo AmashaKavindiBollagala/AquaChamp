@@ -3,13 +3,14 @@ import jwt from 'jsonwebtoken';
 import asyncHandler from 'express-async-handler';
 
 export const login = asyncHandler(async (req, res) => {
-    const { username, password } = req.body;
+    const { email, password } = req.body;
 
-    if (!username || !password) {
+    if (!email || !password) {
         return res.status(400).json({ message: 'All fields are required' });
     }
 
-    const foundUser = await User.findOne({ username }).exec();
+    // ✅ Find user by email
+    const foundUser = await User.findOne({ email: email.toLowerCase() }).exec();
 
     if (!foundUser || !foundUser.active) {
         return res.status(401).json({ message: 'Unauthorized' });
@@ -30,19 +31,25 @@ export const login = asyncHandler(async (req, res) => {
         { expiresIn: '7d' }
     );
 
-    res.cookie('jwt', refreshToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'None',
-        maxAge: 7 * 24 * 60 * 60 * 1000
-    });
+   res.cookie('jwt', refreshToken, {
+    httpOnly: true,
+    secure: false,   
+    sameSite: 'Lax', 
+    maxAge: 7 * 24 * 60 * 60 * 1000
+});
 
-    res.json({ accessToken });
+    // ✅ Return user info for welcome message
+    res.json({
+        accessToken,
+        user: {
+            firstName: foundUser.firstName,
+            username: foundUser.username,
+        }
+    });
 });
 
 export const refresh = (req, res) => {
     const cookies = req.cookies;
-
     if (!cookies?.jwt) return res.status(401).json({ message: 'Unauthorized' });
 
     const refreshToken = cookies.jwt;
