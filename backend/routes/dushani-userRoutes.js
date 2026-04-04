@@ -4,7 +4,9 @@ import {
     getUserProfile,
     updateUserProfile,
     deleteUser,
-    getAllUsers
+    getAllUsers,
+    checkUsernameAvailability,
+    checkEmailAvailability
 } from '../controllers/dushani-userController.js';
 import {
     registerValidation,
@@ -15,8 +17,11 @@ import verifyJWT from '../middleware/amasha-verifyJWT.js';
 
 const router = express.Router();
 
+// Check username availability (public route)
+router.get('/check-username/:username', checkUsernameAvailability);
 
-
+// Check email availability (public route)
+router.get('/check-email/:email', checkEmailAvailability);
 
 // User registration
 router.post('/register', registerValidation, handleValidationErrors, registerUser);
