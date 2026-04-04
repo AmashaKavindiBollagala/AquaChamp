@@ -6,6 +6,60 @@ import SecurityEmailVerification from "../models/securityEmailVerification.js";
 
 import { securitySendEmail } from "../utils/securitySendEmail.js";
 
+// Check if username is available
+export const checkUsernameAvailability = async (req, res) => {
+  try {
+    const { username } = req.params;
+    
+    if (!username || username.length < 3) {
+      return res.status(400).json({
+        success: false,
+        message: "Username must be at least 3 characters",
+      });
+    }
+    
+    const existingUser = await User.findOne({ username });
+    
+    res.status(200).json({
+      success: true,
+      available: !existingUser,
+    });
+  } catch (error) {
+    console.error("Check username error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+// Check if email is available
+export const checkEmailAvailability = async (req, res) => {
+  try {
+    const { email } = req.params;
+    
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required",
+      });
+    }
+    
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    
+    res.status(200).json({
+      success: true,
+      available: !existingUser,
+    });
+  } catch (error) {
+    console.error("Check email error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
 // Register a new user
 export const registerUser = async (req, res) => {
   try {
