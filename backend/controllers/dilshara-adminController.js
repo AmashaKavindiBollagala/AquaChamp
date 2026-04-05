@@ -4,6 +4,21 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
 
+
+export const getAllAdmins = asyncHandler(async (req, res) => {
+    const adminRoles = ['SUPER_ADMIN', 'Game_ADMIN', 'Progress_ADMIN', 'Activity_ADMIN', 'Lesson_ADMIN', 'Lessons_ADMIN'];
+    
+    const admins = await User.find(
+        { roles: { $in: adminRoles } },
+        '-password'
+    ).sort({ createdAt: -1 });
+
+    res.status(200).json({
+        success: true,
+        admins
+    });
+});
+
 // Super admin creates new admin
 
 export const createAdmin = asyncHandler(async (req, res) => {
@@ -54,6 +69,26 @@ export const createAdmin = asyncHandler(async (req, res) => {
     });
 });
 
+//to deactivate and activate 
+export const toggleAdminStatus = asyncHandler(async (req, res) => {
+    const admin = await User.findById(req.params.id);
+    
+    if (!admin) {
+        return res.status(404).json({ message: 'Admin not found' });
+    }
+
+    admin.active = !admin.active;
+    await admin.save({ validateBeforeSave: false });
+
+    res.status(200).json({
+        message: `Admin ${admin.active ? 'activated' : 'deactivated'} successfully`,
+        admin: {
+            id: admin._id,
+            username: admin.username,
+            active: admin.active
+        }
+    });
+});
 
 // Admin login >>>>super admin create other admin
 
