@@ -37,6 +37,7 @@ app.use('/api/admin', adminRoutes);
 connectDB();
 
 
+import './kaveesha-delete-unverified-users.js';
 
 //kaveesha routes
 import securityRoutes from "./routes/securityRoutes.js";

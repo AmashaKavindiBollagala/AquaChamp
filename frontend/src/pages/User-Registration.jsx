@@ -184,6 +184,17 @@ export default function UserRegistration() {
     if (!form.email.trim()) e.email = "Email is required";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
       e.email = "Please enter a valid email";
+    else {
+      // Check for common fake/random domain patterns
+      const domain = form.email.split("@")[1];
+      const hasNumbers = /\d/.test(domain.split(".")[0]);
+      const isVeryShort = domain.split(".")[0].length < 3;
+      
+      // Block obviously fake domains with random numbers
+      if (hasNumbers && isVeryShort) {
+        e.email = "Please use a valid email address (e.g., gmail.com, yahoo.com, outlook.com)";
+      }
+    }
 
     if (!form.username.trim()) e.username = "Username is required";
     else if (form.username.length < 3 || form.username.length > 30)
@@ -226,9 +237,23 @@ export default function UserRegistration() {
     }
   }, []);
 
-  // Check email availability
+  // Check email availability and validate domain
   const checkEmailAvailability = useCallback(async (email) => {
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setEmailAvailable(null);
+      return;
+    }
+
+    // Check for fake domain patterns first
+    const domain = email.split("@")[1];
+    const hasNumbers = /\d/.test(domain.split(".")[0]);
+    const isVeryShort = domain.split(".")[0].length < 3;
+    
+    if (hasNumbers && isVeryShort) {
+      setErrors((prev) => ({
+        ...prev,
+        email: "Please use a valid email address (e.g., gmail.com, yahoo.com, outlook.com)",
+      }));
       setEmailAvailable(null);
       return;
     }
@@ -238,6 +263,11 @@ export default function UserRegistration() {
       // Try to find if user exists with this email
       const response = await axios.get(`http://localhost:4000/api/users/check-email/${email}`);
       setEmailAvailable(response.data.available);
+      // Clear any previous email errors if domain is valid
+      setErrors((prev) => ({
+        ...prev,
+        email: "",
+      }));
     } catch (error) {
       // If endpoint doesn't exist, we'll rely on registration error
       setEmailAvailable(null);
@@ -305,6 +335,35 @@ export default function UserRegistration() {
 
     setServerError("");
 
+    // Real-time email validation
+    if (name === "email") {
+      // Clear availability status when typing
+      setEmailAvailable(null);
+      
+      // Check if email is not empty
+      if (value.trim()) {
+        // Check basic email format
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+          setErrors((prev) => ({
+            ...prev,
+            email: "Please enter a valid email",
+          }));
+        } else {
+          // Email format is valid, check for fake domains
+          const domain = value.split("@")[1];
+          const hasNumbers = /\d/.test(domain.split(".")[0]);
+          const isVeryShort = domain.split(".")[0].length < 3;
+          
+          if (hasNumbers && isVeryShort) {
+            setErrors((prev) => ({
+              ...prev,
+              email: "Please use a valid email address (e.g., gmail.com, yahoo.com, outlook.com)",
+            }));
+          }
+        }
+      }
+    }
+
     // Check username availability with debounce
     if (name === "username") {
       if (debounceTimeout.current) {
@@ -365,10 +424,15 @@ export default function UserRegistration() {
         username: form.username.trim(),
         password: form.password,
         confirmPassword: form.confirmPassword,
+      }, {
+        timeout: 10000, // 10 second timeout
       });
 
       if (response.data.success) {
-        setSuccess(true);
+        // Save email to localStorage for verification page
+        localStorage.setItem("userEmail", form.email.trim().toLowerCase());
+        
+        navigate("/verify-email");
 
         // Optional: reset form after success
         setForm({
@@ -406,26 +470,39 @@ export default function UserRegistration() {
           setErrors(backendErrors);
         } else {
           const message = data.message || "Registration failed";
-          setServerError(message);
           
-          // Check if it's a duplicate username or email error
-          if (message.includes("username") || message.includes("Username")) {
+          // Check if it's an invalid email domain error - show ONLY near email field
+          if (message.includes("Invalid email domain") || message.includes("invalid email")) {
             setErrors((prev) => ({
               ...prev,
-              username: "This username is already taken",
+              email: "Please use a valid email address (e.g., gmail.com, yahoo.com, outlook.com)",
             }));
-            setUsernameAvailable(false);
-          }
-          if (message.includes("email") || message.includes("Email")) {
-            setErrors((prev) => ({
-              ...prev,
-              email: "This email is already registered",
-            }));
-            setEmailAvailable(false);
+            // Don't show in server error banner
+          } else {
+            // Show other errors in server banner
+            setServerError(message);
+            
+            // Check if it's a duplicate username or email error
+            if (message.includes("username") || message.includes("Username")) {
+              setErrors((prev) => ({
+                ...prev,
+                username: "This username is already taken",
+              }));
+              setUsernameAvailable(false);
+            }
+            if (message.includes("email") || message.includes("Email")) {
+              setErrors((prev) => ({
+                ...prev,
+                email: "This email is already registered",
+              }));
+              setEmailAvailable(false);
+            }
           }
         }
+      } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        setServerError("Request timed out. Please try again.");
       } else {
-        setServerError("Unable to connect to server");
+        setServerError("Unable to connect to server. Please check your connection.");
       }
     } finally {
       setLoading(false);
@@ -436,7 +513,7 @@ export default function UserRegistration() {
     <div className="min-h-screen w-full bg-[#EAF5FF]">
       <div className="flex min-h-screen w-full">
         {/* LEFT PANEL */}
-        <aside className="relative hidden min-h-screen w-[40%] overflow-hidden bg-gradient-to-br from-[#042C53] via-[#185FA5] to-[#1D9E75] px-7 py-7 text-white lg:flex lg:flex-col lg:justify-between">
+        <aside className="relative hidden min-h-screen w-[40%] overflow-hidden bg-linear-to-br from-[#042C53] via-[#185FA5] to-[#1D9E75] px-7 py-7 text-white lg:flex lg:flex-col lg:justify-between">
           <div className="absolute -right-20 -bottom-20 h-64 w-64 rounded-full bg-white/5" />
           <div className="absolute -left-12 -top-12 h-52 w-52 rounded-full bg-emerald-300/10" />
           <div className="absolute left-[12%] top-[18%] h-3 w-3 animate-bounce rounded-full bg-white/10" />
@@ -452,7 +529,7 @@ export default function UserRegistration() {
                 className="mr-3 h-12 w-12 rounded-2xl border border-cyan-400 bg-white/30 p-1.5 shadow-lg backdrop-blur-md"
               />
               <div>
-                <h1 className="bg-gradient-to-r from-white via-sky-100 to-emerald-400 bg-clip-text text-3xl font-extrabold tracking-wide text-transparent">
+                <h1 className="bg-linear-to-r from-white via-sky-100 to-emerald-400 bg-clip-text text-3xl font-extrabold tracking-wide text-transparent">
                   AquaChamp
                 </h1>
                 <p className="mt-1 text-[9px] font-bold uppercase tracking-[0.25em] text-white/70">
@@ -461,7 +538,7 @@ export default function UserRegistration() {
               </div>
             </div>
 
-            <div className="ml-[60px] mt-3 inline-flex items-center rounded-full border border-white/20 bg-gradient-to-r from-amber-400 to-orange-400 px-3 py-1 text-[10px] font-black text-white shadow-lg">
+            <div className="ml-15 mt-3 inline-flex items-center rounded-full border border-white/20 bg-linear-to-r from-amber-400 to-orange-400 px-3 py-1 text-[10px] font-black text-white shadow-lg">
               🎯 Play • Learn • Grow
             </div>
           </div>
@@ -522,7 +599,7 @@ export default function UserRegistration() {
                 className="h-11 w-11 rounded-2xl border border-cyan-400 bg-white/30 p-1.5 shadow-md"
               />
               <div>
-                <div className="bg-gradient-to-r from-sky-800 via-sky-500 to-emerald-400 bg-clip-text text-2xl font-extrabold text-transparent">
+                <div className="bg-linear-to-r from-sky-800 via-sky-500 to-emerald-400 bg-clip-text text-2xl font-extrabold text-transparent">
                   AquaChamp
                 </div>
                 <p className="text-[9px] font-bold uppercase tracking-[0.24em] text-sky-600/70">
@@ -532,8 +609,8 @@ export default function UserRegistration() {
             </div>
 
             {success ? (
-              <div className="flex min-h-[520px] flex-col items-center justify-center text-center">
-                <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-sky-600 text-4xl text-white shadow-xl">
+              <div className="flex min-h-130 flex-col items-center justify-center text-center">
+                <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-linear-to-br from-emerald-500 to-sky-600 text-4xl text-white shadow-xl">
                   ✓
                 </div>
 
@@ -547,7 +624,7 @@ export default function UserRegistration() {
 
                 <button
                   onClick={() => setSuccess(false)}
-                  className="mt-6 rounded-2xl bg-gradient-to-r from-sky-700 to-emerald-500 px-8 py-3 text-sm font-extrabold text-white shadow-lg transition hover:-translate-y-1"
+                  className="mt-6 rounded-2xl bg-linear-to-r from-sky-700 to-emerald-500 px-8 py-3 text-sm font-extrabold text-white shadow-lg transition hover:-translate-y-1"
                 >
                   Back to Form
                 </button>
@@ -682,7 +759,7 @@ export default function UserRegistration() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="mt-1 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-sky-700 to-emerald-500 px-4 py-3 text-sm font-extrabold text-white shadow-lg transition hover:-translate-y-1 disabled:cursor-not-allowed disabled:opacity-70"
+                    className="mt-1 flex w-full items-center justify-center gap-2 rounded-2xl bg-linear-to-r from-sky-700 to-emerald-500 px-4 py-3 text-sm font-extrabold text-white shadow-lg transition hover:-translate-y-1 disabled:cursor-not-allowed disabled:opacity-70"
                   >
                     {loading ? (
                       <>

@@ -76,18 +76,130 @@ export const securityResetPassword = async (req, res) => {
 export const verifyEmail = async (req, res) => {
   try {
     const { token } = req.params;
+    console.log(`\n🔐 Email verification attempt`);
+    console.log(`   Token: ${token}`);
 
     const record = await SecurityEmailVerification.findOne({ token });
-    if (!record) return res.status(400).send("Invalid or expired token");
+    if (!record) {
+      console.log(`❌ Invalid or expired token - not found in database`);
+      return res.status(400).send("Invalid or expired token");
+    }
+
+    console.log(`✅ Token found in database`);
+    console.log(`   Token ID: ${record._id}`);
+    console.log(`   User ID: ${record.userId}`);
+    console.log(`   Created at: ${record.createdAt}`);
+
+    // Check if verification link has expired (1 hour)
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    if (record.createdAt < oneHourAgo) {
+      console.log(`⏰ Token expired - older than 1 hour`);
+      await SecurityEmailVerification.deleteOne({ _id: record._id });
+      console.log(`🗑️ Deleted expired token`);
+      return res.status(400).send("Link expired. Please resend verification email.");
+    }
+
+    console.log(`✅ Token is valid and not expired`);
 
     const user = await User.findById(record.userId);
+    if (!user) {
+      console.log(`❌ User not found for token`);
+      return res.status(404).send("User not found");
+    }
+
+    console.log(`   User email: ${user.email}`);
+    console.log(`   Current verified status: ${user.isVerified}`);
+
     user.isVerified = true;
     await user.save();
+    console.log(`✅ User marked as verified`);
 
     await SecurityEmailVerification.deleteOne({ _id: record._id });
+    console.log(`🗑️ Deleted used verification token`);
 
-    res.send("<h2>Email verified successfully. You can login now.</h2>");
+    console.log(`🎉 Redirecting to email-verified page\n`);
+    res.redirect("http://localhost:5173/email-verified");
   } catch (error) {
+    console.error(`❌ Verification error:`, error.message);
+    console.error(error.stack);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+/**
+ * ===============================
+ * RESEND EMAIL VERIFICATION
+ * POST /api/security/resend-verification
+ * ===============================
+ */
+export const resendVerificationEmail = async (req, res) => {
+  try {
+    const { email } = req.body;
+    console.log(`\n🔄 Resend verification request for: ${email}`);
+
+    // ✅ Find user by email
+    const user = await User.findOne({ email });
+    if (!user) {
+      console.log(`❌ User not found: ${email}`);
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Already verified?
+    if (user.isVerified) {
+      console.log(`⚠️ User already verified: ${email}`);
+      return res.json({ message: "Email already verified" });
+    }
+
+    console.log(`   User ID: ${user._id}`);
+
+    // Check existing tokens before deletion
+    const existingTokens = await SecurityEmailVerification.find({ userId: user._id });
+    console.log(`📋 Found ${existingTokens.length} existing token(s):`);
+    existingTokens.forEach((t, i) => {
+      console.log(`   Token ${i + 1}: ${t.token.substring(0, 8)}... | Created: ${t.createdAt}`);
+    });
+
+    // Delete any existing verification tokens for this user - use deleteMany with await
+    const deleteResult = await SecurityEmailVerification.deleteMany({ 
+      userId: user._id 
+    });
+    console.log(`🗑️ Deleted ${deleteResult.deletedCount} old verification token(s)`);
+
+    // Verify deletion
+    const remainingTokens = await SecurityEmailVerification.find({ userId: user._id });
+    console.log(`✅ Remaining tokens after deletion: ${remainingTokens.length}`);
+
+    // Create a new token
+    const token = uuidv4();
+    console.log(`🆕 Creating new token: ${token.substring(0, 8)}...`);
+    
+    const newToken = await SecurityEmailVerification.create({ 
+      userId: user._id, 
+      token 
+    });
+    console.log(`✅ New token created successfully`);
+    console.log(`   Token ID: ${newToken._id}`);
+    console.log(`   Token value: ${token}`);
+
+    const verifyLink = `http://localhost:4000/api/security/verify-email/${token}`;
+    console.log(`🔗 Full verification link:`);
+    console.log(`   ${verifyLink}`);
+
+    // Send the verification email
+    console.log(`📧 Sending verification email...`);
+    await securitySendEmail(
+      email,
+      "Verify Your Email",
+      `<h2>Please verify your email</h2>
+       <p>Click the link below to verify your account:</p>
+       <a href="${verifyLink}">${verifyLink}</a>`
+    );
+
+    console.log(`✅ Verification email sent successfully to: ${email}\n`);
+    res.json({ message: "Verification email sent!" });
+  } catch (error) {
+    console.error(`❌ Resend verification error:`, error.message);
+    console.error(error.stack);
     res.status(500).json({ message: error.message });
   }
 };
