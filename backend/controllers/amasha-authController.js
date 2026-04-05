@@ -16,6 +16,12 @@ export const login = asyncHandler(async (req, res) => {
         return res.status(401).json({ message: 'Unauthorized' });
     }
 
+    if (!foundUser.isVerified) {
+    return res.status(401).json({
+        message: "Please verify your email before login"
+    });
+}
+
     const match = await foundUser.comparePassword(password);
     if (!match) return res.status(401).json({ message: 'Unauthorized' });
 

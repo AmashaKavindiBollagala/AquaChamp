@@ -2,6 +2,7 @@ import express from 'express';
 import {
     registerUser,
     getUserProfile,
+    getCurrentUserProfile,
     updateUserProfile,
     deleteUser,
     getAllUsers,
@@ -14,6 +15,10 @@ import {
     handleValidationErrors
 } from '../middleware/dushani-validation.js';
 import verifyJWT from '../middleware/amasha-verifyJWT.js';
+import {
+  verifyEmail,
+  resendVerificationEmail
+} from '../controllers/securityController.js';
 
 const router = express.Router();
 
@@ -26,7 +31,17 @@ router.get('/check-email/:email', checkEmailAvailability);
 // User registration
 router.post('/register', registerValidation, handleValidationErrors, registerUser);
 
+
+// Email verification (public route)
+router.get('/verify-email/:token', verifyEmail);
+
+// Resend verification email (public route)
+router.post('/resend-verification', resendVerificationEmail);
+
 router.use(verifyJWT)
+
+// Get current user profile (from JWT token)
+router.get('/profile/me', getCurrentUserProfile);
 
 // Get user profile by ID
 router.get('/profile/:id', getUserProfile);

@@ -103,11 +103,11 @@ const ForgotPasswordModal = memo(function ForgotPasswordModal({ onClose }) {
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="w-full max-w-sm rounded-[24px] bg-white p-6 shadow-2xl">
+      <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl">
         {step === "request" ? (
           <>
             <div className="mb-5 flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-emerald-500 text-xl shadow-md">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-linear-to-br from-sky-500 to-emerald-500 text-xl shadow-md">
                 🔑
               </div>
               <div>
@@ -134,7 +134,7 @@ const ForgotPasswordModal = memo(function ForgotPasswordModal({ onClose }) {
               <button
                 type="submit"
                 disabled={loading}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-sky-700 to-emerald-500 py-2.5 text-sm font-extrabold text-white shadow-lg transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-70"
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-linear-to-r from-sky-700 to-emerald-500 py-2.5 text-sm font-extrabold text-white shadow-lg transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {loading ? (
                   <>
@@ -157,7 +157,7 @@ const ForgotPasswordModal = memo(function ForgotPasswordModal({ onClose }) {
           </>
         ) : (
           <div className="flex flex-col items-center py-4 text-center">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-sky-500 text-3xl shadow-lg">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-linear-to-br from-emerald-400 to-sky-500 text-3xl shadow-lg">
               📬
             </div>
             <h3 className="text-xl font-extrabold text-sky-950">Check Your Inbox!</h3>
@@ -167,7 +167,7 @@ const ForgotPasswordModal = memo(function ForgotPasswordModal({ onClose }) {
             <p className="mt-2 text-[11px] text-slate-400">Don't forget to check your spam folder!</p>
             <button
               onClick={onClose}
-              className="mt-5 rounded-2xl bg-gradient-to-r from-sky-700 to-emerald-500 px-8 py-2.5 text-sm font-extrabold text-white shadow-lg transition hover:-translate-y-0.5"
+              className="mt-5 rounded-2xl bg-linear-to-r from-sky-700 to-emerald-500 px-8 py-2.5 text-sm font-extrabold text-white shadow-lg transition hover:-translate-y-0.5"
             >
               Back to Login
             </button>
@@ -228,6 +228,10 @@ export default function UserLogin() {
     setServerError("");
 
     try {
+      console.log("📡 [Login] Attempting login...");
+      console.log("   Email:", form.email.trim().toLowerCase());
+      console.log("   API URL:", API_URL);
+      
       // ✅ FIX 2: Added withCredentials so the httpOnly refresh cookie gets stored
       const response = await axios.post(
         API_URL,
@@ -235,28 +239,58 @@ export default function UserLogin() {
           email: form.email.trim().toLowerCase(),
           password: form.password,
         },
-        { withCredentials: true }
+        { 
+          withCredentials: true,
+          timeout: 10000 // 10 second timeout
+        }
       );
+
+      console.log("✅ [Login] Response received:", response.status);
 
       if (response.data.success || response.data.accessToken) {
         const token = response.data.accessToken || response.data.token;
+        console.log("✅ [Login] Login successful!");
+        console.log("   Token received:", token ? `${token.substring(0, 30)}...` : "NONE");
+        console.log("   User data:", response.data.user);
+        console.log("   Remember me:", rememberMe);
+        
         // Store JWT based on remember me preference
         if (rememberMe) {
           localStorage.setItem("aquachamp_token", token);
+          console.log("   ✅ Token stored in localStorage");
+          // Verify it was stored
+          const verifyToken = localStorage.getItem("aquachamp_token");
+          console.log("   ✅ Verification - Token in localStorage:", !!verifyToken);
         } else {
           sessionStorage.setItem("aquachamp_token", token);
+          console.log("   ✅ Token stored in sessionStorage");
+          // Verify it was stored
+          const verifyToken = sessionStorage.getItem("aquachamp_token");
+          console.log("   ✅ Verification - Token in sessionStorage:", !!verifyToken);
         }
 
         setUserData(response.data.user);
         setLoginSuccess(true);
 
-        navigate("/profile");
+        console.log("   🚀 Navigating to /profile...");
+        // Small delay to ensure storage is complete
+        setTimeout(() => {
+          navigate("/profile");
+        }, 100);
       }
     } catch (error) {
-      console.error("Login error:", error);
-
-      if (error.response?.data) {
+      console.error("❌ [Login] Login error:");
+      console.error("   Error message:", error.message);
+      console.error("   Error code:", error.code);
+      
+      if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+        console.error("   ⏰ Request timed out after 10 seconds");
+        setServerError("Request timed out. Please check your connection and try again.");
+      } else if (error.response?.data) {
         const data = error.response.data;
+        console.error("   Response status:", error.response.status);
+        console.error("   Response data:", data);
+        
         if (error.response.status === 401) {
           setServerError("Invalid email or password. Please try again.");
         } else if (error.response.status === 403) {
@@ -269,7 +303,8 @@ export default function UserLogin() {
           setServerError(data.message || "Login failed. Please try again.");
         }
       } else {
-        setServerError("Unable to connect to server");
+        console.error("   Full error:", error);
+        setServerError(`Unable to connect to server (${error.message})`);
       }
     } finally {
       setLoading(false);
@@ -283,7 +318,7 @@ export default function UserLogin() {
       <div className="min-h-screen w-full bg-[#EAF5FF]">
         <div className="flex min-h-screen w-full">
           {/* ── LEFT PANEL ── */}
-          <aside className="relative hidden min-h-screen w-[40%] overflow-hidden bg-gradient-to-br from-[#042C53] via-[#185FA5] to-[#1D9E75] px-7 py-7 text-white lg:flex lg:flex-col lg:justify-between">
+          <aside className="relative hidden min-h-screen w-[40%] overflow-hidden bg-linear-to-br from-[#042C53] via-[#185FA5] to-[#1D9E75] px-7 py-7 text-white lg:flex lg:flex-col lg:justify-between">
             {/* Background decorations */}
             <div className="absolute -right-20 -bottom-20 h-64 w-64 rounded-full bg-white/5" />
             <div className="absolute -left-12 -top-12 h-52 w-52 rounded-full bg-emerald-300/10" />
@@ -301,7 +336,7 @@ export default function UserLogin() {
                   className="mr-3 h-12 w-12 rounded-2xl border border-cyan-400 bg-white/30 p-1.5 shadow-lg backdrop-blur-md"
                 />
                 <div>
-                  <h1 className="bg-gradient-to-r from-white via-sky-100 to-emerald-400 bg-clip-text text-3xl font-extrabold tracking-wide text-transparent">
+                  <h1 className="bg-linear-to-r from-white via-sky-100 to-emerald-400 bg-clip-text text-3xl font-extrabold tracking-wide text-transparent">
                     AquaChamp
                   </h1>
                   <p className="mt-1 text-[9px] font-bold uppercase tracking-[0.25em] text-white/70">
@@ -310,7 +345,7 @@ export default function UserLogin() {
                 </div>
               </div>
 
-              <div className="ml-[60px] mt-3 inline-flex items-center rounded-full border border-white/20 bg-gradient-to-r from-amber-400 to-orange-400 px-3 py-1 text-[10px] font-black text-white shadow-lg">
+              <div className="ml-15 mt-3 inline-flex items-center rounded-full border border-white/20 bg-linear-to-r from-amber-400 to-orange-400 px-3 py-1 text-[10px] font-black text-white shadow-lg">
                 🎯 Play • Learn • Grow
               </div>
             </div>
@@ -321,7 +356,7 @@ export default function UserLogin() {
                 Welcome Back, <br />
                 <span className="text-emerald-400">Hero! 👋</span>
               </h2>
-              <p className="mt-3 max-w-[220px] text-sm leading-6 text-white/70">
+              <p className="mt-3 max-w-55 text-sm leading-6 text-white/70">
                 Your hygiene missions are waiting. Log in to keep your streak alive and earn new badges!
               </p>
 
@@ -366,7 +401,7 @@ export default function UserLogin() {
                   className="h-11 w-11 rounded-2xl border border-cyan-400 bg-white/30 p-1.5 shadow-md"
                 />
                 <div>
-                  <div className="bg-gradient-to-r from-sky-800 via-sky-500 to-emerald-400 bg-clip-text text-2xl font-extrabold text-transparent">
+                  <div className="bg-linear-to-r from-sky-800 via-sky-500 to-emerald-400 bg-clip-text text-2xl font-extrabold text-transparent">
                     AquaChamp
                   </div>
                   <p className="text-[9px] font-bold uppercase tracking-[0.24em] text-sky-600/70">
@@ -377,8 +412,8 @@ export default function UserLogin() {
 
               {loginSuccess ? (
                 /* ── Success State ── */
-                <div className="flex min-h-[400px] flex-col items-center justify-center text-center">
-                  <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-sky-600 text-4xl text-white shadow-xl">
+                <div className="flex min-h-100 flex-col items-center justify-center text-center">
+                  <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-linear-to-br from-emerald-500 to-sky-600 text-4xl text-white shadow-xl">
                     🏆
                   </div>
                   <h3 className="text-3xl font-extrabold text-sky-950">
@@ -407,7 +442,7 @@ export default function UserLogin() {
                       setLoginSuccess(false);
                       setForm({ email: "", password: "" });
                     }}
-                    className="mt-6 rounded-2xl bg-gradient-to-r from-sky-700 to-emerald-500 px-8 py-3 text-sm font-extrabold text-white shadow-lg transition hover:-translate-y-1"
+                    className="mt-6 rounded-2xl bg-linear-to-r from-sky-700 to-emerald-500 px-8 py-3 text-sm font-extrabold text-white shadow-lg transition hover:-translate-y-1"
                   >
                     Continue to Dashboard →
                   </button>
@@ -470,9 +505,9 @@ export default function UserLogin() {
                     <label className="flex cursor-pointer items-center gap-2.5">
                       <div
                         onClick={() => setRememberMe((p) => !p)}
-                        className={`relative h-5 w-5 flex-shrink-0 rounded-md border-2 transition ${
+                        className={`relative h-5 w-5 shrink-0 rounded-md border-2 transition ${
                           rememberMe
-                            ? "border-sky-600 bg-gradient-to-br from-sky-600 to-emerald-500"
+                            ? "border-sky-600 bg-linear-to-br from-sky-600 to-emerald-500"
                             : "border-sky-200 bg-white"
                         }`}
                       >
@@ -490,7 +525,7 @@ export default function UserLogin() {
                     <button
                       type="submit"
                       disabled={loading}
-                      className="mt-1 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-sky-700 to-emerald-500 px-4 py-3 text-sm font-extrabold text-white shadow-lg transition hover:-translate-y-1 disabled:cursor-not-allowed disabled:opacity-70"
+                      className="mt-1 flex w-full items-center justify-center gap-2 rounded-2xl bg-linear-to-r from-sky-700 to-emerald-500 px-4 py-3 text-sm font-extrabold text-white shadow-lg transition hover:-translate-y-1 disabled:cursor-not-allowed disabled:opacity-70"
                     >
                       {loading ? (
                         <>
