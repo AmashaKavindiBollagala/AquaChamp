@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import UserLogin from "./pages/amasha-login";
 import UserRegistration from "./pages/User-Registration";
 import KaveeshaUserProfile from "./pages/kaveesha-userProfile";
+import DilsharaSuperAdminDashboard from "./components/dilshara-SuperAdminDashboard";
 import VerifyEmail from "./pages/kaveesha-verifyEmail";
 import EmailVerified from "./pages/kaveesha-emailVerified";
 
@@ -19,6 +20,9 @@ function App() {
 
         {/* Profile page */}
         <Route path="/profile" element={<KaveeshaUserProfile />} />
+
+        {/* super admin dashboard */}
+<Route path="/super-admin" element={<DilsharaSuperAdminDashboard />} />
 
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/email-verified" element={<EmailVerified />} />
