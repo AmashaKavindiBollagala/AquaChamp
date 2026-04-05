@@ -6,6 +6,8 @@ import SecurityEmailVerification from "../models/securityEmailVerification.js";
 
 import { securitySendEmail } from "../utils/securitySendEmail.js";
 
+import { isValidEmail } from "../utils/kaveesha-emailCheck.js";
+
 // Check if username is available
 export const checkUsernameAvailability = async (req, res) => {
   try {
@@ -63,7 +65,22 @@ export const checkEmailAvailability = async (req, res) => {
 // Register a new user
 export const registerUser = async (req, res) => {
   try {
-    const { firstName, lastName, age, email, username, password } = req.body;
+    console.log(`\n🚀 Registration attempt received`);
+    const { firstName, lastName, age, username, password } = req.body;
+    const email = req.body.email.toLowerCase();
+
+    // ✅ Validate email format + MX
+    console.log(`📧 Validating email: ${email}`);
+    const validEmail = await isValidEmail(email);
+    console.log(`📧 Email validation result: ${validEmail ? 'VALID' : 'INVALID'}`);
+
+    if (!validEmail) {
+      console.log(`🚫 Registration blocked - Invalid email: ${email}\n`);
+      return res.status(400).json({
+        success: false,
+        message: "Invalid email domain. Please use a valid email address (e.g., gmail.com, yahoo.com, outlook.com)",
+      });
+    }
 
     // Check if user already exists
     const existingUser = await User.findOne({
@@ -174,12 +191,66 @@ export const getUserProfile = async (req, res) => {
         age: user.age,
         email: user.email,
         username: user.username,
+        isVerified: user.isVerified,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
       },
     });
   } catch (error) {
     console.error("Get profile error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+// Get current user profile (from JWT token)
+export const getCurrentUserProfile = async (req, res) => {
+  try {
+    console.log("\n🔐 Getting current user profile");
+    console.log("   req.user:", req.user);
+    
+    // req.user is set by verifyJWT middleware - it's the username
+    const username = req.user;
+    
+    if (!username) {
+      console.log("❌ No username in request");
+      return res.status(401).json({
+        success: false,
+        message: "Not authenticated",
+      });
+    }
+
+    console.log(`🔍 Finding user by username: ${username}`);
+    const user = await User.findOne({ username });
+
+    if (!user) {
+      console.log(`❌ User not found: ${username}`);
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    console.log(`✅ User found: ${user.email}`);
+    res.status(200).json({
+      success: true,
+      user: {
+        id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        age: user.age,
+        email: user.email,
+        username: user.username,
+        isVerified: user.isVerified,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      },
+    });
+  } catch (error) {
+    console.error("❌ Get current user profile error:", error);
+    console.error(error.stack);
     res.status(500).json({
       success: false,
       message: "Internal server error",

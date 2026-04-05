@@ -186,113 +186,63 @@ const ChangePasswordPanel = ({ navigate }) => {
   return (
     <>
       {showSuccess && <SuccessModal onOk={() => { localStorage.clear(); navigate("/login"); }} />}
-      <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
 
-        {/* Header */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-          <div style={{
-            width: 42, height: 42, borderRadius: 14, display: "flex", alignItems: "center",
-            justifyContent: "center", fontSize: 22,
-            background: "linear-gradient(135deg,#4FC3F7,#185FA5)",
-            boxShadow: "0 4px 12px rgba(24,95,165,0.3)"
-          }}>🔒</div>
-          <div>
-            <h3 style={{ margin: 0, fontSize: 15, fontWeight: 900, color: "#042C53", fontFamily: "'Nunito', sans-serif" }}>Change Password</h3>
-            <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: "#1D9E75", fontFamily: "'Nunito', sans-serif" }}>Protect your water world! 🛡️💧</p>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+        <div style={{
+          width: 46, height: 46, borderRadius: 16, display: "flex", alignItems: "center",
+          justifyContent: "center", fontSize: 24,
+          background: "linear-gradient(135deg,#4FC3F7,#185FA5)",
+          boxShadow: "0 4px 14px rgba(24,95,165,0.35)"
+        }}>🔒</div>
+        <div>
+          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 900, color: "#042C53", fontFamily: "'Nunito', sans-serif" }}>Change Password</h3>
+          <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "#1D9E75", fontFamily: "'Nunito', sans-serif" }}>Protect your water world! 🛡️💧</p>
+        </div>
+      </div>
+
+      {/* Step indicator */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+        {["form", "otp"].map((s, i) => (
+          <div key={s} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{
+              width: 30, height: 30, borderRadius: "50%",
+              background: step === s || (s === "form" && step === "otp")
+                ? "linear-gradient(135deg,#185FA5,#1D9E75)"
+                : "#DCE8F5",
+              color: step === s || (s === "form" && step === "otp") ? "#fff" : "#185FA5",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 13, fontWeight: 900, fontFamily: "'Nunito', sans-serif",
+              boxShadow: step === s ? "0 3px 10px rgba(24,95,165,0.35)" : "none",
+              transition: "all 0.3s"
+            }}>{i + 1}</div>
+            {i === 0 && <div style={{ width: 32, height: 4, borderRadius: 4, background: step === "otp" ? "#1D9E75" : "#DCE8F5", transition: "background 0.3s" }} />}
           </div>
-        </div>
+        ))}
+        <span style={{ fontSize: 11, fontWeight: 800, color: "#185FA5", fontFamily: "'Nunito', sans-serif" }}>
+          {step === "form" ? "Enter passwords" : "Verify OTP"}
+        </span>
+      </div>
 
-        {/* Step indicator */}
-        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
-          {["form", "otp"].map((s, i) => (
-            <div key={s} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <div style={{
-                width: 26, height: 26, borderRadius: "50%",
-                background: step === s || (s === "form" && step === "otp")
-                  ? "linear-gradient(135deg,#185FA5,#1D9E75)"
-                  : "#DCE8F5",
-                color: step === s || (s === "form" && step === "otp") ? "#fff" : "#185FA5",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 11, fontWeight: 900, fontFamily: "'Nunito', sans-serif",
-                boxShadow: step === s ? "0 3px 8px rgba(24,95,165,0.3)" : "none",
-                transition: "all 0.3s"
-              }}>{i + 1}</div>
-              {i === 0 && <div style={{ width: 24, height: 3, borderRadius: 4, background: step === "otp" ? "#1D9E75" : "#DCE8F5", transition: "background 0.3s" }} />}
-            </div>
-          ))}
-          <span style={{ fontSize: 10, fontWeight: 800, color: "#185FA5", fontFamily: "'Nunito', sans-serif" }}>
-            {step === "form" ? "Enter passwords" : "Verify OTP"}
-          </span>
-        </div>
+      {error && (
+        <div style={{
+          marginBottom: 12, padding: "10px 14px", borderRadius: 12,
+          background: "#FFF0F0", border: "2px solid #FFAAAA",
+          color: "#e05a5a", fontWeight: 800, fontSize: 12,
+          display: "flex", alignItems: "center", gap: 6, fontFamily: "'Nunito', sans-serif"
+        }}>⚠️ {error}</div>
+      )}
 
-        {error && (
-          <div style={{
-            marginBottom: 10, padding: "9px 12px", borderRadius: 12,
-            background: "#FFF0F0", border: "2px solid #FFAAAA",
-            color: "#e05a5a", fontWeight: 800, fontSize: 11,
-            display: "flex", alignItems: "center", gap: 6, fontFamily: "'Nunito', sans-serif"
-          }}>⚠️ {error}</div>
-        )}
-
-        {step === "form" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, flex: 1 }}>
-            <StyledInput label="Current Password" emoji="🔑" name="currentPassword" type="password" value={form.currentPassword} onChange={handle} placeholder="Your current password" />
+      {step === "form" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+            <StyledInput label="Current Password" emoji="🔑" name="currentPassword" type="password" value={form.currentPassword} onChange={handle} placeholder="Current password" />
             <StyledInput label="New Password" emoji="✨" name="newPassword" type="password" value={form.newPassword} onChange={handle} placeholder="Min 6 chars, A-Z + 0-9" />
             <StyledInput label="Confirm New Password" emoji="🔄" name="confirmPassword" type="password" value={form.confirmPassword} onChange={handle} placeholder="Re-enter new password" />
-            <button onClick={requestOtp} disabled={loading} style={{
-              marginTop: "auto", width: "100%", padding: "12px 0", borderRadius: 14,
-              background: loading ? "#B8D4EE" : "linear-gradient(90deg,#185FA5,#1D9E75)",
-              color: "#fff", fontWeight: 900, fontSize: 13, border: "none",
-              cursor: loading ? "not-allowed" : "pointer", fontFamily: "'Nunito', sans-serif",
-              boxShadow: "0 5px 16px rgba(24,95,165,0.3)",
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "transform 0.15s"
-            }}
-              onMouseOver={e => { if (!loading) e.currentTarget.style.transform = "scale(1.03)"; }}
-              onMouseOut={e => e.currentTarget.style.transform = "scale(1)"}>
-              {loading ? <><span style={{ animation: "spin 1s linear infinite", display: "inline-block" }}>⏳</span> Sending...</> : <>📨 Request OTP</>}
-            </button>
           </div>
-        )}
 
-        {step === "otp" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10, flex: 1 }}>
-            <div style={{
-              padding: "10px 14px", borderRadius: 14,
-              background: "linear-gradient(135deg,#E1F5EE,#E6F1FB)",
-              border: "2.5px solid #1D9E7550", color: "#1D9E75",
-              fontWeight: 800, fontSize: 12, textAlign: "center", fontFamily: "'Nunito', sans-serif"
-            }}>📬 OTP sent to your email! Check your inbox.</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-              <label style={{ fontSize: 10, fontWeight: 900, color: "#185FA5", textTransform: "uppercase", letterSpacing: 1.2, fontFamily: "'Nunito', sans-serif" }}>🔢 Enter OTP</label>
-              <input type="text" value={otp} onChange={e => setOtp(e.target.value)} maxLength={6} placeholder="• • • • • •"
-                style={{
-                  padding: "14px", borderRadius: 14, border: "2.5px solid #1D9E75",
-                  background: "linear-gradient(135deg,#E1F5EE,#E6F1FB)",
-                  color: "#042C53", fontWeight: 900, fontSize: 24, textAlign: "center",
-                  letterSpacing: "0.4em", fontFamily: "'Nunito', sans-serif", outline: "none"
-                }} />
-            </div>
-            <button onClick={verifyOtp} disabled={loading} style={{
-              width: "100%", padding: "12px 0", borderRadius: 14,
-              background: loading ? "#B8D4EE" : "linear-gradient(90deg,#1D9E75,#185FA5)",
-              color: "#fff", fontWeight: 900, fontSize: 13, border: "none",
-              cursor: loading ? "not-allowed" : "pointer", fontFamily: "'Nunito', sans-serif",
-              boxShadow: "0 5px 16px rgba(29,158,117,0.25)",
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 8
-            }}>
-              {loading ? <><span style={{ animation: "spin 1s linear infinite", display: "inline-block" }}>⏳</span> Verifying...</> : <>✅ Verify &amp; Change</>}
-            </button>
-            <button onClick={() => { setStep("form"); setError(""); }} style={{
-              background: "none", border: "none", color: "#185FA5", fontWeight: 800,
-              fontSize: 12, cursor: "pointer", fontFamily: "'Nunito', sans-serif"
-            }}>← Back</button>
-          </div>
-        )}
-
-        {/* Tips */}
-        <div style={{ marginTop: "auto", paddingTop: 10, borderTop: "2.5px dashed #B8D4EE" }}>
-          <p style={{ margin: "0 0 7px", fontSize: 10, fontWeight: 900, color: "#185FA5", textTransform: "uppercase", letterSpacing: 1.1, fontFamily: "'Nunito', sans-serif" }}>💡 Password Tips</p>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 5 }}>
+          {/* Password tips inline */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8 }}>
             {[
               { icon: "🔤", tip: "Mix A-Z & a-z", bg: "#E6F1FB", color: "#185FA5" },
               { icon: "🔢", tip: "Add a number", bg: "#E1F5EE", color: "#1D9E75" },
@@ -302,13 +252,64 @@ const ChangePasswordPanel = ({ navigate }) => {
               <div key={tip} style={{
                 display: "flex", alignItems: "center", gap: 5,
                 fontSize: 11, color, fontWeight: 800,
-                padding: "5px 9px", borderRadius: 10, background: bg,
+                padding: "6px 10px", borderRadius: 10, background: bg,
                 fontFamily: "'Nunito', sans-serif", border: `1.5px solid ${color}30`
               }}>{icon} {tip}</div>
             ))}
           </div>
+
+          <button onClick={requestOtp} disabled={loading} style={{
+            width: "100%", padding: "13px 0", borderRadius: 16,
+            background: loading ? "#B8D4EE" : "linear-gradient(90deg,#185FA5,#1D9E75)",
+            color: "#fff", fontWeight: 900, fontSize: 14, border: "none",
+            cursor: loading ? "not-allowed" : "pointer", fontFamily: "'Nunito', sans-serif",
+            boxShadow: "0 6px 20px rgba(24,95,165,0.3)",
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "transform 0.15s"
+          }}
+            onMouseOver={e => { if (!loading) e.currentTarget.style.transform = "scale(1.02)"; }}
+            onMouseOut={e => e.currentTarget.style.transform = "scale(1)"}>
+            {loading ? <><span style={{ animation: "spin 1s linear infinite", display: "inline-block" }}>⏳</span> Sending...</> : <>📨 Request OTP</>}
+          </button>
         </div>
-      </div>
+      )}
+
+      {step === "otp" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{
+            padding: "12px 16px", borderRadius: 14,
+            background: "linear-gradient(135deg,#E1F5EE,#E6F1FB)",
+            border: "2.5px solid #1D9E7550", color: "#1D9E75",
+            fontWeight: 800, fontSize: 13, textAlign: "center", fontFamily: "'Nunito', sans-serif"
+          }}>📬 OTP sent to your email! Check your inbox.</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <label style={{ fontSize: 10, fontWeight: 900, color: "#185FA5", textTransform: "uppercase", letterSpacing: 1.2, fontFamily: "'Nunito', sans-serif" }}>🔢 Enter OTP</label>
+            <input type="text" value={otp} onChange={e => setOtp(e.target.value)} maxLength={6} placeholder="• • • • • •"
+              style={{
+                padding: "16px", borderRadius: 16, border: "2.5px solid #1D9E75",
+                background: "linear-gradient(135deg,#E1F5EE,#E6F1FB)",
+                color: "#042C53", fontWeight: 900, fontSize: 28, textAlign: "center",
+                letterSpacing: "0.4em", fontFamily: "'Nunito', sans-serif", outline: "none"
+              }} />
+          </div>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button onClick={() => { setStep("form"); setError(""); }} style={{
+              flex: 1, padding: "13px 0", borderRadius: 16, border: "2.5px solid #DCE8F5",
+              background: "#fff", color: "#185FA5", fontWeight: 900, fontSize: 13,
+              cursor: "pointer", fontFamily: "'Nunito', sans-serif"
+            }}>← Back</button>
+            <button onClick={verifyOtp} disabled={loading} style={{
+              flex: 2, padding: "13px 0", borderRadius: 16,
+              background: loading ? "#B8D4EE" : "linear-gradient(90deg,#1D9E75,#185FA5)",
+              color: "#fff", fontWeight: 900, fontSize: 14, border: "none",
+              cursor: loading ? "not-allowed" : "pointer", fontFamily: "'Nunito', sans-serif",
+              boxShadow: "0 6px 20px rgba(29,158,117,0.25)",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8
+            }}>
+              {loading ? <><span style={{ animation: "spin 1s linear infinite", display: "inline-block" }}>⏳</span> Verifying...</> : <>✅ Verify &amp; Change</>}
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 };
@@ -327,9 +328,62 @@ export default function KaveeshaUserProfile() {
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
-    const testUser = { _id: "123", firstName: "Kamal", lastName: "Perera", age: 10, email: "kamal@example.com", username: "kamal_p", isVerified: true };
-    setTimeout(() => { setUser(testUser); setFormData(testUser); setLoading(false); }, 800);
-  }, []);
+    const fetchUserProfile = async () => {
+      try {
+        // Get token - check both localStorage and sessionStorage
+        let token = localStorage.getItem("aquachamp_token");
+        let tokenSource = "localStorage";
+        
+        if (!token) {
+          token = sessionStorage.getItem("aquachamp_token");
+          tokenSource = "sessionStorage";
+        }
+        
+        console.log("🔍 [Profile] Fetching user profile...");
+        console.log("   Token source:", tokenSource);
+        console.log("   Token exists:", !!token);
+        
+        if (!token) {
+          console.error("❌ [Profile] No token found in localStorage or sessionStorage");
+          showToast("Not authenticated. Please login again.", "error");
+          setTimeout(() => navigate("/login"), 2000);
+          return;
+        }
+
+        console.log("📡 [Profile] Calling API with token from", tokenSource);
+        console.log("   Token first 50 chars:", token.substring(0, 50));
+        
+        const config = {
+          headers: { 
+            Authorization: `Bearer ${token}`
+          },
+          timeout: 10000
+        };
+        
+        console.log("   Request config headers:", config.headers);
+        
+        const response = await axios.get("http://localhost:4000/api/users/profile/me", config);
+
+        console.log("✅ [Profile] Success:", response.data.user);
+        setUser(response.data.user);
+        setFormData(response.data.user);
+      } catch (error) {
+        console.error("❌ [Profile] Error:", error.response?.status, error.response?.data?.message);
+        
+        if (error.response?.status === 401 || error.response?.status === 403) {
+          showToast("Session expired. Please login again.", "error");
+        } else {
+          showToast(`Error: ${error.response?.data?.message || error.message}`, "error");
+        }
+        
+        setTimeout(() => navigate("/login"), 2500);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserProfile();
+  }, [navigate]);
 
   const showToast = (msg, type = "success") => setToast({ message: msg, type });
 
@@ -361,8 +415,8 @@ export default function KaveeshaUserProfile() {
   };
 
   const ProfileField = ({ label, name, type = "text", emoji }) => (
-    <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-      <label style={{ fontSize: 9, fontWeight: 900, color: "#185FA5", textTransform: "uppercase", letterSpacing: 1.2, fontFamily: "'Nunito', sans-serif" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      <label style={{ fontSize: 10, fontWeight: 900, color: "#185FA5", textTransform: "uppercase", letterSpacing: 1.2, fontFamily: "'Nunito', sans-serif" }}>
         {emoji} {label}
       </label>
       {editMode ? (
@@ -370,21 +424,21 @@ export default function KaveeshaUserProfile() {
           <input type={type} value={formData[name] ?? ""}
             onChange={e => { setFormData(p => ({ ...p, [name]: e.target.value })); setErrors(p => ({ ...p, [name]: "" })); }}
             style={{
-              padding: "8px 11px", borderRadius: 11,
+              padding: "10px 13px", borderRadius: 12,
               border: errors[name] ? "2.5px solid #e05a5a" : "2.5px solid #B8D4EE",
               background: errors[name] ? "#FFF5F5" : "#F0F8FF",
-              color: "#042C53", fontWeight: 700, fontSize: 12,
+              color: "#042C53", fontWeight: 700, fontSize: 13,
               fontFamily: "'Nunito', sans-serif", outline: "none"
             }}
             onFocus={e => { e.target.style.border = "2.5px solid #185FA5"; e.target.style.background = "#E6F1FB"; e.target.style.boxShadow = "0 0 0 3px rgba(24,95,165,0.12)"; }}
             onBlur={e => { e.target.style.border = errors[name] ? "2.5px solid #e05a5a" : "2.5px solid #B8D4EE"; e.target.style.background = errors[name] ? "#FFF5F5" : "#F0F8FF"; e.target.style.boxShadow = "none"; }}
           />
-          {errors[name] && <p style={{ fontSize: 9, color: "#e05a5a", fontWeight: 800, margin: "1px 0 0 2px", fontFamily: "'Nunito', sans-serif" }}>⚠️ {errors[name]}</p>}
+          {errors[name] && <p style={{ fontSize: 10, color: "#e05a5a", fontWeight: 800, margin: "1px 0 0 2px", fontFamily: "'Nunito', sans-serif" }}>⚠️ {errors[name]}</p>}
         </>
       ) : (
         <div style={{
-          padding: "8px 11px", borderRadius: 11, border: "2px solid #DCE8F5",
-          background: "#F4F9FF", color: "#042C53", fontWeight: 700, fontSize: 12,
+          padding: "10px 13px", borderRadius: 12, border: "2px solid #DCE8F5",
+          background: "#F4F9FF", color: "#042C53", fontWeight: 700, fontSize: 13,
           fontFamily: "'Nunito', sans-serif"
         }}>{formData[name] ?? "—"}</div>
       )}
@@ -410,85 +464,102 @@ export default function KaveeshaUserProfile() {
 
   return (
     <div style={{
-      minHeight: "100vh", height: "100vh", overflow: "hidden",
+      minHeight: "100vh",
       background: "linear-gradient(160deg,#C8E6FA 0%,#B2EDD8 35%,#FEE9BF 70%,#C8E6FA 100%)",
-      display: "flex", flexDirection: "column", fontFamily: "'Nunito', sans-serif",
-      position: "relative"
+      fontFamily: "'Nunito', sans-serif",
+      position: "relative",
+      overflowX: "hidden",
     }}>
 
-      {/* ── Decorative background elements ── */}
-      <WaterDrop size={90} color="#185FA520" style={{ position: "absolute", top: -20, left: 30, animation: "floatSlow 8s ease-in-out infinite", pointerEvents: "none" }} />
-      <WaterDrop size={60} color="#1D9E7520" style={{ position: "absolute", top: 60, right: 50, animation: "floatSlow 6s ease-in-out infinite 2s", pointerEvents: "none" }} />
-      <WaterDrop size={45} color="#EF9F2725" style={{ position: "absolute", bottom: 100, left: 80, animation: "floatSlow 7s ease-in-out infinite 1s", pointerEvents: "none" }} />
-      <WaterDrop size={70} color="#4FC3F720" style={{ position: "absolute", bottom: 40, right: 100, animation: "floatSlow 9s ease-in-out infinite 3s", pointerEvents: "none" }} />
-      <WaterDrop size={35} color="#185FA530" style={{ position: "absolute", top: "45%", left: 20, animation: "floatSlow 5s ease-in-out infinite 0.5s", pointerEvents: "none" }} />
-
-      <Bubble size={40} color="#185FA540" style={{ position: "absolute", top: 100, left: "20%", animation: "floatUp 5s ease-in-out infinite", pointerEvents: "none" }} />
-      <Bubble size={28} color="#1D9E7540" style={{ position: "absolute", top: "30%", right: "15%", animation: "floatUp 7s ease-in-out infinite 1.5s", pointerEvents: "none" }} />
-      <Bubble size={20} color="#EF9F2740" style={{ position: "absolute", bottom: "25%", left: "10%", animation: "floatUp 6s ease-in-out infinite 0.8s", pointerEvents: "none" }} />
-      <Bubble size={34} color="#4FC3F740" style={{ position: "absolute", top: "60%", right: "8%", animation: "floatUp 8s ease-in-out infinite 2s", pointerEvents: "none" }} />
-
-      <Fish size={36} color="#185FA540" style={{ position: "absolute", top: "25%", left: "5%", animation: "swimRight 12s linear infinite", pointerEvents: "none" }} />
-      <Fish size={28} color="#1D9E7540" style={{ position: "absolute", top: "65%", right: "5%", animation: "swimLeft 15s linear infinite 4s", pointerEvents: "none" }} flip />
-
-      <StarBurst size={22} color="#EF9F27" style={{ position: "absolute", top: 70, left: "35%", animation: "twinkle 2s ease-in-out infinite", pointerEvents: "none" }} />
-      <StarBurst size={16} color="#185FA5" style={{ position: "absolute", top: "50%", right: "20%", animation: "twinkle 3s ease-in-out infinite 1s", pointerEvents: "none" }} />
-      <StarBurst size={18} color="#1D9E75" style={{ position: "absolute", bottom: 80, left: "40%", animation: "twinkle 2.5s ease-in-out infinite 0.5s", pointerEvents: "none" }} />
+      {/* ── Floating decorative BG elements ── */}
+      <WaterDrop size={90} color="#185FA518" style={{ position: "absolute", top: 60, left: 20, animation: "floatSlow 8s ease-in-out infinite", pointerEvents: "none" }} />
+      <WaterDrop size={60} color="#1D9E7518" style={{ position: "absolute", top: 200, right: 40, animation: "floatSlow 6s ease-in-out infinite 2s", pointerEvents: "none" }} />
+      <WaterDrop size={45} color="#EF9F2720" style={{ position: "absolute", bottom: 180, left: 60, animation: "floatSlow 7s ease-in-out infinite 1s", pointerEvents: "none" }} />
+      <WaterDrop size={70} color="#4FC3F718" style={{ position: "absolute", bottom: 80, right: 80, animation: "floatSlow 9s ease-in-out infinite 3s", pointerEvents: "none" }} />
+      <Bubble size={40} color="#185FA535" style={{ position: "absolute", top: 350, left: "18%", animation: "floatUp 5s ease-in-out infinite", pointerEvents: "none" }} />
+      <Bubble size={28} color="#1D9E7535" style={{ position: "absolute", top: "40%", right: "12%", animation: "floatUp 7s ease-in-out infinite 1.5s", pointerEvents: "none" }} />
+      <Fish size={36} color="#185FA530" style={{ position: "absolute", top: "30%", left: "3%", animation: "swimRight 14s linear infinite", pointerEvents: "none" }} />
+      <Fish size={28} color="#1D9E7530" style={{ position: "absolute", top: "70%", right: "3%", animation: "swimLeft 16s linear infinite 4s", pointerEvents: "none" }} flip />
+      <StarBurst size={22} color="#EF9F27" style={{ position: "absolute", top: 120, left: "38%", animation: "twinkle 2s ease-in-out infinite", pointerEvents: "none", opacity: 0.5 }} />
+      <StarBurst size={16} color="#185FA5" style={{ position: "absolute", top: "55%", right: "22%", animation: "twinkle 3s ease-in-out infinite 1s", pointerEvents: "none", opacity: 0.4 }} />
+      <StarBurst size={18} color="#1D9E75" style={{ position: "absolute", bottom: 120, left: "42%", animation: "twinkle 2.5s ease-in-out infinite 0.5s", pointerEvents: "none", opacity: 0.4 }} />
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       {/* ── NAV BAR ── */}
       <nav style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "8px 24px",
-        background: "linear-gradient(90deg,#185FA5,#1496C8,#1D9E75)",
-        boxShadow: "0 4px 20px rgba(24,95,165,0.3)", flexShrink: 0,
+        padding: "10px 32px",
+        background: "linear-gradient(90deg,#042C53,#185FA5,#1496C8,#1D9E75)",
+        boxShadow: "0 4px 24px rgba(24,95,165,0.35)", flexShrink: 0,
         position: "relative", overflow: "hidden"
       }}>
         <Wave color="rgba(255,255,255,0.1)" />
         <div style={{ position: "absolute", right: "35%", top: "50%", transform: "translateY(-50%)", opacity: 0.2, animation: "swimLeft 10s linear infinite", pointerEvents: "none" }}>
           <Fish size={22} color="#fff" flip />
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, zIndex: 1 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, zIndex: 1 }}>
           <div style={{
-            width: 38, height: 38, borderRadius: 14, display: "flex", alignItems: "center",
+            width: 42, height: 42, borderRadius: 14, display: "flex", alignItems: "center",
             justifyContent: "center", background: "rgba(255,255,255,0.25)",
-            border: "2px solid rgba(255,255,255,0.5)", fontSize: 20
+            border: "2px solid rgba(255,255,255,0.5)", fontSize: 22
           }}>🌊</div>
           <div>
-            <span style={{ fontWeight: 900, fontSize: 17, color: "#fff", letterSpacing: -0.5, display: "block", lineHeight: 1 }}>AquaChamp</span>
-            <span style={{ fontSize: 9, fontWeight: 800, color: "rgba(255,255,255,0.85)", letterSpacing: 1 }}>CLEAN WATER HEROES</span>
+            <span style={{ fontWeight: 900, fontSize: 20, color: "#fff", letterSpacing: -0.5, display: "block", lineHeight: 1 }}>AquaChamp</span>
+            <span style={{ fontSize: 9, fontWeight: 800, color: "rgba(255,255,255,0.85)", letterSpacing: 1.2 }}>CLEAN WATER HEROES</span>
           </div>
-          <span style={{ padding: "3px 10px", borderRadius: 20, background: "rgba(239,159,39,0.95)", color: "#fff", fontSize: 10, fontWeight: 900, border: "1.5px solid rgba(255,255,255,0.4)" }}>
+          <span style={{ padding: "3px 12px", borderRadius: 20, background: "rgba(239,159,39,0.95)", color: "#fff", fontSize: 10, fontWeight: 900, border: "1.5px solid rgba(255,255,255,0.4)" }}>
             ⭐ Kids Edition
           </span>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, zIndex: 1 }}>
-          <span style={{ fontWeight: 900, color: "#fff", fontSize: 13 }}>Hi, {user?.firstName}! 👋</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, zIndex: 1 }}>
+          <span style={{ fontWeight: 900, color: "#fff", fontSize: 14 }}>Hi, {user?.firstName}! 👋</span>
           <div style={{
-            width: 34, height: 34, borderRadius: "50%",
-            background: "rgba(255,255,255,0.25)",
+            width: 38, height: 38, borderRadius: "50%",
+            background: "linear-gradient(135deg,#4FC3F7,#1D9E75)",
             border: "2.5px solid rgba(255,255,255,0.6)",
             display: "flex", alignItems: "center", justifyContent: "center",
-            fontWeight: 900, color: "#fff", fontSize: 15
+            fontWeight: 900, color: "#fff", fontSize: 16
           }}>{user?.firstName?.[0]}</div>
         </div>
       </nav>
 
-      {/* ── PAGE HEADER ── */}
-      <div style={{ padding: "10px 24px 6px", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <h1 style={{ margin: 0, fontSize: 22, fontWeight: 900, color: "#042C53", letterSpacing: -0.5 }}>My Profile</h1>
-            <WaterDrop size={22} color="#185FA5" style={{ animation: "bounce 1.5s ease-in-out infinite" }} />
-            <StarBurst size={20} color="#EF9F27" style={{ animation: "twinkle 2s ease-in-out infinite" }} />
+      {/* ── HERO HEADER BAND ── */}
+      <div style={{
+        background: "linear-gradient(135deg,rgba(255,255,255,0.7),rgba(255,255,255,0.4))",
+        backdropFilter: "blur(10px)",
+        borderBottom: "2.5px solid rgba(24,95,165,0.12)",
+        padding: "18px 40px",
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        position: "relative", overflow: "hidden"
+      }}>
+        {/* Left — avatar + name */}
+        <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+          <AvatarBubble firstName={user?.firstName} lastName={user?.lastName} />
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <h1 style={{ margin: 0, fontSize: 26, fontWeight: 900, color: "#042C53" }}>
+                {user?.firstName} {user?.lastName}
+              </h1>
+              <WaterDrop size={22} color="#185FA5" style={{ animation: "bounce 1.5s ease-in-out infinite" }} />
+              <StarBurst size={20} color="#EF9F27" style={{ animation: "twinkle 2s ease-in-out infinite" }} />
+            </div>
+            <p style={{ margin: "3px 0 0", fontSize: 13, fontWeight: 800, color: "#185FA5" }}>@{user?.username}</p>
+            <div style={{ display: "flex", gap: 6, marginTop: 7, flexWrap: "wrap" }}>
+              <span style={{ padding: "3px 11px", borderRadius: 20, fontSize: 11, fontWeight: 900, background: "linear-gradient(90deg,#E6F1FB,#C8E6FA)", color: "#185FA5", border: "2px solid #185FA540" }}>🎂 Age {user?.age}</span>
+              <span style={{
+                padding: "3px 11px", borderRadius: 20, fontSize: 11, fontWeight: 900,
+                background: user?.isVerified ? "linear-gradient(90deg,#E1F5EE,#B2EDD8)" : "linear-gradient(90deg,#FEF6E8,#FDE9BF)",
+                color: user?.isVerified ? "#1D9E75" : "#EF9F27",
+                border: `2px solid ${user?.isVerified ? "#1D9E7550" : "#EF9F2750"}`
+              }}>{user?.isVerified ? "✅ Verified" : "⏳ Unverified"}</span>
+              <span style={{ padding: "3px 11px", borderRadius: 20, fontSize: 11, fontWeight: 900, background: "linear-gradient(90deg,#F3E8FF,#E9D5FF)", color: "#8B5CF6", border: "2px solid #8B5CF640" }}>💧 Water Hero</span>
+            </div>
           </div>
-          <p style={{ margin: "1px 0 0", fontSize: 11, fontWeight: 800, color: "#1D9E75" }}>
-            🌊 Manage your info and protect your water world!
-          </p>
         </div>
-        {/* XP chips */}
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+
+        {/* Right — XP chips */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {[
             { emoji: "💧", val: "850", label: "Drops", bg: "linear-gradient(135deg,#E6F1FB,#C8E6FA)", color: "#185FA5", border: "#185FA550" },
             { emoji: "⭐", val: "Pro", label: "Level", bg: "linear-gradient(135deg,#FEF6E8,#FDE9BF)", color: "#EF9F27", border: "#EF9F2750" },
@@ -496,65 +567,50 @@ export default function KaveeshaUserProfile() {
           ].map(({ emoji, val, label, bg, color, border }) => (
             <div key={label} style={{
               display: "flex", flexDirection: "column", alignItems: "center",
-              padding: "5px 11px", borderRadius: 14, background: bg,
-              border: `2.5px solid ${border}`, minWidth: 52
+              padding: "10px 18px", borderRadius: 18, background: bg,
+              border: `2.5px solid ${border}`, minWidth: 64,
+              boxShadow: "0 3px 12px rgba(24,95,165,0.1)"
             }}>
-              <span style={{ fontSize: 14 }}>{emoji}</span>
-              <span style={{ fontSize: 12, fontWeight: 900, color, lineHeight: 1 }}>{val}</span>
-              <span style={{ fontSize: 9, fontWeight: 800, color: "#185FA5", opacity: 0.7 }}>{label}</span>
+              <span style={{ fontSize: 20 }}>{emoji}</span>
+              <span style={{ fontSize: 16, fontWeight: 900, color, lineHeight: 1.1 }}>{val}</span>
+              <span style={{ fontSize: 10, fontWeight: 800, color: "#185FA5", opacity: 0.7 }}>{label}</span>
             </div>
           ))}
         </div>
       </div>
 
-      {/* ── MAIN CONTENT ── */}
-      <div style={{ flex: 1, padding: "0 24px 10px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, minHeight: 0, overflow: "hidden" }}>
+      {/* ── MAIN CONTENT — vertical stack ── */}
+      <div style={{ maxWidth: 960, margin: "0 auto", padding: "28px 24px 32px", display: "flex", flexDirection: "column", gap: 22 }}>
 
-        {/* ══ LEFT — Profile Info ══ */}
+        {/* ══ SECTION 1 — Profile Info Card ══ */}
         <div style={{
-          background: "#fff", borderRadius: 24,
+          background: "rgba(255,255,255,0.88)",
+          borderRadius: 28,
           border: "3px solid #B8D4EE",
-          boxShadow: "0 6px 28px rgba(24,95,165,0.13)",
-          padding: "16px 18px", display: "flex", flexDirection: "column", gap: 10,
-          overflow: "hidden", position: "relative"
+          boxShadow: "0 8px 36px rgba(24,95,165,0.13)",
+          padding: "24px 28px",
+          position: "relative", overflow: "hidden"
         }}>
-          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 8, background: "linear-gradient(90deg,#4FC3F7,#185FA5,#1D9E75,#EF9F27,#4FC3F7)", borderRadius: "22px 22px 0 0" }} />
-          <div style={{ position: "absolute", top: 8, right: 10, opacity: 0.07, fontSize: 52, lineHeight: 1, pointerEvents: "none" }}>💧</div>
-          <div style={{ position: "absolute", bottom: 10, left: 8, opacity: 0.06, fontSize: 40, lineHeight: 1, pointerEvents: "none" }}>🌊</div>
+          {/* Rainbow top bar */}
+          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 8, background: "linear-gradient(90deg,#4FC3F7,#185FA5,#1D9E75,#EF9F27,#4FC3F7)", borderRadius: "26px 26px 0 0" }} />
+          {/* Ghost watermark */}
+          <div style={{ position: "absolute", top: 10, right: 18, opacity: 0.05, fontSize: 80, lineHeight: 1, pointerEvents: "none" }}>💧</div>
 
-          {/* Avatar + name */}
-          <div style={{ display: "flex", alignItems: "center", gap: 12, paddingTop: 8, paddingBottom: 10, borderBottom: "2.5px dashed #B8D4EE" }}>
-            <AvatarBubble firstName={user?.firstName} lastName={user?.lastName} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <h2 style={{ margin: 0, fontSize: 17, fontWeight: 900, color: "#042C53" }}>
-                {user?.firstName} {user?.lastName}
-              </h2>
-              <p style={{ margin: "2px 0 0", fontSize: 12, fontWeight: 900, color: "#185FA5" }}>@{user?.username}</p>
-              <div style={{ display: "flex", gap: 5, marginTop: 5, flexWrap: "wrap" }}>
-                <span style={{ padding: "3px 9px", borderRadius: 20, fontSize: 10, fontWeight: 900, background: "linear-gradient(90deg,#E6F1FB,#C8E6FA)", color: "#185FA5", border: "2px solid #185FA540" }}>🎂 Age {user?.age}</span>
-                <span style={{
-                  padding: "3px 9px", borderRadius: 20, fontSize: 10, fontWeight: 900,
-                  background: user?.isVerified ? "linear-gradient(90deg,#E1F5EE,#B2EDD8)" : "linear-gradient(90deg,#FEF6E8,#FDE9BF)",
-                  color: user?.isVerified ? "#1D9E75" : "#EF9F27",
-                  border: `2px solid ${user?.isVerified ? "#1D9E7550" : "#EF9F2750"}`
-                }}>{user?.isVerified ? "✅ Verified" : "⏳ Unverified"}</span>
-                <span style={{ padding: "3px 9px", borderRadius: 20, fontSize: 10, fontWeight: 900, background: "linear-gradient(90deg,#F3E8FF,#E9D5FF)", color: "#8B5CF6", border: "2px solid #8B5CF640" }}>💧 Water Hero</span>
+          {/* Section header */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, paddingTop: 6 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ width: 38, height: 38, borderRadius: 13, background: "linear-gradient(135deg,#EF9F27,#F7C46A)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, boxShadow: "0 4px 12px rgba(239,159,39,0.3)" }}>👤</div>
+              <div>
+                <span style={{ fontWeight: 900, color: "#042C53", fontSize: 16 }}>My Profile Info</span>
+                <p style={{ margin: "1px 0 0", fontSize: 11, fontWeight: 800, color: "#1D9E75" }}>Keep your details up to date! 🌟</p>
               </div>
-            </div>
-          </div>
-
-          {/* Edit controls */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-              <div style={{ width: 28, height: 28, borderRadius: 10, background: "linear-gradient(135deg,#EF9F27,#F7C46A)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15 }}>👤</div>
-              <span style={{ fontWeight: 900, color: "#042C53", fontSize: 13 }}>Profile Info</span>
             </div>
             {!editMode ? (
               <button onClick={() => setEditMode(true)} style={{
-                display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 12,
+                display: "flex", alignItems: "center", gap: 6, padding: "9px 18px", borderRadius: 14,
                 background: "linear-gradient(90deg,#185FA5,#1D9E75)", color: "#fff", fontWeight: 900,
-                fontSize: 11, border: "none", cursor: "pointer",
-                boxShadow: "0 4px 12px rgba(24,95,165,0.3)", transition: "transform 0.15s",
+                fontSize: 12, border: "none", cursor: "pointer",
+                boxShadow: "0 4px 14px rgba(24,95,165,0.3)", transition: "transform 0.15s",
                 fontFamily: "'Nunito', sans-serif"
               }}
                 onMouseOver={e => e.currentTarget.style.transform = "scale(1.05)"}
@@ -562,112 +618,119 @@ export default function KaveeshaUserProfile() {
                 ✏️ Edit Profile
               </button>
             ) : (
-              <div style={{ display: "flex", gap: 6 }}>
+              <div style={{ display: "flex", gap: 8 }}>
                 <button onClick={() => { setFormData(user); setEditMode(false); setErrors({}); }} style={{
-                  padding: "6px 11px", borderRadius: 12, border: "2.5px solid #DCE8F5",
-                  background: "#fff", color: "#185FA5", fontWeight: 900, fontSize: 11,
+                  padding: "9px 16px", borderRadius: 14, border: "2.5px solid #DCE8F5",
+                  background: "#fff", color: "#185FA5", fontWeight: 900, fontSize: 12,
                   cursor: "pointer", fontFamily: "'Nunito', sans-serif"
                 }}>✕ Cancel</button>
                 <button onClick={handleSave} disabled={saving} style={{
-                  display: "flex", alignItems: "center", gap: 5, padding: "6px 13px", borderRadius: 12,
+                  display: "flex", alignItems: "center", gap: 6, padding: "9px 20px", borderRadius: 14,
                   background: saving ? "#B8D4EE" : "linear-gradient(90deg,#1D9E75,#185FA5)",
-                  color: "#fff", fontWeight: 900, fontSize: 11, border: "none",
-                  cursor: saving ? "not-allowed" : "pointer", fontFamily: "'Nunito', sans-serif"
+                  color: "#fff", fontWeight: 900, fontSize: 12, border: "none",
+                  cursor: saving ? "not-allowed" : "pointer", fontFamily: "'Nunito', sans-serif",
+                  boxShadow: "0 4px 14px rgba(29,158,117,0.3)"
                 }}>
-                  {saving ? <span style={{ animation: "spin 1s linear infinite", display: "inline-block" }}>⏳</span> : "💾"} Save
+                  {saving ? <span style={{ animation: "spin 1s linear infinite", display: "inline-block" }}>⏳</span> : "💾"} Save Changes
                 </button>
               </div>
             )}
           </div>
 
-          {/* Fields */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, flex: 1 }}>
+          {/* Fields — 3 columns top, email full width below */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginBottom: 14 }}>
             <ProfileField label="First Name" name="firstName" emoji="🏷️" />
             <ProfileField label="Last Name" name="lastName" emoji="🏷️" />
             <ProfileField label="Age" name="age" type="number" emoji="🎂" />
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
             <ProfileField label="Username" name="username" emoji="🎮" />
-            <div style={{ gridColumn: "1 / -1" }}>
-              <ProfileField label="Email Address" name="email" type="email" emoji="📧" />
-            </div>
+            <ProfileField label="Email Address" name="email" type="email" emoji="📧" />
           </div>
 
-          {/* Badges / edit hint */}
-          {!editMode ? (
-            <div style={{ borderTop: "2.5px dashed #B8D4EE", paddingTop: 10 }}>
-              <p style={{ margin: "0 0 7px", fontSize: 9, fontWeight: 900, color: "#185FA5", textTransform: "uppercase", letterSpacing: 1.2 }}>🏅 My Water Missions</p>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
+          {/* Badges strip */}
+          {!editMode && (
+            <div style={{ marginTop: 20, paddingTop: 16, borderTop: "2.5px dashed #B8D4EE" }}>
+              <p style={{ margin: "0 0 10px", fontSize: 10, fontWeight: 900, color: "#185FA5", textTransform: "uppercase", letterSpacing: 1.3 }}>🏅 My Water Missions</p>
+              <div style={{ display: "flex", gap: 10 }}>
                 {[
-                  { icon: "💧", label: "Drop Saver", bg: "linear-gradient(135deg,#E6F1FB,#C8E6FA)", color: "#185FA5", border: "#185FA550" },
-                  { icon: "🌿", label: "Eco Friend", bg: "linear-gradient(135deg,#E1F5EE,#B2EDD8)", color: "#1D9E75", border: "#1D9E7550" },
-                  { icon: "⭐", label: "Star Hero", bg: "linear-gradient(135deg,#FEF6E8,#FDE9BF)", color: "#EF9F27", border: "#EF9F2750" },
+                  { icon: "💧", label: "Drop Saver", bg: "linear-gradient(135deg,#E6F1FB,#C8E6FA)", color: "#185FA5", border: "#185FA540" },
+                  { icon: "🌿", label: "Eco Friend", bg: "linear-gradient(135deg,#E1F5EE,#B2EDD8)", color: "#1D9E75", border: "#1D9E7540" },
+                  { icon: "⭐", label: "Star Hero", bg: "linear-gradient(135deg,#FEF6E8,#FDE9BF)", color: "#EF9F27", border: "#EF9F2740" },
+                  { icon: "🏆", label: "Champion", bg: "linear-gradient(135deg,#F3E8FF,#E9D5FF)", color: "#8B5CF6", border: "#8B5CF640" },
+                  { icon: "🐠", label: "Ocean Pal", bg: "linear-gradient(135deg,#E6F1FB,#C8E6FA)", color: "#0EA5E9", border: "#0EA5E940" },
                 ].map(({ icon, label, bg, color, border }) => (
                   <div key={label} style={{
                     display: "flex", flexDirection: "column", alignItems: "center",
-                    padding: "8px 4px", borderRadius: 14, background: bg,
-                    border: `2.5px solid ${border}`
+                    padding: "10px 18px", borderRadius: 16, background: bg,
+                    border: `2.5px solid ${border}`, flex: 1,
+                    boxShadow: "0 2px 8px rgba(24,95,165,0.08)"
                   }}>
-                    <span style={{ fontSize: 18 }}>{icon}</span>
-                    <span style={{ fontSize: 9, fontWeight: 900, color, marginTop: 3, textAlign: "center" }}>{label}</span>
+                    <span style={{ fontSize: 22 }}>{icon}</span>
+                    <span style={{ fontSize: 10, fontWeight: 900, color, marginTop: 4, textAlign: "center" }}>{label}</span>
                   </div>
                 ))}
               </div>
             </div>
-          ) : (
-            <p style={{ fontSize: 10, fontWeight: 800, color: "#185FA5", textAlign: "center", borderTop: "2.5px dashed #B8D4EE", paddingTop: 8, margin: 0 }}>
-              💡 Edit above, then hit <span style={{ color: "#1D9E75", fontWeight: 900 }}>Save</span>!
+          )}
+          {editMode && (
+            <p style={{ margin: "16px 0 0", fontSize: 11, fontWeight: 800, color: "#185FA5", textAlign: "center", borderTop: "2.5px dashed #B8D4EE", paddingTop: 14 }}>
+              💡 Edit your details above, then hit <span style={{ color: "#1D9E75", fontWeight: 900 }}>Save Changes</span>!
             </p>
           )}
         </div>
 
-        {/* ══ RIGHT — Change Password ══ */}
+        {/* ══ SECTION 2 — Change Password Card ══ */}
         <div style={{
-          background: "#fff", borderRadius: 24,
+          background: "rgba(255,255,255,0.88)",
+          borderRadius: 28,
           border: "3px solid #A8DCC8",
-          boxShadow: "0 6px 28px rgba(29,158,117,0.13)",
-          padding: "16px 18px", display: "flex", flexDirection: "column",
-          overflow: "hidden", position: "relative"
+          boxShadow: "0 8px 36px rgba(29,158,117,0.13)",
+          padding: "24px 28px",
+          position: "relative", overflow: "hidden"
         }}>
-          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 8, background: "linear-gradient(90deg,#1D9E75,#185FA5,#EF9F27,#4FC3F7,#1D9E75)", borderRadius: "22px 22px 0 0" }} />
-          <div style={{ position: "absolute", top: 8, right: 10, opacity: 0.07, fontSize: 48, lineHeight: 1, pointerEvents: "none" }}>🔒</div>
-          <div style={{ position: "absolute", bottom: 10, right: 10, opacity: 0.06, fontSize: 40, lineHeight: 1, pointerEvents: "none" }}>💧</div>
-          <div style={{ paddingTop: 8, flex: 1, display: "flex", flexDirection: "column" }}>
+          {/* Rainbow top bar */}
+          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 8, background: "linear-gradient(90deg,#1D9E75,#185FA5,#EF9F27,#4FC3F7,#1D9E75)", borderRadius: "26px 26px 0 0" }} />
+          {/* Ghost watermark */}
+          <div style={{ position: "absolute", top: 10, right: 18, opacity: 0.05, fontSize: 80, lineHeight: 1, pointerEvents: "none" }}>🔒</div>
+
+          <div style={{ paddingTop: 6 }}>
             <ChangePasswordPanel navigate={navigate} />
           </div>
         </div>
+
       </div>
 
       {/* ── FOOTER ── */}
       <footer style={{
         background: "linear-gradient(90deg,#042C53,#185FA5,#1D9E75)",
-        padding: "8px 24px",
+        padding: "12px 32px",
         display: "flex", alignItems: "center", justifyContent: "center",
-        gap: 10, flexShrink: 0, overflow: "hidden", position: "relative"
+        gap: 12, overflow: "hidden", position: "relative"
       }}>
         <Wave color="rgba(255,255,255,0.08)" />
-        <span style={{ fontSize: 16, zIndex: 1 }}>🐠</span>
-        <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "rgba(255,255,255,0.9)", zIndex: 1 }}>
+        <span style={{ fontSize: 18, zIndex: 1 }}>🐠</span>
+        <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: "rgba(255,255,255,0.9)", zIndex: 1 }}>
           💧 Keep saving water, keep winning, AquaChamp! 🌊
         </p>
         <WaterDrop size={14} color="rgba(255,255,255,0.5)" style={{ zIndex: 1 }} />
-        <StarBurst size={13} color="#EF9F27" style={{ zIndex: 1 }} />
-        <span style={{ fontSize: 16, zIndex: 1 }}>🐟</span>
+        <StarBurst size={14} color="#EF9F27" style={{ zIndex: 1 }} />
+        <span style={{ fontSize: 18, zIndex: 1 }}>🐟</span>
       </footer>
 
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap');
         @keyframes floatSlow { 0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-16px) rotate(8deg)} }
         @keyframes floatUp { 0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-12px) scale(1.1)} }
-        @keyframes swimRight { 0%{transform:translateX(-60px)}100%{transform:translateX(calc(100vw + 60px))} }
-        @keyframes swimLeft { 0%{transform:translateX(calc(100vw + 60px)) scaleX(-1)}100%{transform:translateX(-60px) scaleX(-1)} }
+        @keyframes swimRight { 0%{transform:translateX(-80px)}100%{transform:translateX(calc(100vw + 80px))} }
+        @keyframes swimLeft { 0%{transform:translateX(calc(100vw + 80px)) scaleX(-1)}100%{transform:translateX(-80px) scaleX(-1)} }
         @keyframes spin { from{transform:rotate(0deg)}to{transform:rotate(360deg)} }
         @keyframes bounce { 0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)} }
         @keyframes wobble { 0%,100%{transform:rotate(-12deg) scale(1)}50%{transform:rotate(12deg) scale(1.2)} }
         @keyframes twinkle { 0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.75)} }
         @keyframes slideInRight { from{transform:translateX(120%);opacity:0}to{transform:translateX(0);opacity:1} }
-        @keyframes ping { 0%{transform:scale(1);opacity:0.4}75%,100%{transform:scale(1.5);opacity:0} }
         * { box-sizing: border-box; }
       `}</style>
     </div>
   );
 }
-

@@ -9,7 +9,8 @@ import {
   requestPasswordReset,
   verifyPasswordResetToken,
   requestResetPasswordOTP,
-  verifyResetPasswordOTP
+  verifyResetPasswordOTP,
+  resendVerificationEmail
 } from "../controllers/securityController.js";
 
 const router = express.Router();
@@ -39,6 +40,8 @@ router.post("/forgot-password/verify-otp", verifyResetPasswordOTP);
 
 // ------------------ Email Verification ------------------
 router.get("/verify-email/:token", verifyEmail);
+
+router.post("/resend-verification", resendVerificationEmail);
 
 // ------------------ Login (if you have it later) ------------------
 // router.post("/login", loginUser);
