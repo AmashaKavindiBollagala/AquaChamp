@@ -184,40 +184,137 @@ const ChangePasswordPanel = ({ navigate }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
 
   const handle = (e) => setForm(p => ({ ...p, [e.target.name]: e.target.value }));
 
+  // Validate password with same rules as registration
+  const validatePassword = (password) => {
+    if (password.length < 6) return "Password must be at least 6 characters long";
+    if (!/[A-Z]/.test(password)) return "Password must include at least one uppercase letter";
+    if (!/[0-9]/.test(password)) return "Password must include at least one number";
+    if (!/[a-z]/.test(password)) return "Password must include at least one lowercase letter";
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) return "Password must include at least one special character";
+    return null;
+  };
+
   const requestOtp = async () => {
     setError("");
-    if (!form.currentPassword || !form.newPassword || !form.confirmPassword) return setError("Please fill in all fields! 😊");
-    if (form.newPassword.length < 6) return setError("New password needs 6+ characters! 🔐");
-    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(form.newPassword)) return setError("Need uppercase, lowercase & a number! 💪");
-    if (form.newPassword !== form.confirmPassword) return setError("Passwords don't match! 🙈");
+    
+    // Validate all fields
+    if (!form.currentPassword || !form.newPassword || !form.confirmPassword) {
+      return setError("Please fill in all fields! 😊");
+    }
+    
+    // Validate new password strength (same as registration)
+    const passwordError = validatePassword(form.newPassword);
+    if (passwordError) return setError(passwordError);
+    
+    // Check passwords match
+    if (form.newPassword !== form.confirmPassword) {
+      return setError("Passwords don't match! 🙈");
+    }
+    
     setLoading(true);
     try {
-      const token = localStorage.getItem("token");
-      await axios.post("/api/security/request-password-otp",
-        { currentPassword: form.currentPassword, newPassword: form.newPassword },
-        { headers: { Authorization: `Bearer ${token}` } });
+      // Get token from localStorage or sessionStorage
+      let token = localStorage.getItem("aquachamp_token");
+      if (!token) {
+        token = sessionStorage.getItem("aquachamp_token");
+      }
+      
+      console.log("📨 Requesting OTP...");
+      
+      const response = await axios.post(
+        "http://localhost:4000/api/security/change-password/request-otp",
+        { 
+          currentPassword: form.currentPassword, 
+          newPassword: form.newPassword 
+        },
+        { 
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          } 
+        }
+      );
+      
+      console.log("✅ OTP sent successfully:", response.data);
+      setUserEmail(response.data.email);
       setStep("otp");
     } catch (err) {
+      console.error("❌ Request OTP error:", err.response?.data);
       setError(err.response?.data?.message || "Oops! Something went wrong 😥");
-    } finally { setLoading(false); }
+    } finally { 
+      setLoading(false); 
+    }
+  };
+
+  const resendOtp = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      let token = localStorage.getItem("aquachamp_token");
+      if (!token) {
+        token = sessionStorage.getItem("aquachamp_token");
+      }
+      
+      console.log("🔄 Resending OTP...");
+      
+      const response = await axios.post(
+        "http://localhost:4000/api/security/change-password/resend-otp",
+        { newPassword: form.newPassword },
+        { 
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          } 
+        }
+      );
+      
+      console.log("✅ New OTP sent:", response.data);
+      setUserEmail(response.data.email);
+      setError(""); // Clear any previous errors
+    } catch (err) {
+      console.error("❌ Resend OTP error:", err.response?.data);
+      setError(err.response?.data?.message || "Failed to resend OTP 😥");
+    } finally { 
+      setLoading(false); 
+    }
   };
 
   const verifyOtp = async () => {
     setError("");
     if (!otp) return setError("Please enter the OTP! 📨");
+    
     setLoading(true);
     try {
-      const token = localStorage.getItem("token");
-      await axios.post("/api/security/verify-password-otp",
+      let token = localStorage.getItem("aquachamp_token");
+      if (!token) {
+        token = sessionStorage.getItem("aquachamp_token");
+      }
+      
+      console.log("✅ Verifying OTP...");
+      
+      await axios.post(
+        "http://localhost:4000/api/security/change-password/verify-otp",
         { otp, newPassword: form.newPassword },
-        { headers: { Authorization: `Bearer ${token}` } });
+        { 
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          } 
+        }
+      );
+      
+      console.log("🎉 Password changed successfully!");
       setShowSuccess(true);
     } catch (err) {
+      console.error("❌ Verify OTP error:", err.response?.data);
       setError(err.response?.data?.message || "Wrong OTP! Try again 🙈");
-    } finally { setLoading(false); }
+    } finally { 
+      setLoading(false); 
+    }
   };
 
   return (
@@ -283,8 +380,8 @@ const ChangePasswordPanel = ({ navigate }) => {
             {[
               { icon: "🔤", tip: "Mix A-Z & a-z", bg: "#E6F1FB", color: "#185FA5" },
               { icon: "🔢", tip: "Add a number", bg: "#E1F5EE", color: "#1D9E75" },
-              { icon: "📏", tip: "8+ characters", bg: "#FEF6E8", color: "#EF9F27" },
-              { icon: "🚫", tip: "Don't share it!", bg: "#F3E8FF", color: "#8B5CF6" },
+              { icon: "📏", tip: "6+ characters", bg: "#FEF6E8", color: "#EF9F27" },
+              { icon: "✨", tip: "1 special char", bg: "#F3E8FF", color: "#8B5CF6" },
             ].map(({ icon, tip, bg, color }) => (
               <div key={tip} style={{
                 display: "flex", alignItems: "center", gap: 5,
@@ -317,7 +414,9 @@ const ChangePasswordPanel = ({ navigate }) => {
             background: "linear-gradient(135deg,#E1F5EE,#E6F1FB)",
             border: "2.5px solid #1D9E7550", color: "#1D9E75",
             fontWeight: 800, fontSize: 13, textAlign: "center", fontFamily: "'Nunito', sans-serif"
-          }}>📬 OTP sent to your email! Check your inbox.</div>
+          }}>
+            📬 OTP sent to <span style={{ color: "#185FA5", fontWeight: 900 }}>{userEmail}</span>
+          </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             <label style={{ fontSize: 10, fontWeight: 900, color: "#185FA5", textTransform: "uppercase", letterSpacing: 1.2, fontFamily: "'Nunito', sans-serif" }}>🔢 Enter OTP</label>
             <input type="text" value={otp} onChange={e => setOtp(e.target.value)} maxLength={6} placeholder="• • • • • •"
@@ -345,6 +444,18 @@ const ChangePasswordPanel = ({ navigate }) => {
               {loading ? <><span style={{ animation: "spin 1s linear infinite", display: "inline-block" }}>⏳</span> Verifying...</> : <>✅ Verify &amp; Change</>}
             </button>
           </div>
+          {/* Resend OTP button */}
+          <button onClick={resendOtp} disabled={loading} style={{
+            width: "100%", padding: "11px 0", borderRadius: 14, border: "2.5px solid #EF9F27",
+            background: "#FEF6E8", color: "#EF9F27", fontWeight: 900, fontSize: 13,
+            cursor: loading ? "not-allowed" : "pointer", fontFamily: "'Nunito', sans-serif",
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+            transition: "all 0.2s"
+          }}
+            onMouseOver={e => { if (!loading) { e.currentTarget.style.background = "#FDE9BF"; e.currentTarget.style.transform = "scale(1.02)"; } }}
+            onMouseOut={e => { e.currentTarget.style.background = "#FEF6E8"; e.currentTarget.style.transform = "scale(1)"; }}>
+            {loading ? <><span style={{ animation: "spin 1s linear infinite", display: "inline-block" }}>⏳</span> Sending...</> : <>🔄 Resend OTP</>}
+          </button>
         </div>
       )}
     </>
