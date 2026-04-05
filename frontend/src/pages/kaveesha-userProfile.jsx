@@ -137,6 +137,43 @@ const StyledInput = ({ label, emoji, name, type = "text", value, onChange, error
   </div>
 );
 
+// ── Profile Field Component ───────────────────────────────────────────────
+const ProfileField = ({ label, name, type = "text", emoji, disabled = false, editMode, formData, errors, setFormData, setErrors }) => (
+  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+    <label style={{ fontSize: 10, fontWeight: 900, color: "#185FA5", textTransform: "uppercase", letterSpacing: 1.2, fontFamily: "'Nunito', sans-serif" }}>
+      {emoji} {label}
+    </label>
+    {editMode && !disabled ? (
+      <>
+        <input type={type} value={formData[name] ?? ""}
+          onChange={e => { setFormData(p => ({ ...p, [name]: e.target.value })); setErrors(p => ({ ...p, [name]: "" })); }}
+          style={{
+            padding: "10px 13px", borderRadius: 12,
+            border: errors[name] ? "2.5px solid #e05a5a" : "2.5px solid #B8D4EE",
+            background: errors[name] ? "#FFF5F5" : "#F0F8FF",
+            color: "#042C53", fontWeight: 700, fontSize: 13,
+            fontFamily: "'Nunito', sans-serif", outline: "none"
+          }}
+          onFocus={e => { e.target.style.border = "2.5px solid #185FA5"; e.target.style.background = "#E6F1FB"; e.target.style.boxShadow = "0 0 0 3px rgba(24,95,165,0.12)"; }}
+          onBlur={e => { e.target.style.border = errors[name] ? "2.5px solid #e05a5a" : "2.5px solid #B8D4EE"; e.target.style.background = errors[name] ? "#FFF5F5" : "#F0F8FF"; e.target.style.boxShadow = "none"; }}
+        />
+        {errors[name] && <p style={{ fontSize: 10, color: "#e05a5a", fontWeight: 800, margin: "1px 0 0 2px", fontFamily: "'Nunito', sans-serif" }}>⚠️ {errors[name]}</p>}
+      </>
+    ) : (
+      <div style={{
+        padding: "10px 13px", borderRadius: 12, 
+        border: "2px solid #DCE8F5",
+        background: disabled ? "#E8E8E8" : "#F4F9FF", 
+        color: disabled ? "#999" : "#042C53", 
+        fontWeight: 700, fontSize: 13,
+        fontFamily: "'Nunito', sans-serif",
+        cursor: disabled ? "not-allowed" : "default",
+        opacity: disabled ? 0.7 : 1
+      }}>{formData[name] ?? "—"}{disabled && editMode && <span style={{ marginLeft: 8, fontSize: 10, color: "#999" }}>(Cannot edit)</span>}</div>
+    )}
+  </div>
+);
+
 // ══════════════════════════════════════════════════════════════════════════
 // CHANGE PASSWORD PANEL
 // ══════════════════════════════════════════════════════════════════════════
@@ -390,10 +427,19 @@ export default function KaveeshaUserProfile() {
   const validate = () => {
     const e = {};
     if (!formData.firstName?.trim()) e.firstName = "First name required!";
+    else if (formData.firstName.trim().length > 50) e.firstName = "Max 50 characters!";
+    
     if (!formData.lastName?.trim()) e.lastName = "Last name required!";
-    if (!formData.age || formData.age < 5 || formData.age > 15) e.age = "Age must be 5–15!";
-    if (!formData.email?.trim()) e.email = "Email required!";
+    else if (formData.lastName.trim().length > 50) e.lastName = "Max 50 characters!";
+    
+    if (!formData.age) e.age = "Age required!";
+    else if (formData.age < 5 || formData.age > 15) e.age = "Age must be 5–15!";
+    
     if (!formData.username?.trim()) e.username = "Username required!";
+    else if (formData.username.trim().length < 3) e.username = "Min 3 characters!";
+    else if (formData.username.trim().length > 30) e.username = "Max 30 characters!";
+    else if (!/^[a-zA-Z0-9_]+$/.test(formData.username.trim())) e.username = "Only letters, numbers & underscores!";
+    
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -402,48 +448,51 @@ export default function KaveeshaUserProfile() {
     if (!validate()) return;
     setSaving(true);
     try {
-      const token = localStorage.getItem("token");
-      const userId = localStorage.getItem("userId");
-      const res = await axios.put(`/api/users/profile/${userId}`,
-        { firstName: formData.firstName, lastName: formData.lastName, age: formData.age, email: formData.email, username: formData.username },
-        { headers: { Authorization: `Bearer ${token}` } });
-      setUser(res.data.user); setFormData(res.data.user); setEditMode(false);
+      // Get token - check both localStorage and sessionStorage
+      let token = localStorage.getItem("aquachamp_token");
+      if (!token) {
+        token = sessionStorage.getItem("aquachamp_token");
+      }
+      
+      const userId = user?.id;
+      
+      console.log("💾 [Profile] Saving profile updates...");
+      console.log("   User ID:", userId);
+      console.log("   Token exists:", !!token);
+      
+      // Send update without email (email cannot be edited)
+      const updateData = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        age: parseInt(formData.age),
+        username: formData.username
+      };
+      
+      console.log("   Update data:", updateData);
+      
+      const res = await axios.put(
+        `http://localhost:4000/api/users/profile/${userId}`,
+        updateData,
+        { 
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          } 
+        }
+      );
+      
+      console.log("✅ [Profile] Profile updated successfully:", res.data.user);
+      setUser(res.data.user); 
+      setFormData(res.data.user); 
+      setEditMode(false);
       showToast("Profile updated! Awesome! 🎉");
     } catch (err) {
+      console.error("❌ [Profile] Update error:", err.response?.data);
       showToast(err.response?.data?.message || "Couldn't save changes 😥", "error");
-    } finally { setSaving(false); }
+    } finally { 
+      setSaving(false); 
+    }
   };
-
-  const ProfileField = ({ label, name, type = "text", emoji }) => (
-    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-      <label style={{ fontSize: 10, fontWeight: 900, color: "#185FA5", textTransform: "uppercase", letterSpacing: 1.2, fontFamily: "'Nunito', sans-serif" }}>
-        {emoji} {label}
-      </label>
-      {editMode ? (
-        <>
-          <input type={type} value={formData[name] ?? ""}
-            onChange={e => { setFormData(p => ({ ...p, [name]: e.target.value })); setErrors(p => ({ ...p, [name]: "" })); }}
-            style={{
-              padding: "10px 13px", borderRadius: 12,
-              border: errors[name] ? "2.5px solid #e05a5a" : "2.5px solid #B8D4EE",
-              background: errors[name] ? "#FFF5F5" : "#F0F8FF",
-              color: "#042C53", fontWeight: 700, fontSize: 13,
-              fontFamily: "'Nunito', sans-serif", outline: "none"
-            }}
-            onFocus={e => { e.target.style.border = "2.5px solid #185FA5"; e.target.style.background = "#E6F1FB"; e.target.style.boxShadow = "0 0 0 3px rgba(24,95,165,0.12)"; }}
-            onBlur={e => { e.target.style.border = errors[name] ? "2.5px solid #e05a5a" : "2.5px solid #B8D4EE"; e.target.style.background = errors[name] ? "#FFF5F5" : "#F0F8FF"; e.target.style.boxShadow = "none"; }}
-          />
-          {errors[name] && <p style={{ fontSize: 10, color: "#e05a5a", fontWeight: 800, margin: "1px 0 0 2px", fontFamily: "'Nunito', sans-serif" }}>⚠️ {errors[name]}</p>}
-        </>
-      ) : (
-        <div style={{
-          padding: "10px 13px", borderRadius: 12, border: "2px solid #DCE8F5",
-          background: "#F4F9FF", color: "#042C53", fontWeight: 700, fontSize: 13,
-          fontFamily: "'Nunito', sans-serif"
-        }}>{formData[name] ?? "—"}</div>
-      )}
-    </div>
-  );
 
   if (loading) {
     return (
@@ -639,13 +688,13 @@ export default function KaveeshaUserProfile() {
 
           {/* Fields — 3 columns top, email full width below */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginBottom: 14 }}>
-            <ProfileField label="First Name" name="firstName" emoji="🏷️" />
-            <ProfileField label="Last Name" name="lastName" emoji="🏷️" />
-            <ProfileField label="Age" name="age" type="number" emoji="🎂" />
+            <ProfileField label="First Name" name="firstName" emoji="🏷️" editMode={editMode} formData={formData} errors={errors} setFormData={setFormData} setErrors={setErrors} />
+            <ProfileField label="Last Name" name="lastName" emoji="🏷️" editMode={editMode} formData={formData} errors={errors} setFormData={setFormData} setErrors={setErrors} />
+            <ProfileField label="Age" name="age" type="number" emoji="🎂" editMode={editMode} formData={formData} errors={errors} setFormData={setFormData} setErrors={setErrors} />
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-            <ProfileField label="Username" name="username" emoji="🎮" />
-            <ProfileField label="Email Address" name="email" type="email" emoji="📧" />
+            <ProfileField label="Username" name="username" emoji="🎮" editMode={editMode} formData={formData} errors={errors} setFormData={setFormData} setErrors={setErrors} />
+            <ProfileField label="Email Address" name="email" type="email" emoji="📧" disabled={true} editMode={editMode} formData={formData} errors={errors} setFormData={setFormData} setErrors={setErrors} />
           </div>
 
           {/* Badges strip */}
@@ -675,7 +724,7 @@ export default function KaveeshaUserProfile() {
           )}
           {editMode && (
             <p style={{ margin: "16px 0 0", fontSize: 11, fontWeight: 800, color: "#185FA5", textAlign: "center", borderTop: "2.5px dashed #B8D4EE", paddingTop: 14 }}>
-              💡 Edit your details above, then hit <span style={{ color: "#1D9E75", fontWeight: 900 }}>Save Changes</span>!
+              💡 Edit your details above, then hit <span style={{ color: "#1D9E75", fontWeight: 900 }}>Save Changes</span>! 📧 Email cannot be changed.
             </p>
           )}
         </div>
