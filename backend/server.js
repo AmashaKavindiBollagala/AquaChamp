@@ -22,6 +22,7 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 app.use(cookieParser()); 
+app.use('/uploads', express.static('uploads')); 
 
 
 //Routes
@@ -34,7 +35,11 @@ app.use('/api/admin', adminRoutes);
 
 
 // DB
-connectDB();
+connectDB().then(() => {
+  console.log('Database connected successfully');
+}).catch((err) => {
+  console.error('Database connection failed:', err);
+});
 
 
 import './kaveesha-delete-unverified-users.js';
@@ -48,7 +53,7 @@ app.use("/api/security", securityRoutes);
 
 
 // use routes
-app.use('/api/users', userRoutes);
+// app.use('/api/users', userRoutes); // Removed duplicate - already registered above
 
 
 // APP PORT AND LISTEN

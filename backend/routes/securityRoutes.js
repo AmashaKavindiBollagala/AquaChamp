@@ -1,13 +1,16 @@
 // routes/securityRoutes.js
 import express from "express";
+import verifyJWT from "../middleware/amasha-verifyJWT.js";
 import {
   securityChangePassword,
   securityResetPassword,
   verifyEmail,
   requestChangePasswordOTP,
   verifyChangePasswordOTP,
+  resendChangePasswordOTP,
   requestPasswordReset,
   verifyPasswordResetToken,
+  resetPasswordWithToken,
   requestResetPasswordOTP,
   verifyResetPasswordOTP,
   resendVerificationEmail
@@ -15,15 +18,19 @@ import {
 
 const router = express.Router();
 
-// ------------------ Change Password ------------------
+// ------------------ Change Password (Protected Routes) ------------------
+// All change password routes require authentication
 // Update existing user password
-router.put("/change-password/:id", securityChangePassword);
+router.put("/change-password/:id", verifyJWT, securityChangePassword);
 
 // Request OTP before password change
-router.post("/change-password/request-otp", requestChangePasswordOTP);
+router.post("/change-password/request-otp", verifyJWT, requestChangePasswordOTP);
 
 // Verify OTP and change password
-router.post("/change-password/verify-otp", verifyChangePasswordOTP);
+router.post("/change-password/verify-otp", verifyJWT, verifyChangePasswordOTP);
+
+// Resend OTP for password change
+router.post("/change-password/resend-otp", verifyJWT, resendChangePasswordOTP);
 
 // ------------------ Reset Password (Forgot Password) ------------------
 // Step 1: Request reset link
@@ -31,6 +38,9 @@ router.post("/forgot-password", requestPasswordReset);
 
 // Step 2: Verify reset token from email link
 router.get("/forgot-password/verify-token/:token", verifyPasswordResetToken);
+
+// Step 3: Reset password with token
+router.post("/forgot-password/reset", resetPasswordWithToken);
 
 // Step 3: Request OTP after user clicks link
 router.post("/forgot-password/request-otp", requestResetPasswordOTP);

@@ -104,7 +104,9 @@ export const registerUser = async (req, res) => {
       password,
     });
 
+    console.log(`💾 Saving user to database...`);
     await user.save();
+    console.log(`✅ User saved successfully with ID: ${user._id}`);
 
     // 🔐 create verification token
     const token = uuidv4();
@@ -119,12 +121,62 @@ export const registerUser = async (req, res) => {
     const verificationLink = `http://localhost:4000/api/security/verify-email/${token}`;
 
     // send email
+    const html = `
+<div style="font-family: Arial, sans-serif; background:#EAF5FF; padding:40px 0;">
+  <div style="max-width:500px;margin:auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.1);">
+
+    <!-- Header -->
+    <div style="background: linear-gradient(135deg,#042C53,#185FA5,#1D9E75); padding:25px; text-align:center; color:white;">
+      
+      <img src="http://localhost:4000/uploads/images/AquaChampLogo.png" alt="AquaChamp Logo" style="width:60px;height:60px;border-radius:12px;margin-bottom:10px;" />
+      
+      <h1 style="margin:0;font-size:24px;">💧 AquaChamp</h1>
+      <p style="margin:5px 0 0;font-size:12px;">Clean Water · Safe Futures</p>
+    </div>
+
+    <!-- Body -->
+    <div style="padding:30px; text-align:center;">
+      <h2 style="color:#0f172a;">👋 Welcome, Hero!</h2>
+
+      <p style="color:#475569; font-size:14px; line-height:1.6;">
+        You're one step away from starting your hygiene adventure 🎮✨
+      </p>
+
+      <p style="color:#475569; font-size:14px;">
+        Click below to verify your email:
+      </p>
+
+      <!-- Button -->
+      <a href="${verificationLink}" 
+         style="display:inline-block;margin-top:20px;padding:14px 28px;
+         background:linear-gradient(135deg,#0284c7,#10b981);
+         color:white;text-decoration:none;border-radius:10px;
+         font-weight:bold;font-size:15px;">
+         🚀 Verify My Account
+      </a>
+
+      <p style="margin-top:20px;font-size:12px;color:#94a3b8;">
+        ⏳ This link expires in 1 hour
+      </p>
+
+      <p style="margin-top:10px;font-size:12px;color:#94a3b8;">
+        If you didn't create this account, you can safely ignore this email.
+      </p>
+    </div>
+
+    <!-- Footer -->
+    <div style="background:#f1f5f9;padding:15px;text-align:center;font-size:11px;color:#64748b;">
+      © 2026 AquaChamp 🌊 | Stay Clean, Stay Healthy 💙
+    </div>
+
+  </div>
+</div>
+`;
+
     await securitySendEmail(
       user.email,
       "Verify Your Email",
-      `<h2>Email Verification</h2>
-     <p>Please click below to verify your email:</p>
-     <a href="${verificationLink}">${verificationLink}</a>`,
+      html
     );
 
     res.status(201).json({
