@@ -650,30 +650,94 @@ export const resendChangePasswordOTP = async (req, res) => {
  */
 export const requestPasswordReset = async (req, res) => {
   try {
+    console.log("\n📧 Forgot Password Request");
     const { email } = req.body;
+    console.log("   Email:", email);
 
     const user = await User.findOne({ email });
-    if (!user)
+    if (!user) {
+      console.log("   ⚠️ User not found - sending success anyway to prevent enumeration");
       return res
         .status(200)
         .json({ message: "If this email exists, a reset link has been sent" });
+    }
+    
+    console.log("   ✅ User found:", user.email);
+
+    // Delete any existing reset tokens for this user
+    await SecurityPasswordReset.deleteMany({ userId: user._id });
+    console.log("   🗑️ Deleted old reset tokens");
 
     const token = uuidv4();
+    console.log("   🆕 Generated reset token");
 
     await SecurityPasswordReset.create({ userId: user._id, token });
+    console.log("   ✅ Reset token saved");
 
-    const resetLink = `http://localhost:4000/api/security/forgot-password/verify-token/${token}`;
+    // Create reset link - points to frontend reset password page
+    const resetLink = `http://localhost:5173/reset-password/${token}`;
+    console.log("   🔗 Reset link:", resetLink);
 
-    await securitySendEmail(
-      email,
-      "Reset Your Password",
-      `<h2>Password Reset Request</h2>
-       <p>Click the link below to reset your password. It expires in 5 minutes.</p>
-       <a href="${resetLink}">${resetLink}</a>`,
-    );
+    // Send beautiful email
+    const html = `
+<div style="font-family: Arial, sans-serif; background:#EAF5FF; padding:40px 0;">
+  <div style="max-width:500px;margin:auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.1);">
+
+    <!-- Header -->
+    <div style="background: linear-gradient(135deg,#042C53,#185FA5,#1D9E75); padding:25px; text-align:center; color:white;">
+      
+      <img src="http://localhost:4000/uploads/images/AquaChampLogo.png" alt="AquaChamp Logo" style="width:60px;height:60px;border-radius:12px;margin-bottom:10px;" />
+      
+      <h1 style="margin:0;font-size:24px;">💧 AquaChamp</h1>
+      <p style="margin:5px 0 0;font-size:12px;">Clean Water · Safe Futures</p>
+    </div>
+
+    <!-- Body -->
+    <div style="padding:30px; text-align:center;">
+      <h2 style="color:#0f172a;">🔐 Password Reset Request</h2>
+
+      <p style="color:#475569; font-size:14px; line-height:1.6;">
+        Hello ${user.firstName}! We received a request to reset your password.
+      </p>
+
+      <p style="color:#475569; font-size:14px;">
+        Click the button below to create a new password:
+      </p>
+
+      <!-- Reset Button -->
+      <a href="${resetLink}" 
+         style="display:inline-block;margin-top:20px;padding:14px 28px;
+         background:linear-gradient(135deg,#0284c7,#10b981);
+         color:white;text-decoration:none;border-radius:10px;
+         font-weight:bold;font-size:15px;">
+         🔄 Reset My Password
+      </a>
+
+      <p style="margin-top:20px;font-size:12px;color:#94a3b8;">
+        ⏳ This link expires in 5 minutes
+      </p>
+
+      <p style="margin-top:10px;font-size:12px;color:#94a3b8;">
+        If you didn't request this, please ignore this email.
+      </p>
+    </div>
+
+    <!-- Footer -->
+    <div style="background:#f1f5f9;padding:15px;text-align:center;font-size:11px;color:#64748b;">
+      © 2026 AquaChamp 🌊 | Stay Clean, Stay Healthy 💙
+    </div>
+
+  </div>
+</div>
+`;
+
+    await securitySendEmail(email, "Reset Your Password", html);
+    console.log(`✅ Reset email sent to: ${email}`);
 
     res.json({ message: "If this email exists, a reset link has been sent" });
   } catch (error) {
+    console.error("❌ Forgot password error:", error.message);
+    console.error(error.stack);
     res.status(500).json({ message: error.message });
   }
 };
@@ -686,16 +750,79 @@ export const requestPasswordReset = async (req, res) => {
  */
 export const verifyPasswordResetToken = async (req, res) => {
   try {
+    console.log("\n🔐 Verify Reset Token");
     const { token } = req.params;
+    console.log("   Token:", token);
 
     const record = await SecurityPasswordReset.findOne({ token });
-    if (!record)
-      return res
-        .status(400)
-        .json({ message: "Invalid or expired reset token" });
+    if (!record) {
+      console.log("❌ Invalid or expired token");
+      return res.status(400).json({ message: "Invalid or expired reset token" });
+    }
+    
+    console.log("✅ Token valid");
+    console.log("   User ID:", record.userId);
 
     res.json({ message: "Token valid", userId: record.userId });
   } catch (error) {
+    console.error("❌ Verify token error:", error.message);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+/**
+ * ===============================
+ * STEP 3: Reset password with token
+ * POST /api/security/forgot-password/reset
+ * ===============================
+ */
+export const resetPasswordWithToken = async (req, res) => {
+  try {
+    console.log("\n🔄 Reset Password with Token");
+    const { token, newPassword } = req.body;
+    console.log("   Validating token and password...");
+
+    // Find reset token
+    const record = await SecurityPasswordReset.findOne({ token });
+    if (!record) {
+      console.log("❌ Invalid or expired token");
+      return res.status(400).json({ message: "Invalid or expired reset token" });
+    }
+    
+    console.log("✅ Token found");
+
+    // Validate password strength
+    try {
+      checkPasswordStrength(newPassword);
+      console.log("✅ Password meets requirements");
+    } catch (error) {
+      console.log("❌ Password validation failed:", error.message);
+      return res.status(400).json({ message: error.message });
+    }
+
+    // Find user
+    const user = await User.findById(record.userId);
+    if (!user) {
+      console.log("❌ User not found");
+      return res.status(404).json({ message: "User not found" });
+    }
+    
+    console.log("   User found:", user.email);
+
+    // Update password
+    user.password = await hashPassword(newPassword);
+    await user.save();
+    console.log("✅ Password updated successfully");
+
+    // Delete used reset token
+    await SecurityPasswordReset.deleteOne({ _id: record._id });
+    console.log("🗑️ Deleted used reset token");
+
+    console.log("🎉 Password reset completed successfully");
+    res.json({ message: "Password reset successful" });
+  } catch (error) {
+    console.error("❌ Reset password error:", error.message);
+    console.error(error.stack);
     res.status(500).json({ message: error.message });
   }
 };

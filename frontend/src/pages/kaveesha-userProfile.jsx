@@ -804,7 +804,7 @@ export default function KaveeshaUserProfile() {
             <ProfileField label="Age" name="age" type="number" emoji="🎂" editMode={editMode} formData={formData} errors={errors} setFormData={setFormData} setErrors={setErrors} />
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-            <ProfileField label="Username" name="username" emoji="🎮" editMode={editMode} formData={formData} errors={errors} setFormData={setFormData} setErrors={setErrors} />
+            <ProfileField label="Username" name="username" emoji="🎮" disabled={true} editMode={editMode} formData={formData} errors={errors} setFormData={setFormData} setErrors={setErrors} />
             <ProfileField label="Email Address" name="email" type="email" emoji="📧" disabled={true} editMode={editMode} formData={formData} errors={errors} setFormData={setFormData} setErrors={setErrors} />
           </div>
 
@@ -835,7 +835,7 @@ export default function KaveeshaUserProfile() {
           )}
           {editMode && (
             <p style={{ margin: "16px 0 0", fontSize: 11, fontWeight: 800, color: "#185FA5", textAlign: "center", borderTop: "2.5px dashed #B8D4EE", paddingTop: 14 }}>
-              💡 Edit your details above, then hit <span style={{ color: "#1D9E75", fontWeight: 900 }}>Save Changes</span>! 📧 Email cannot be changed.
+              💡 Edit your details above, then hit <span style={{ color: "#1D9E75", fontWeight: 900 }}>Save Changes</span>! 📧 Email & 🎮 Username cannot be changed.
             </p>
           )}
         </div>

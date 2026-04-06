@@ -5,6 +5,7 @@ import KaveeshaUserProfile from "./pages/kaveesha-userProfile";
 import DilsharaSuperAdminDashboard from "./components/dilshara-SuperAdminDashboard";
 import VerifyEmail from "./pages/kaveesha-verifyEmail";
 import EmailVerified from "./pages/kaveesha-emailVerified";
+import ResetPassword from "./pages/kaveesha-resetPassword";
 
 
 function App() {
@@ -26,6 +27,9 @@ function App() {
 
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/email-verified" element={<EmailVerified />} />
+        
+        {/* Reset Password page */}
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
       </Routes>
     </BrowserRouter>
   );

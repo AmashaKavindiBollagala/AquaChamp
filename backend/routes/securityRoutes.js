@@ -10,6 +10,7 @@ import {
   resendChangePasswordOTP,
   requestPasswordReset,
   verifyPasswordResetToken,
+  resetPasswordWithToken,
   requestResetPasswordOTP,
   verifyResetPasswordOTP,
   resendVerificationEmail
@@ -37,6 +38,9 @@ router.post("/forgot-password", requestPasswordReset);
 
 // Step 2: Verify reset token from email link
 router.get("/forgot-password/verify-token/:token", verifyPasswordResetToken);
+
+// Step 3: Reset password with token
+router.post("/forgot-password/reset", resetPasswordWithToken);
 
 // Step 3: Request OTP after user clicks link
 router.post("/forgot-password/request-otp", requestResetPasswordOTP);

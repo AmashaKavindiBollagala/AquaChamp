@@ -85,7 +85,7 @@ const ForgotPasswordModal = memo(function ForgotPasswordModal({ onClose }) {
     setError("");
 
     try {
-      await axios.post("http://localhost:4000/auth/forgot-password", {
+      await axios.post("http://localhost:4000/api/security/forgot-password", {
         email: email.trim().toLowerCase(),
       });
       setStep("sent");
