@@ -14,12 +14,9 @@ import { v4 as uuidv4 } from "uuid";
 import { securitySendEmail } from "../utils/securitySendEmail.js";
 import { generateOTP } from "../utils/securityGenerateOTP.js";
 
-/**
- * ===============================
- * CHANGE PASSWORD (direct change)
- * PUT /api/security/change-password/:id
- * ===============================
- */
+
+ // CHANGE PASSWORD (direct change)
+ 
 export const securityChangePassword = async (req, res) => {
   try {
     const userId = req.params.id;
@@ -43,12 +40,9 @@ export const securityChangePassword = async (req, res) => {
   }
 };
 
-/**
- * ===============================
- * RESET PASSWORD (direct reset via email)
- * POST /api/security/reset-password
- * ===============================
- */
+
+// RESET PASSWORD (direct reset via email)
+
 export const securityResetPassword = async (req, res) => {
   try {
     const { email, newPassword } = req.body;
@@ -67,12 +61,9 @@ export const securityResetPassword = async (req, res) => {
   }
 };
 
-/**
- * ===============================
- * VERIFY EMAIL
- * GET /api/security/verify-email/:token
- * ===============================
- */
+
+ // VERIFY EMAIL
+ 
 export const verifyEmail = async (req, res) => {
   try {
     const { token } = req.params;
@@ -262,12 +253,9 @@ export const resendVerificationEmail = async (req, res) => {
   }
 };
 
-/**
- * ===============================
- * LOGIN USER
- * POST /api/security/login
- * ===============================
- */
+
+ // LOGIN USER
+ 
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -294,12 +282,9 @@ export const loginUser = async (req, res) => {
   }
 };
 
-/**
- * ===============================
- * STEP 1: Request OTP for changing password
- * POST /api/security/change-password/request-otp
- * ===============================
- */
+
+ // STEP 1: Request OTP for changing password
+ 
 export const requestChangePasswordOTP = async (req, res) => {
   try {
     console.log("\n🔐 Request Change Password OTP");
@@ -427,12 +412,9 @@ export const requestChangePasswordOTP = async (req, res) => {
   }
 };
 
-/**
- * ===============================
- * STEP 2: Verify OTP and change password
- * POST /api/security/change-password/verify-otp
- * ===============================
- */
+
+// STEP 2: Verify OTP and change password
+
 export const verifyChangePasswordOTP = async (req, res) => {
   try {
     console.log("\n✅ Verify Change Password OTP");
@@ -642,12 +624,9 @@ export const resendChangePasswordOTP = async (req, res) => {
   }
 };
 
-/**
- * ===============================
- * STEP 1 (Forgot Password): Request password reset link
- * POST /api/security/forgot-password
- * ===============================
- */
+
+ // STEP 1 (Forgot Password): Request password reset link
+ 
 export const requestPasswordReset = async (req, res) => {
   try {
     console.log("\n📧 Forgot Password Request");
@@ -742,12 +721,9 @@ export const requestPasswordReset = async (req, res) => {
   }
 };
 
-/**
- * ===============================
- * STEP 2: Verify reset token from link
- * GET /api/security/forgot-password/verify-token/:token
- * ===============================
- */
+
+ // STEP 2: Verify reset token from link
+ 
 export const verifyPasswordResetToken = async (req, res) => {
   try {
     console.log("\n🔐 Verify Reset Token");
@@ -827,12 +803,9 @@ export const resetPasswordWithToken = async (req, res) => {
   }
 };
 
-/**
- * ===============================
- * STEP 3: Request OTP after clicking reset link
- * POST /api/security/forgot-password/request-otp
- * ===============================
- */
+
+ // STEP 3: Request OTP after clicking reset link
+ 
 export const requestResetPasswordOTP = async (req, res) => {
   try {
     const { userId, newPassword } = req.body;
@@ -865,12 +838,9 @@ export const requestResetPasswordOTP = async (req, res) => {
   }
 };
 
-/**
- * ===============================
- * STEP 4: Verify OTP and set new password
- * POST /api/security/forgot-password/verify-otp
- * ===============================
- */
+
+ // STEP 4: Verify OTP and set new password
+ 
 export const verifyResetPasswordOTP = async (req, res) => {
   try {
     const { userId, otp, newPassword } = req.body;
