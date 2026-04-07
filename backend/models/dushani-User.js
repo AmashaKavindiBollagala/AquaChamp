@@ -60,6 +60,14 @@ const userSchema = new mongoose.Schema(
       default: false,
     },
 
+    verifyToken: {
+    type: String, // <-- new field for verification token
+    },
+
+    verifyTokenExpiry: {
+    type: Date, // <-- new field for token expiry
+    },
+
     roles: {
       type: [String],
       default: ["User"],

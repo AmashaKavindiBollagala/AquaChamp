@@ -1,11 +1,43 @@
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import UserLogin from "./pages/amasha-login";
+import UserRegistration from "./pages/User-Registration";
+import KaveeshaUserProfile from "./pages/kaveesha-userProfile";
+import DilsharaSuperAdminDashboard from "./pages/dilshara-SuperAdminDashboard";
+import DilsharaAdminLogin from "./pages/dilshara-AdminLogin";
+import VerifyEmail from "./pages/kaveesha-verifyEmail";
+import EmailVerified from "./pages/kaveesha-emailVerified";
+import ResetPassword from "./pages/kaveesha-resetPassword";
 
 
 function App() {
   return (
-    <div><h1 className="text-3xl font-bold underline">
-    Hello world!
-  </h1></div>
-  )
+    <BrowserRouter>
+      <Routes>
+        {/* Default page */}
+        <Route path="/" element={<UserLogin />} />
+
+        {/* Auth pages */}
+        <Route path="/login" element={<UserLogin />} />
+        <Route path="/register" element={<UserRegistration />} />
+
+        {/* Profile page */}
+        <Route path="/profile" element={<KaveeshaUserProfile />} />
+
+        {/* super admin dashboard */}
+<Route path="/super-admin" element={<DilsharaSuperAdminDashboard />} />
+
+{/* admin login*/}
+<Route path="/admin-login" element={<DilsharaAdminLogin />} />
+
+
+        <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/email-verified" element={<EmailVerified />} />
+        
+        {/* Reset Password page */}
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
+      </Routes>
+    </BrowserRouter>
+  );
 }
 
 export default App;

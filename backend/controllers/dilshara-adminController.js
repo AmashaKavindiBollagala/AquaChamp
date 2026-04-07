@@ -1,45 +1,41 @@
-import User from '../models/dushani-User.js';
+import Admin from '../models/dilshara-Admin.js';  
 import asyncHandler from 'express-async-handler';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
+// Get all admins
+export const getAllAdmins = asyncHandler(async (req, res) => {
+    const admins = await Admin.find({}, '-password').sort({ createdAt: -1 });
+    res.status(200).json({ success: true, admins });
+});
 
 // Super admin creates new admin
-
 export const createAdmin = asyncHandler(async (req, res) => {
     const { firstName, lastName, age, email, username, password, roles } = req.body;
 
-    // Validate required fields
     if (!firstName || !lastName || !age || !email || !username || !password || !roles) {
         return res.status(400).json({ message: 'All fields are required including roles' });
     }
 
-    
-    const existingUser = await User.findOne({ $or: [{ email }, { username }] });
-    if (existingUser) {
+    const existingAdmin = await Admin.findOne({ $or: [{ email }, { username }] });
+    if (existingAdmin) {
         return res.status(400).json({ message: 'Email or username already exists' });
     }
 
-    // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    // Create admin instance
-    const admin = new User({
+    // Admin model auto-hashes via pre('save') hook — do NOT hash manually here
+    const admin = new Admin({
         firstName,
         lastName,
         age,
         email,
         username,
-        password: hashedPassword,
+        password,   // plain text — pre('save') hook in dilshara-Admin.js handles hashing
         roles,
         active: true
     });
 
-   
-    await admin.save({ validateBeforeSave: false });
+    await admin.save();
 
-    // Respond
     res.status(201).json({
         message: 'Admin created successfully',
         admin: {
@@ -54,63 +50,62 @@ export const createAdmin = asyncHandler(async (req, res) => {
     });
 });
 
+// Toggle admin active/inactive
+export const toggleAdminStatus = asyncHandler(async (req, res) => {
+    const admin = await Admin.findById(req.params.id);
 
-// Admin login >>>>super admin create other admin
+    if (!admin) {
+        return res.status(404).json({ message: 'Admin not found' });
+    }
 
+    admin.active = !admin.active;
+    await admin.save();
+
+    res.status(200).json({
+        message: `Admin ${admin.active ? 'activated' : 'deactivated'} successfully`,
+        admin: { id: admin._id, username: admin.username, active: admin.active }
+    });
+});
+
+// Admin login
 export const adminLogin = asyncHandler(async (req, res) => {
     const { username, password } = req.body;
 
- 
-    console.log("=== LOGIN ATTEMPT ===");
-    console.log("Username received:", username);
-    console.log("Password received:", password);
+    console.log("=== ADMIN LOGIN ATTEMPT ===");
+    console.log("Username:", username);
 
-    // Find admin by username
-    const user = await User.findOne({ username });
+    const admin = await Admin.findOne({ username });   // ✅ searches Admin collection
 
-    console.log("User found in DB:", user ? "YES" : "NO");
-    if (user) {
-        console.log("User active:", user.active);
-        console.log("Stored hashed password:", user.password);
+    if (!admin) {
+        console.log("FAILED: Not found in Admin collection");
+        return res.status(401).json({ message: 'Unauthorized - admin not found' });
     }
 
-    if (!user) {
-        console.log("FAILED: User not found");
-        return res.status(401).json({ message: 'Unauthorized - user not found' });
+    if (!admin.active) {
+        console.log("FAILED: Account inactive");
+        return res.status(401).json({ message: 'Unauthorized - account is inactive' });
     }
 
-    if (!user.active) {
-        console.log("FAILED: User is inactive");
-        return res.status(401).json({ message: 'Unauthorized - user inactive' });
-    }
-
-    // Compare the password
-    const validPassword = await bcrypt.compare(password, user.password);
-    console.log("Password match result:", validPassword);
+    const validPassword = await bcrypt.compare(password, admin.password);
+    console.log("Password match:", validPassword);
 
     if (!validPassword) {
-        console.log("FAILED: Wrong password");
         return res.status(401).json({ message: 'Unauthorized - wrong password' });
     }
 
-    
-    console.log("ACCESS_TOKEN_SECRET exists:", !!process.env.ACCESS_TOKEN_SECRET);
-
-    //  JWT
     const token = jwt.sign(
-        { UserInfo: { username: user.username, roles: user.roles } },
+        { UserInfo: { username: admin.username, roles: admin.roles } },
         process.env.ACCESS_TOKEN_SECRET,
         { expiresIn: '1h' }
     );
 
-    console.log("=== LOGIN SUCCESS ===");
+    console.log("=== LOGIN SUCCESS | Roles:", admin.roles);
 
-    // Return token and user info
     res.json({
         accessToken: token,
         user: {
-            username: user.username,
-            roles: user.roles
+            username: admin.username,
+            roles: admin.roles
         }
     });
 });

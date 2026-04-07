@@ -1,3 +1,11 @@
+import dns from "dns";
+dns.setDefaultResultOrder("ipv4first");
+dns.setServers(['8.8.8.8', '1.1.1.1']);
+
+
+
+
+
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
@@ -34,10 +42,14 @@ const port = 4000;
 
 //  Middleware 
 app.use(logger);
-app.use(cors());
+app.use(cors({
+  origin: "http://localhost:5173",
+  credentials: true
+}));
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
+app.use(express.urlencoded({extended: true}));
+app.use(cookieParser()); 
+app.use('/uploads', express.static('uploads')); 
 
 app.use("/uploads", express.static("uploads"));
 
@@ -62,6 +74,27 @@ app.use('/api/activities', activityRoutes);
 app.use('/api/water', waterRoutes);
 app.use('/api/amasha-points', amashapointsRoutes);
 
+
+// DB
+connectDB().then(() => {
+  console.log('Database connected successfully');
+}).catch((err) => {
+  console.error('Database connection failed:', err);
+});
+
+
+import './kaveesha-delete-unverified-users.js';
+
+//kaveesha routes
+import securityRoutes from "./routes/securityRoutes.js";
+
+
+//kaveesha use routes
+app.use("/api/security", securityRoutes);
+
+
+// use routes
+// app.use('/api/users', userRoutes); // Removed duplicate - already registered above
 //  DB 
 connectDB();
 
