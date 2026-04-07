@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import UserLogin from "./pages/amasha-login";
 import UserRegistration from "./pages/User-Registration";
 import KaveeshaUserProfile from "./pages/kaveesha-userProfile";
-import DilsharaSuperAdminDashboard from "./components/dilshara-SuperAdminDashboard";
+import DilsharaSuperAdminDashboard from "./pages/dilshara-SuperAdminDashboard";
 import DilsharaAdminLogin from "./pages/dilshara-AdminLogin";
 import VerifyEmail from "./pages/kaveesha-verifyEmail";
 import EmailVerified from "./pages/kaveesha-emailVerified";
