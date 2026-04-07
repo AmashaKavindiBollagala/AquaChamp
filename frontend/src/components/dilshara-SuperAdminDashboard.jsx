@@ -12,6 +12,8 @@ const ROLE_CONFIG = {
   User:           { bg: "#94a3b8", label: "User",           icon: "👤" },
 };
 
+const VALID_ROLES = ["Game_ADMIN", "Progress_ADMIN", "Activity_ADMIN", "Lesson_ADMIN"];
+
 const getRoleConfig = (roles) => {
   if (!roles || roles.length === 0) return ROLE_CONFIG["User"];
   return ROLE_CONFIG[roles[0]] || { bg: "#185FA5", label: roles[0], icon: "🔑" };
@@ -24,6 +26,58 @@ const STAT_ROLES = [
   { role: "Lesson_ADMIN",   label: "Lesson Admins",   icon: "📚", color: "#6B5FCF" },
 ];
 
+const EMPTY_FORM = {
+  firstName: "", lastName: "", age: "",
+  email: "", username: "", password: "", roles: "",
+};
+
+// ── Validation ──────────────────────────────────────────────
+const validateForm = (form) => {
+  const errors = {};
+
+  if (!form.firstName.trim())
+    errors.firstName = "First name is required";
+  else if (!/^[a-zA-Z\s]+$/.test(form.firstName.trim()))
+    errors.firstName = "Letters only";
+
+  if (!form.lastName.trim())
+    errors.lastName = "Last name is required";
+  else if (!/^[a-zA-Z\s]+$/.test(form.lastName.trim()))
+    errors.lastName = "Letters only";
+
+  const age = Number(form.age);
+  if (!form.age)
+    errors.age = "Age is required";
+  else if (!Number.isInteger(age) || age < 18 || age > 65)
+    errors.age = "Age must be between 18 and 65";
+
+  if (!form.email.trim())
+    errors.email = "Email is required";
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()))
+    errors.email = "Enter a valid email address";
+
+  if (!form.username.trim())
+    errors.username = "Username is required";
+  else if (form.username.length < 3)
+    errors.username = "Min 3 characters";
+  else if (/\s/.test(form.username))
+    errors.username = "No spaces allowed";
+  else if (!/^[a-zA-Z0-9_]+$/.test(form.username))
+    errors.username = "Letters, numbers and _ only";
+
+  if (!form.password)
+    errors.password = "Password is required";
+  else if (form.password.length < 8)
+    errors.password = "Min 8 characters";
+
+  if (!form.roles)
+    errors.roles = "Please select a role";
+  else if (!VALID_ROLES.includes(form.roles))
+    errors.roles = "Select a valid role from the list";
+
+  return errors;
+};
+
 export default function DilsharaSuperAdminDashboard() {
   const [admins, setAdmins] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -31,15 +85,11 @@ export default function DilsharaSuperAdminDashboard() {
   const [showModal, setShowModal] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
   const [formError, setFormError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRole, setFilterRole] = useState("ALL");
-
-  const [form, setForm] = useState({
-    firstName: "", lastName: "", age: "",
-    email: "", username: "", password: "",
-    roles: "",
-  });
+  const [form, setForm] = useState(EMPTY_FORM);
 
   const token = localStorage.getItem("superAdminToken");
 
@@ -62,27 +112,35 @@ export default function DilsharaSuperAdminDashboard() {
 
   useEffect(() => { fetchAdmins(); }, []);
 
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
+    // Clear field error on change
+    if (fieldErrors[name]) setFieldErrors({ ...fieldErrors, [name]: "" });
+    setFormError("");
+  };
 
   const handleSubmit = async () => {
     setFormError("");
-    setSuccessMsg("");
-    const { firstName, lastName, age, email, username, password, roles } = form;
-    if (!firstName || !lastName || !age || !email || !username || !password || !roles) {
-      setFormError("All fields are required including role.");
+    const errors = validateForm(form);
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setFormError("Please fix the errors below.");
       return;
     }
+    setFieldErrors({});
     setSubmitting(true);
     try {
       const res = await fetch(`${API_BASE}/api/admin/create`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ ...form, age: Number(age), roles: [roles] }),
+        body: JSON.stringify({ ...form, age: Number(form.age), roles: [form.roles] }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to create admin");
-      setSuccessMsg(`✅ ${data.admin.firstName} (${roles}) created successfully!`);
-      setForm({ firstName: "", lastName: "", age: "", email: "", username: "", password: "", roles: "" });
+      setSuccessMsg(`✅ ${data.admin.firstName} (${form.roles}) created successfully!`);
+      setForm(EMPTY_FORM);
+      setFieldErrors({});
       setShowModal(false);
       fetchAdmins();
     } catch (err) {
@@ -107,6 +165,14 @@ export default function DilsharaSuperAdminDashboard() {
     }
   };
 
+  const openModal = () => {
+    setForm(EMPTY_FORM);
+    setFieldErrors({});
+    setFormError("");
+    setSuccessMsg("");
+    setShowModal(true);
+  };
+
   const filteredAdmins = admins.filter((admin) => {
     const matchSearch =
       admin.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -115,6 +181,10 @@ export default function DilsharaSuperAdminDashboard() {
     const matchRole = filterRole === "ALL" || admin.roles?.includes(filterRole);
     return matchSearch && matchRole;
   });
+
+  // Helper: input class with error highlight
+  const inputClass = (name) =>
+    `w-full border ${fieldErrors[name] ? "border-red-400 bg-red-50" : "border-[#E6F1FB]"} rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#185FA5] focus:ring-2 focus:ring-[#185FA5] focus:ring-opacity-20 transition-all`;
 
   return (
     <div className="min-h-screen bg-[#E6F1FB]">
@@ -132,7 +202,12 @@ export default function DilsharaSuperAdminDashboard() {
             <span className="text-[#E6F1FB] text-sm font-medium">Super Admin</span>
           </div>
           <button
-            onClick={() => { localStorage.removeItem("superAdminToken"); window.location.href = "/"; }}
+            onClick={() => {
+              localStorage.removeItem("superAdminToken");
+              localStorage.removeItem("adminRoles");
+              localStorage.removeItem("adminUsername");
+              window.location.href = "/admin-login";
+            }}
             className="bg-red-500 hover:bg-red-600 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all"
           >
             Logout
@@ -157,7 +232,7 @@ export default function DilsharaSuperAdminDashboard() {
             <p className="text-[#185FA5] mt-1 font-medium">Manage all AquaChamp system administrators</p>
           </div>
           <button
-            onClick={() => { setShowModal(true); setFormError(""); setSuccessMsg(""); }}
+            onClick={openModal}
             className="bg-[#185FA5] hover:bg-[#042C53] text-white font-bold px-6 py-3 rounded-xl transition-all flex items-center gap-2 shadow-lg"
           >
             <span className="text-xl">+</span> Create Admin
@@ -321,10 +396,10 @@ export default function DilsharaSuperAdminDashboard() {
         </div>
       </div>
 
-      {/* Create Admin Modal */}
+      {/* ── Create Admin Modal ── */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 px-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-8">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-8 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="text-xl font-extrabold text-[#042C53]">Create New Admin</h2>
@@ -341,41 +416,69 @@ export default function DilsharaSuperAdminDashboard() {
             )}
 
             <div className="grid grid-cols-2 gap-4">
-              {[
-                { label: "First Name", name: "firstName", type: "text",     span: false, placeholder: "Enter first name" },
-                { label: "Last Name",  name: "lastName",  type: "text",     span: false, placeholder: "Enter last name" },
-                { label: "Age",        name: "age",       type: "number",   span: false, placeholder: "Enter age" },
-                { label: "Email",      name: "email",     type: "email",    span: true,  placeholder: "Enter email address" },
-                { label: "Username",   name: "username",  type: "text",     span: false, placeholder: "Enter username" },
-                { label: "Password",   name: "password",  type: "password", span: false, placeholder: "Enter password" },
-              ].map((field) => (
-                <div key={field.name} className={field.span ? "col-span-2" : ""}>
-                  <label className="block text-xs font-bold text-[#042C53] mb-1.5 uppercase tracking-wide">{field.label}</label>
-                  <input
-                    type={field.type}
-                    name={field.name}
-                    value={form[field.name]}
-                    onChange={handleChange}
-                    className="w-full border border-[#E6F1FB] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#185FA5] focus:ring-2 focus:ring-[#185FA5] focus:ring-opacity-20 transition-all"
-                    placeholder={field.placeholder}
-                  />
-                </div>
-              ))}
 
+              {/* First Name */}
+              <div>
+                <label className="block text-xs font-bold text-[#042C53] mb-1.5 uppercase tracking-wide">First Name</label>
+                <input type="text" name="firstName" value={form.firstName} onChange={handleChange}
+                  className={inputClass("firstName")} placeholder="Enter first name" />
+                {fieldErrors.firstName && <p className="mt-1 text-xs text-red-500 font-medium">⚠ {fieldErrors.firstName}</p>}
+              </div>
+
+              {/* Last Name */}
+              <div>
+                <label className="block text-xs font-bold text-[#042C53] mb-1.5 uppercase tracking-wide">Last Name</label>
+                <input type="text" name="lastName" value={form.lastName} onChange={handleChange}
+                  className={inputClass("lastName")} placeholder="Enter last name" />
+                {fieldErrors.lastName && <p className="mt-1 text-xs text-red-500 font-medium">⚠ {fieldErrors.lastName}</p>}
+              </div>
+
+              {/* Age */}
+              <div>
+                <label className="block text-xs font-bold text-[#042C53] mb-1.5 uppercase tracking-wide">Age <span className="text-gray-400 normal-case font-normal">(18–65)</span></label>
+                <input type="number" name="age" value={form.age} onChange={handleChange}
+                  className={inputClass("age")} placeholder="Enter age" min="18" max="65" />
+                {fieldErrors.age && <p className="mt-1 text-xs text-red-500 font-medium">⚠ {fieldErrors.age}</p>}
+              </div>
+
+              {/* Email */}
+              <div>
+                <label className="block text-xs font-bold text-[#042C53] mb-1.5 uppercase tracking-wide">Email</label>
+                <input type="email" name="email" value={form.email} onChange={handleChange}
+                  className={inputClass("email")} placeholder="name@example.com" autoComplete="off" />
+                {fieldErrors.email && <p className="mt-1 text-xs text-red-500 font-medium">⚠ {fieldErrors.email}</p>}
+              </div>
+
+              {/* Username */}
+              <div>
+                <label className="block text-xs font-bold text-[#042C53] mb-1.5 uppercase tracking-wide">Username</label>
+                <input type="text" name="username" value={form.username} onChange={handleChange}
+                  className={inputClass("username")} placeholder="e.g. john_admin" autoComplete="off" />
+                {fieldErrors.username && <p className="mt-1 text-xs text-red-500 font-medium">⚠ {fieldErrors.username}</p>}
+              </div>
+
+              {/* Password */}
+              <div>
+                <label className="block text-xs font-bold text-[#042C53] mb-1.5 uppercase tracking-wide">Password <span className="text-gray-400 normal-case font-normal">(min 8)</span></label>
+                <input type="password" name="password" value={form.password} onChange={handleChange}
+                  className={inputClass("password")} placeholder="Min 8 characters" autoComplete="new-password" />
+                {fieldErrors.password && <p className="mt-1 text-xs text-red-500 font-medium">⚠ {fieldErrors.password}</p>}
+              </div>
+
+              {/* Role — dropdown instead of text input */}
               <div className="col-span-2">
                 <label className="block text-xs font-bold text-[#042C53] mb-1.5 uppercase tracking-wide">Role</label>
-                <input
-                  type="text"
-                  name="roles"
-                  value={form.roles}
-                  onChange={handleChange}
-                  className="w-full border border-[#E6F1FB] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#185FA5] focus:ring-2 focus:ring-[#185FA5] focus:ring-opacity-20 transition-all"
-                  placeholder="e.g. Game_ADMIN"
-                />
-                <p className="text-xs text-gray-400 mt-1.5">
-                  💡 Common roles: <span className="font-medium text-[#185FA5]">Game_ADMIN</span>, <span className="font-medium text-[#1D9E75]">Progress_ADMIN</span>, <span className="font-medium text-[#EF9F27]">Activity_ADMIN</span>, <span className="font-medium text-[#6B5FCF]">Lesson_ADMIN</span>
-                </p>
+                <select name="roles" value={form.roles} onChange={handleChange}
+                  className={`${inputClass("roles")} bg-white`}>
+                  <option value="">— Select a role —</option>
+                  <option value="Game_ADMIN">🎮 Game Admin</option>
+                  <option value="Progress_ADMIN">🏆 Progress Admin</option>
+                  <option value="Activity_ADMIN">💧 Activity Admin</option>
+                  <option value="Lesson_ADMIN">📚 Lesson Admin</option>
+                </select>
+                {fieldErrors.roles && <p className="mt-1 text-xs text-red-500 font-medium">⚠ {fieldErrors.roles}</p>}
               </div>
+
             </div>
 
             <div className="flex gap-3 mt-6">
