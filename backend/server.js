@@ -86,7 +86,11 @@ connectDB().then(() => {
 import './kaveesha-delete-unverified-users.js';
 
 //kaveesha routes
+<<<<<<< HEAD
 // import securityRoutes from "./routes/securityRoutes.js";
+=======
+//import securityRoutes from "./routes/securityRoutes.js";
+>>>>>>> main
 
 
 //kaveesha use routes
@@ -96,7 +100,11 @@ app.use("/api/security", securityRoutes);
 // use routes
 // app.use('/api/users', userRoutes); // Removed duplicate - already registered above
 //  DB 
+<<<<<<< HEAD
 // connectDB();
+=======
+//connectDB();
+>>>>>>> main
 
 app.use("/api/topics", topicRoutes);
 app.use("/api/subtopics", subtopicRoutes);
