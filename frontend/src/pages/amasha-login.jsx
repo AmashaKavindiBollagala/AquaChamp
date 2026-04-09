@@ -272,6 +272,28 @@ export default function UserLogin() {
         setUserData(response.data.user);
         setLoginSuccess(true);
 
+        // 🎯 CLAIM DAILY LOGIN POINTS AUTOMATICALLY
+        try {
+          console.log("🎁 Attempting to claim daily login reward...");
+          const dailyLoginRes = await axios.post(
+            "http://localhost:4000/api/points/daily-login",
+            {},
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+          console.log("✅ Daily login response:", dailyLoginRes.data);
+        } catch (dailyLoginError) {
+          // If already claimed today, it will return 400 - that's OK
+          if (dailyLoginError.response?.status === 400) {
+            console.log("ℹ️  Daily login already claimed today");
+          } else {
+            console.warn("⚠️  Daily login claim failed:", dailyLoginError.message);
+          }
+        }
+
         console.log("   🚀 Navigating to /profile...");
         // Small delay to ensure storage is complete
         setTimeout(() => {

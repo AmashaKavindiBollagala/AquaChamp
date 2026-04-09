@@ -3,17 +3,8 @@ import {
   dailyLoginReward,
   addGamePoints,
   getPointsStatus,
-  addTestPoints,
   getStudentGamePoints,
-  getAllStudentsPoints,
-  aggregateResultsPoints,
-  resetTestPoints,
-  aggregateUserPoints,
-  consolidateAllPoints,
-  getPointsDiagnostic,
-  checkStudentProgress,
-  updateUserPoints,
-  cleanupInactiveBadges
+  getAllStudentsPoints
 } from '../controllers/dushani-PointsController.js';
 import verifyJWT from '../middleware/amasha-verifyJWT.js';
 
@@ -28,9 +19,6 @@ router.post('/daily-login', dailyLoginReward);
 // Add points to student (for quiz/game integration)
 router.post('/add', addGamePoints);
 
-// Add test points (for testing before merge)
-router.post('/add-test', addTestPoints);
-
 // Get current points status
 router.get('/status', getPointsStatus);
 
@@ -39,29 +27,5 @@ router.get('/student/:userId', getStudentGamePoints);
 
 // Get all students' points leaderboard (admin)
 router.get('/leaderboard', getAllStudentsPoints);
-
-// Aggregate points from TrueFalseResult and QuizResult collections (admin)
-router.post('/aggregate-results-points', aggregateResultsPoints);
-
-// Reset all test points to original state (admin)
-router.post('/reset-test-points', resetTestPoints);
-
-// Aggregate points from userPoints table (admin)
-router.post('/aggregate-user-points', aggregateUserPoints);
-
-// Consolidate all points from all sources (daily login, quizzes, userpoints, truefalse) (admin)
-router.post('/consolidate-all-points', consolidateAllPoints);
-
-// Diagnostic endpoint to check points breakdown for a specific user (admin)
-router.get('/diagnostic/:username', getPointsDiagnostic);
-
-// Check student progress for a specific user (admin)
-router.get('/check-progress/:username', checkStudentProgress);
-
-// Update points for a specific user (admin)
-router.put('/update-user-points/:username', updateUserPoints);
-
-// Cleanup inactive badges from all student progress (admin)
-router.post('/cleanup-inactive-badges', cleanupInactiveBadges);
 
 export default router;
