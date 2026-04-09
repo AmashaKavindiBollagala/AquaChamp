@@ -1,50 +1,43 @@
+
 import express from 'express';
 import {
-    createGame,
-    getAllGames,
-    getGameById,
-    updateGame,
-    deleteGame,
-    submitGameScore,
-    getScoresByGame,
-    getMyGameScores,
-    deleteGameScore,
-    getScoresByUserId,
+  createGame,
+  getAllGames,
+  getGameById,
+  updateGame,
+  deleteGame,
+  generateQuestions,
+  submitGameScore,
+  getScoresByGame,
+  getMyGameScores,
+  getScoresByUserId,
+  deleteGameScore,
 } from '../controllers/dilshara-gameController.js';
 import verifyJWT from '../middleware/amasha-verifyJWT.js';
 import { verifyRoles } from '../middleware/dilshara-verifyRoles.js';
 
 const router = express.Router();
 
+// All routes below require a valid JWT
+router.use(verifyJWT);
 
-// child sees their own scores
-router.get('/scores/me', verifyJWT, getMyGameScores);
+// ── Question generation (Game Admin or Super Admin only) ──────────────────────
+router.get('/generate-questions', verifyRoles('Game_ADMIN', 'SUPER_ADMIN'), generateQuestions);
 
-// progress manager views all game scores for a specific child
-router.get('/scores/user/:userId', verifyJWT, getScoresByUserId);
+// ── My scores (must be before /:id routes to avoid conflict) ──────────────────
+router.get('/my/scores', getMyGameScores);
 
-// delete a score record
-router.delete('/scores/:scoreId', verifyJWT, verifyRoles('Game_ADMIN'), deleteGameScore);
+// ── Game CRUD ─────────────────────────────────────────────────────────────────
+router.post('/',       verifyRoles('Game_ADMIN', 'SUPER_ADMIN'), createGame);
+router.get('/',        getAllGames);
+router.get('/:id',     getGameById);
+router.put('/:id',     verifyRoles('Game_ADMIN', 'SUPER_ADMIN'), updateGame);
+router.delete('/:id',  verifyRoles('Game_ADMIN', 'SUPER_ADMIN'), deleteGame);
 
-//all games here
-router.get('/', verifyJWT, getAllGames);
-
-//admin can create new game
-router.post('/', verifyJWT, verifyRoles('Game_ADMIN'), createGame);
-
-//using id one game can get
-router.get('/:id', verifyJWT, getGameById);
-
-//update the game
-router.put('/:id', verifyJWT, verifyRoles('Game_ADMIN'), updateGame);
-
-//delete the game
-router.delete('/:id', verifyJWT, verifyRoles('Game_ADMIN'), deleteGame);
-
-//user/child submit the score
-router.post('/:id/score', verifyJWT, submitGameScore);
-
-//admin view all score
-router.get('/:id/scores', verifyJWT, verifyRoles('Game_ADMIN'), getScoresByGame);
+// ── Scores ────────────────────────────────────────────────────────────────────
+router.post('/:id/scores',             submitGameScore);
+router.get('/:id/scores',              verifyRoles('Game_ADMIN', 'SUPER_ADMIN'), getScoresByGame);
+router.get('/user/:userId/scores',     verifyRoles('Game_ADMIN', 'SUPER_ADMIN', 'Progress_ADMIN'), getScoresByUserId);
+router.delete('/scores/:scoreId',      verifyRoles('Game_ADMIN', 'SUPER_ADMIN'), deleteGameScore);
 
 export default router;

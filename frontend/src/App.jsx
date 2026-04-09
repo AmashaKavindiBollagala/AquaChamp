@@ -7,7 +7,8 @@ import DilsharaAdminLogin from "./pages/dilshara-AdminLogin";
 import VerifyEmail from "./pages/kaveesha-verifyEmail";
 import EmailVerified from "./pages/kaveesha-emailVerified";
 import ResetPassword from "./pages/kaveesha-resetPassword";
-
+import DilsharaGameAdminDashboard from "./components/dilshara-gameAdmin-dashboard";
+import GamePlayScreen from "./components/dilshara-GamePlayScreen";
 
 function App() {
   return (
@@ -35,6 +36,10 @@ function App() {
         
         {/* Reset Password page */}
         <Route path="/reset-password/:token" element={<ResetPassword />} />
+
+        {/* game admin dashboard */}
+        <Route path="/game-dashboard" element={<DilsharaGameAdminDashboard />} />
+        
       </Routes>
     </BrowserRouter>
   );
