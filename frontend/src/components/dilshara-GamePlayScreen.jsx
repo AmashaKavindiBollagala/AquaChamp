@@ -1,31 +1,47 @@
+/**
+ * dilshara-GamePlayScreen.jsx
+ *
+ * This is the entry point for every game a child plays.
+ * It:
+ *  1. Fetches the game from the backend using the gameId URL param
+ *  2. Reads game.subType from the game data
+ *  3. Routes to the correct game component:
+ *       quiz        → StandardQuiz   (ages 11–15, uses admin-written questions)
+ *       germcatcher → GermCatcher    (ages 5–10, auto-generates from word-bank)
+ *       waterdrop   → WaterDropAdventure (ages 5–10, auto-generates)
+ *       memory      → MemoryMatch    (ages 5–10, uses card library)
+ *  4. After the game ends, saves the score to the backend
+ *  5. Shows a result screen
+ */
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import GermCatcher from "./dilshara-GermCatcher";
+import GermCatcher        from "./dilshara-GermCatcher";
 import WaterDropAdventure from "./dilshara-WaterDropAdventure";
-import MemoryMatch from "./dilshara-MemoryMatch";
+import MemoryMatch        from "./dilshara-MemoryMatch";
 
 const API_BASE = "http://localhost:4000";
 
+// ─────────────────────────────────────────────────────────────────────────────
 export default function GamePlayScreen() {
   const { gameId } = useParams();
-  const navigate = useNavigate();
+  const navigate   = useNavigate();
 
-  const [game, setGame] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [game, setGame]           = useState(null);
+  const [loading, setLoading]     = useState(true);
+  const [error, setError]         = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [finalResult, setFinalResult] = useState(null);
 
-  const token = localStorage.getItem("userToken") || localStorage.getItem("superAdminToken");
+  const token    = localStorage.getItem("userToken") || localStorage.getItem("superAdminToken");
   const username = localStorage.getItem("username") || localStorage.getItem("adminUsername") || "Player";
 
   useEffect(() => { fetchGame(); }, [gameId]);
 
   const fetchGame = async () => {
-    setLoading(true);
-    setFinalResult(null);
+    setLoading(true); setFinalResult(null);
     try {
-      const res = await fetch(`${API_BASE}/api/games/${gameId}`, {
+      const res  = await fetch(`${API_BASE}/api/games/${gameId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -38,6 +54,7 @@ export default function GamePlayScreen() {
     }
   };
 
+  // Called by every game component when the player finishes
   const handleFinish = async (score, maxScore, percentage, passed) => {
     setSubmitting(true);
     try {
@@ -54,8 +71,10 @@ export default function GamePlayScreen() {
     }
   };
 
-  if (loading) return <LoadingScreen msg="Loading game..." />;
+  // ── Loading / error screens ────────────────────────────────────────────────
+  if (loading)    return <LoadingScreen msg="Loading game..." />;
   if (submitting) return <LoadingScreen msg="Saving your score..." />;
+
   if (error) return (
     <div style={centerStyle}>
       <div style={{ fontSize: 48 }}>❌</div>
@@ -64,10 +83,11 @@ export default function GamePlayScreen() {
     </div>
   );
 
+  // ── Final result screen (shown after any game type finishes) ───────────────
   if (finalResult) return (
     <div style={centerStyle}>
-     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;900&display=swap" />
-<style>{`@keyframes pop { 0% { transform:scale(0.5);opacity:0; } 80% { transform:scale(1.1); } 100% { transform:scale(1);opacity:1; } }`}</style>
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;900&display=swap" />
+      <style>{`@keyframes pop { 0%{transform:scale(0.5);opacity:0;} 80%{transform:scale(1.1);} 100%{transform:scale(1);opacity:1;} }`}</style>
       <div style={{ animation: "pop 0.5s ease both", textAlign: "center" }}>
         <div style={{ fontSize: 72 }}>{finalResult.passed ? "🏆" : "💪"}</div>
         <h2 style={{ color: "#f1f5f9", fontFamily: "'Fredoka One', cursive", fontSize: 28, margin: "12px 0 4px" }}>
@@ -78,39 +98,47 @@ export default function GamePlayScreen() {
         </div>
         <p style={{ color: "#94a3b8" }}>{finalResult.score} / {finalResult.maxScore} points</p>
         <p style={{ fontSize: 12, color: finalResult.saved ? "#4ade80" : "#f87171", margin: "8px 0 20px" }}>
-          {finalResult.saved ? "✅ Score saved to database!" : "⚠️ Could not save score"}
+          {finalResult.saved ? "✅ Score saved!" : "⚠️ Could not save score"}
         </p>
         <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
-          <button onClick={() => fetchGame()} style={btnStyle("#10b981")}>🔄 Play Again</button>
+          <button onClick={fetchGame} style={btnStyle("#10b981")}>🔄 Play Again</button>
           <button onClick={() => navigate(-1)} style={btnStyle("#1e3a5f")}>🏠 Back</button>
         </div>
       </div>
     </div>
   );
 
-  // Route to correct game based on subType field
+  // ── Route to correct game based on subType ─────────────────────────────────
   const subType = game.subType || "quiz";
 
-  if (subType === "germcatcher") return <GermCatcher game={game} username={username} onFinish={handleFinish} />;
-  if (subType === "waterdrop")   return <WaterDropAdventure game={game} username={username} onFinish={handleFinish} />;
-  if (subType === "memory")      return <MemoryMatch game={game} username={username} onFinish={handleFinish} />;
+  if (subType === "germcatcher")
+    return <GermCatcher game={game} username={username} onFinish={handleFinish} />;
 
-  // Default: standard quiz (for 11–15 or unspecified)
+  if (subType === "waterdrop")
+    return <WaterDropAdventure game={game} username={username} onFinish={handleFinish} />;
+
+  if (subType === "memory")
+    return <MemoryMatch game={game} username={username} onFinish={handleFinish} />;
+
+  // Default: Standard Quiz (quiz subType or fallback)
   return <StandardQuiz game={game} username={username} onFinish={handleFinish} />;
 }
 
-// ── Standard Quiz (ages 11–15 default) ────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+//  STANDARD QUIZ  (ages 11–15 — uses questions written by admin)
+// ─────────────────────────────────────────────────────────────────────────────
 function StandardQuiz({ game, username, onFinish }) {
-  const [qIndex, setQIndex] = useState(0);
-  const [score, setScore] = useState(0);
+  const [qIndex, setQIndex]     = useState(0);
+  const [score, setScore]       = useState(0);
   const [selected, setSelected] = useState(null);
   const [answered, setAnswered] = useState(false);
   const [timeLeft, setTimeLeft] = useState(game.timeLimit || 20);
-  const AVATAR = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(username)}`;
+
+  const AVATAR    = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(username)}`;
   const questions = game.questions || [];
-  const currentQ = questions[qIndex];
-  const totalQ = questions.length;
-  const maxScore = totalQ * (game.pointsPerQuestion || 10);
+  const currentQ  = questions[qIndex];
+  const totalQ    = questions.length;
+  const maxScore  = totalQ * (game.pointsPerQuestion || 10);
 
   useEffect(() => {
     if (answered) return;
@@ -127,22 +155,30 @@ function StandardQuiz({ game, username, onFinish }) {
     if (answered) return;
     setAnswered(true); setSelected(opt);
     const isCorrect = opt === currentQ.correctAnswer;
-    const newScore = isCorrect ? score + (game.pointsPerQuestion || 10) : score;
+    const newScore  = isCorrect ? score + (game.pointsPerQuestion || 10) : score;
     if (isCorrect) setScore(newScore);
     setTimeout(() => {
       if (qIndex + 1 >= totalQ) {
         const pct = Math.round((newScore / maxScore) * 100);
         onFinish(newScore, maxScore, pct, pct >= (game.passMark || 60));
       } else {
-        setQIndex(i => i + 1); setAnswered(false); setSelected(null);
-        setTimeLeft(game.timeLimit || 20);
+        setQIndex(i => i + 1); setAnswered(false);
+        setSelected(null); setTimeLeft(game.timeLimit || 20);
       }
     }, 1600);
   };
 
+  if (!currentQ) return (
+    <div style={centerStyle}>
+      <p style={{ color: "#f87171" }}>No questions found for this game.</p>
+    </div>
+  );
+
   return (
     <div style={{ minHeight: "100vh", background: "#060e1a", fontFamily: "'Nunito',sans-serif", display: "flex", flexDirection: "column" }}>
       <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" />
+
+      {/* Header */}
       <div style={{ display: "flex", alignItems: "center", padding: "12px 16px", borderBottom: "1px solid #1e3a5f", gap: 10 }}>
         <img src={AVATAR} alt="avatar" style={{ width: 38, height: 38, borderRadius: "50%", border: "2px solid #3b82f6" }} />
         <div style={{ flex: 1 }}>
@@ -154,24 +190,34 @@ function StandardQuiz({ game, username, onFinish }) {
             <div style={{ width: `${(qIndex / totalQ) * 100}%`, height: "100%", background: "#3b82f6", borderRadius: 10, transition: "width 0.4s" }} />
           </div>
         </div>
-        <div style={{ width: 42, height: 42, borderRadius: "50%", background: timeLeft <= 6 ? "#dc2626" : "#1e3a5f", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, color: "#fff", fontSize: 15, transition: "background 0.3s" }}>
-          {timeLeft}
-        </div>
+        <div style={{
+          width: 42, height: 42, borderRadius: "50%",
+          background: timeLeft <= 6 ? "#dc2626" : "#1e3a5f",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontWeight: 900, color: "#fff", fontSize: 15, transition: "background 0.3s",
+        }}>{timeLeft}</div>
       </div>
+
+      {/* Question */}
       <div style={{ padding: "20px 16px 12px", background: "#0f2040", margin: "16px 16px 8px", borderRadius: 14, border: "1px solid #1e3a5f" }}>
         <p style={{ color: "#f1f5f9", fontWeight: 700, fontSize: 17, margin: 0, lineHeight: 1.4 }}>{currentQ.questionText}</p>
         {currentQ.hint && !answered && <p style={{ color: "#64748b", fontSize: 12, margin: "6px 0 0" }}>💡 {currentQ.hint}</p>}
       </div>
+
+      {/* Options */}
       <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "0 16px" }}>
         {currentQ.options.map((opt, i) => {
           let bg = "#0f2040", border = "#1e3a5f", color = "#cbd5e1";
           if (answered) {
             if (opt === currentQ.correctAnswer) { bg = "#052e1680"; border = "#16a34a"; color = "#4ade80"; }
-            else if (selected === opt) { bg = "#450a0a80"; border = "#dc2626"; color = "#f87171"; }
+            else if (selected === opt)          { bg = "#450a0a80"; border = "#dc2626"; color = "#f87171"; }
           }
           return (
-            <button key={i} onClick={() => handleAnswer(opt)} disabled={answered}
-              style={{ padding: "14px 16px", background: bg, border: `2px solid ${border}`, borderRadius: 12, color, fontWeight: 700, fontSize: 14, fontFamily: "'Nunito',sans-serif", cursor: answered ? "default" : "pointer", textAlign: "left", transition: "all 0.2s" }}>
+            <button key={i} onClick={() => handleAnswer(opt)} disabled={answered} style={{
+              padding: "14px 16px", background: bg, border: `2px solid ${border}`, borderRadius: 12,
+              color, fontWeight: 700, fontSize: 14, fontFamily: "'Nunito',sans-serif",
+              cursor: answered ? "default" : "pointer", textAlign: "left", transition: "all 0.2s",
+            }}>
               {["A","B","C","D"][i]}. {opt}
             </button>
           );
@@ -181,6 +227,9 @@ function StandardQuiz({ game, username, onFinish }) {
   );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+//  HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
 function LoadingScreen({ msg }) {
   return (
     <div style={centerStyle}>

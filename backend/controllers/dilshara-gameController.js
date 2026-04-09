@@ -33,10 +33,12 @@ export const createGame = asyncHandler(async (req, res) => {
   const resolvedSubType = subType || 'quiz';
   const isMemoryGame = resolvedSubType === 'memory';
 
-  if (!isMemoryGame) {
-    if (!questions || questions.length === 0) {
-      return res.status(400).json({ message: 'At least one question is required' });
-    }
+  if (!isMemoryGame) {//  added non quiz game part — only require questions for quiz subType
+const NON_QUIZ_TYPES = ["germcatcher", "waterdrop", "memory"];
+
+if (!NON_QUIZ_TYPES.includes(subType) && (!questions || questions.length === 0)) {
+  return res.status(400).json({ message: "At least one question is required" });
+}
     for (let i = 0; i < questions.length; i++) {
       const q = questions[i];
       if (!q.questionText?.trim()) {
