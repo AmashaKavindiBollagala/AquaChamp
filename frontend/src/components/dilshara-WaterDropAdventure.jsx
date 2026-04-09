@@ -1,288 +1,224 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 
 const AVATAR_URL = (seed) =>
   `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(seed)}&backgroundColor=b6e3f4`;
 
-// River path steps visuals
-const PATH_ICONS = ["🏔️", "🌧️", "🏞️", "🌊", "🏗️", "🚰", "🏡"];
+const FONT_LINK = "https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;800;900&display=swap";
 
-export default function WaterDropAdventure({ game, username, onFinish }) {
-  const [phase, setPhase] = useState("intro"); // intro | playing | result
-  const [qIndex, setQIndex] = useState(0);
-  const [score, setScore] = useState(0);
-  const [waterLevel, setWaterLevel] = useState(0); // 0–100
-  const [timeLeft, setTimeLeft] = useState(game.timeLimit || 30);
-  const [selected, setSelected] = useState(null); // selected option text
-  const [feedback, setFeedback] = useState(null);
-  const [answered, setAnswered] = useState(false);
-  const [results, setResults] = useState([]);
-  const [characterPos, setCharacterPos] = useState(0); // 0–100 (percentage along path)
-  const [dropAnimation, setDropAnimation] = useState(false);
-  const timerRef = useRef(null);
+const CARD_PAIRS_BY_TOPIC = {
+  default: [
+    { word: "Clean Water",   icon: "💧" }, { word: "Wash Hands",    icon: "🧼" },
+    { word: "Toilet",        icon: "🚽" }, { word: "Germs",         icon: "🦠" },
+    { word: "Rain",          icon: "🌧️" }, { word: "River",         icon: "🏞️" },
+    { word: "Filter",        icon: "🔽" }, { word: "Safe to Drink", icon: "✅" },
+  ],
+  "safe-drinking-water": [
+    { word: "Boil Water",    icon: "♨️" }, { word: "Clean Cup",     icon: "🥤" },
+    { word: "Filter",        icon: "🔽" }, { word: "Well",          icon: "🪣" },
+    { word: "Tap Water",     icon: "🚰" }, { word: "Safe to Drink", icon: "✅" },
+    { word: "River Water",   icon: "🏞️" }, { word: "Rain Water",    icon: "🌧️" },
+  ],
+  "hand-washing-and-personal-hygiene": [
+    { word: "Soap",          icon: "🧼" }, { word: "Towel",         icon: "🧻" },
+    { word: "Toothbrush",    icon: "🪥" }, { word: "Germs",         icon: "🦠" },
+    { word: "Clean Hands",   icon: "🙌" }, { word: "Nail Brush",    icon: "💅" },
+    { word: "Sanitizer",     icon: "💊" }, { word: "Bath",          icon: "🛁" },
+  ],
+  "toilet-and-sanpracticesitation-practices": [
+    { word: "Toilet",        icon: "🚽" }, { word: "Flush",         icon: "💦" },
+    { word: "Wash After",    icon: "🧼" }, { word: "Outdoor",       icon: "⛺" },
+    { word: "Sewage",        icon: "🕳️" }, { word: "Paper",         icon: "🧻" },
+    { word: "Pit Latrine",   icon: "⬛" }, { word: "Clean Toilet",  icon: "✨" },
+  ],
+};
 
-  const questions = game.questions || [];
-  const currentQ = questions[qIndex];
-  const totalQ = questions.length;
-  const maxScore = totalQ * (game.pointsPerQuestion || 10);
+function getPairs(topicId, count = 6) {
+  const pool = CARD_PAIRS_BY_TOPIC[topicId] || CARD_PAIRS_BY_TOPIC.default;
+  return pool.slice(0, count);
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function buildCards(pairs) {
+  const cards = [];
+  pairs.forEach((pair, i) => {
+    cards.push({ id: `w${i}`, pairId: i, type: "word",  content: pair.word });
+    cards.push({ id: `e${i}`, pairId: i, type: "emoji", content: pair.icon });
+  });
+  return shuffle(cards);
+}
+
+const PAIR_COLORS = ["#3b82f6","#10b981","#f59e0b","#ec4899","#8b5cf6","#ef4444","#06b6d4","#84cc16"];
+
+export default function MemoryMatch({ game, username, onFinish }) {
+  const topicId = game.topicId || "default";
+  const pairCount = 6;
+
+  const [phase, setPhase]       = useState("intro");
+  const [cards, setCards]       = useState([]);
+  const [flipped, setFlipped]   = useState([]);
+  const [matched, setMatched]   = useState([]);
+  const [moves, setMoves]       = useState(0);
+  const [startTime, setStartTime] = useState(null);
+  const [elapsed, setElapsed]   = useState(0);
+  const [canFlip, setCanFlip]   = useState(true);
+  const [wrongPair, setWrongPair] = useState([]);
+
+  const totalPairs = pairCount;
+  const isWon = matched.length === totalPairs;
 
   useEffect(() => {
-    if (phase !== "playing" || answered) return;
-    timerRef.current = setInterval(() => {
-      setTimeLeft(t => {
-        if (t <= 1) {
-          clearInterval(timerRef.current);
-          handleTimeout();
-          return 0;
-        }
-        return t - 1;
-      });
-    }, 1000);
-    return () => clearInterval(timerRef.current);
-  }, [phase, qIndex, answered]);
+    if (phase !== "playing" || isWon) return;
+    const t = setInterval(() => setElapsed(Math.floor((Date.now() - startTime) / 1000)), 1000);
+    return () => clearInterval(t);
+  }, [phase, isWon, startTime]);
 
-  const handleTimeout = () => {
-    if (answered) return;
-    setAnswered(true);
-    setFeedback({ correct: false, text: `⏰ Time's up! Answer: ${currentQ.correctAnswer}` });
-    setResults(r => [...r, false]);
-    setTimeout(advance, 2000);
+  useEffect(() => {
+    if (phase === "playing" && isWon) setTimeout(() => setPhase("result"), 800);
+  }, [matched, phase]);
+
+  const initGame = () => {
+    const pairs = getPairs(topicId, pairCount);
+    setCards(buildCards(pairs));
+    setFlipped([]); setMatched([]); setMoves(0);
+    setWrongPair([]); setCanFlip(true);
+    setStartTime(Date.now()); setElapsed(0);
+    setPhase("playing");
   };
 
-  const handleAnswer = (option) => {
-    if (answered) return;
-    clearInterval(timerRef.current);
-    setAnswered(true);
-    setSelected(option);
+  const handleFlip = (card) => {
+    if (!canFlip) return;
+    if (matched.includes(card.pairId)) return;
+    if (flipped.find(c => c.id === card.id)) return;
+    if (flipped.length === 2) return;
 
-    const isCorrect = option === currentQ.correctAnswer;
-    if (isCorrect) {
-      const pts = game.pointsPerQuestion || 10;
-      setScore(s => s + pts);
-      setWaterLevel(w => Math.min(100, w + (100 / totalQ)));
-      setCharacterPos(p => Math.min(100, p + (100 / totalQ)));
-      setDropAnimation(true);
-      setTimeout(() => setDropAnimation(false), 800);
-      setFeedback({ correct: true, text: "💧 Great! The water flows forward!" });
-    } else {
-      setFeedback({ correct: false, text: `Not quite! The answer was: ${currentQ.correctAnswer}` });
-    }
-    setResults(r => [...r, isCorrect]);
-    setTimeout(advance, 2000);
-  };
+    const newFlipped = [...flipped, card];
+    setFlipped(newFlipped);
 
-  const advance = () => {
-    if (qIndex + 1 >= totalQ) {
-      setPhase("result");
-    } else {
-      setQIndex(i => i + 1);
-      setAnswered(false);
-      setSelected(null);
-      setFeedback(null);
-      setTimeLeft(game.timeLimit || 30);
+    if (newFlipped.length === 2) {
+      setMoves(m => m + 1);
+      setCanFlip(false);
+      if (newFlipped[0].pairId === newFlipped[1].pairId) {
+        setTimeout(() => { setMatched(m => [...m, newFlipped[0].pairId]); setFlipped([]); setCanFlip(true); }, 600);
+      } else {
+        setWrongPair(newFlipped.map(c => c.id));
+        setTimeout(() => { setFlipped([]); setWrongPair([]); setCanFlip(true); }, 900);
+      }
     }
   };
 
-  const percentage = Math.round((score / maxScore) * 100);
-  const passed = percentage >= (game.passMark || 60);
+  const calcScore = () => {
+    const perfect = totalPairs;
+    const ratio = Math.max(0, 1 - (moves - perfect) / (perfect * 3));
+    return Math.round(30 + ratio * 70);
+  };
 
-  // ── INTRO ──────────────────────────────────────────────────────────────────
+  const score = phase === "result" ? calcScore() : 0;
+  const stars = score >= 85 ? 3 : score >= 60 ? 2 : 1;
+
   if (phase === "intro") return (
-    <div style={fullScreenStyle}>
+    <div style={screen}>
+      <link rel="stylesheet" href={FONT_LINK} />
       <style>{css}</style>
-      <div style={cardStyle}>
-        <div style={{ fontSize: 64, marginBottom: 8, animation: "float 2s ease-in-out infinite" }}>💧</div>
-        <img src={AVATAR_URL(username)} alt="avatar" style={avatarStyle(100)} />
-        <h1 style={titleStyle}>Water Drop Adventure!</h1>
-        <p style={subStyle}>Hi <strong style={{ color: "#38bdf8" }}>{username}</strong>! Help the water drop travel from the mountains to the village!</p>
-        <p style={{ color: "#94a3b8", fontSize: 13, margin: "0 0 20px", textAlign: "center", maxWidth: 300 }}>
-          Answer questions correctly to fill the river and move your character along the path. Wrong answers slow you down!
+      <div style={cardS}>
+        <div style={{ fontSize: 56, animation: "mspin 4s linear infinite" }}>🃏</div>
+        <img src={AVATAR_URL(username)} alt="avatar" style={ava(100)} />
+        <h1 style={titleS}>Memory Match!</h1>
+        <p style={sub}>Hi <strong style={{ color: "#a78bfa" }}>{username}</strong>! Flip cards and find matching pairs!</p>
+        <p style={{ color: "#94a3b8", fontSize: 13, textAlign: "center", maxWidth: 280, margin: "0 0 20px" }}>
+          Match the water & hygiene words to their pictures. Fewer moves = higher score! 🌟
         </p>
-        <div style={pillsRow}>
-          <span style={pill("#38bdf8")}>💧 {totalQ} Steps</span>
-          <span style={pill("#34d399")}>⏱ {game.timeLimit}s each</span>
-          <span style={pill("#f59e0b")}>🏆 {maxScore} pts</span>
+        <div style={pills}>
+          <span style={pl("#a78bfa")}>🃏 {totalPairs * 2} Cards</span>
+          <span style={pl("#34d399")}>🎯 {totalPairs} Pairs</span>
+          <span style={pl("#f59e0b")}>⭐ Stars to earn</span>
         </div>
-        <button onClick={() => setPhase("playing")} style={btnStyle("#0ea5e9")}>
-          🌊 Start the Journey!
-        </button>
+        <button onClick={initGame} style={btn("#7c3aed")}>🎮 Start Matching!</button>
       </div>
     </div>
   );
 
-  // ── RESULT ─────────────────────────────────────────────────────────────────
   if (phase === "result") return (
-    <div style={fullScreenStyle}>
+    <div style={screen}>
+      <link rel="stylesheet" href={FONT_LINK} />
       <style>{css}</style>
-      <div style={cardStyle}>
-        <div style={{ fontSize: 64, animation: "float 1.5s ease-in-out infinite" }}>
-          {passed ? "🎉" : "💪"}
-        </div>
-        <img src={AVATAR_URL(username)} alt="avatar" style={avatarStyle(90)} />
-        <h2 style={{ ...titleStyle, fontSize: 26, color: passed ? "#4ade80" : "#f59e0b" }}>
-          {passed ? "The village has clean water!" : "Keep trying, hero!"}
-        </h2>
-        <div style={{ fontSize: 52, fontWeight: 900, color: "#fff", margin: "8px 0" }}>{percentage}%</div>
-
-        {/* Water level bar */}
-        <div style={{ width: "100%", maxWidth: 300, margin: "0 auto 16px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-            <span style={{ color: "#64748b", fontSize: 12 }}>Water collected</span>
-            <span style={{ color: "#38bdf8", fontSize: 12, fontWeight: 700 }}>{Math.round(waterLevel)}%</span>
-          </div>
-          <div style={{ background: "#1e3a5f", borderRadius: 20, height: 16, overflow: "hidden" }}>
-            <div style={{
-              width: `${waterLevel}%`, height: "100%",
-              background: "linear-gradient(90deg, #0ea5e9, #38bdf8)",
-              borderRadius: 20, transition: "width 1s ease",
-            }} />
-          </div>
-        </div>
-
-        <p style={{ color: "#94a3b8", margin: "0 0 16px" }}>
-          Score: <strong style={{ color: "#60a5fa" }}>{score}</strong> / {maxScore} pts
-        </p>
-        <div style={{ display: "flex", gap: 6, marginBottom: 20, flexWrap: "wrap", justifyContent: "center" }}>
-          {results.map((r, i) => <span key={i} style={{ fontSize: 20 }}>{r ? "💧" : "💢"}</span>)}
-        </div>
-        <button onClick={() => onFinish(score, maxScore, percentage, passed)} style={btnStyle("#3b82f6")}>
-          🏠 Back to Games
-        </button>
-      </div>
-    </div>
-  );
-
-  // ── PLAYING ────────────────────────────────────────────────────────────────
-  return (
-    <div style={fullScreenStyle}>
-      <style>{css}</style>
-
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", padding: "12px 16px", borderBottom: "1px solid #1e3a5f", gap: 10 }}>
-        <img src={AVATAR_URL(username)} alt="avatar" style={avatarStyle(38)} />
-        <div style={{ flex: 1 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-            <span style={{ color: "#94a3b8", fontSize: 11 }}>Question {qIndex + 1}/{totalQ}</span>
-            <span style={{ color: "#f59e0b", fontWeight: 700, fontSize: 12 }}>⭐ {score} pts</span>
-          </div>
-          <div style={{ background: "#1e3a5f", borderRadius: 20, height: 6 }}>
-            <div style={{ width: `${(qIndex / totalQ) * 100}%`, height: "100%", background: "#0ea5e9", borderRadius: 20, transition: "width 0.4s" }} />
-          </div>
-        </div>
-        <div style={{
-          width: 44, height: 44, borderRadius: "50%",
-          background: timeLeft <= 8 ? "#dc2626" : "#1e3a5f",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 15, fontWeight: 900, color: "#fff", transition: "background 0.3s",
-          animation: timeLeft <= 5 ? "pulse 0.5s infinite" : "none",
-        }}>{timeLeft}</div>
-      </div>
-
-      {/* River Path */}
-      <div style={{
-        background: "linear-gradient(180deg, #0c1f3a 0%, #0a3d62 100%)",
-        padding: "12px 16px", position: "relative", overflow: "hidden",
-      }}>
-        {/* Sky & scenery */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 6, position: "relative", zIndex: 2 }}>
-          {PATH_ICONS.slice(0, totalQ + 1).map((icon, i) => (
-            <div key={i} style={{ textAlign: "center", opacity: i <= qIndex ? 1 : 0.3 }}>
-              <div style={{ fontSize: i === qIndex ? 22 : 16 }}>{icon}</div>
-            </div>
+      <div style={cardS}>
+        <img src={AVATAR_URL(username)} alt="avatar" style={ava(90)} />
+        <div style={{ display: "flex", gap: 4, margin: "8px 0", fontSize: 36 }}>
+          {[...Array(3)].map((_, i) => (
+            <span key={i} style={{ opacity: i < stars ? 1 : 0.2, animation: i < stars ? `starPop 0.4s ease ${i * 0.15}s both` : "none" }}>⭐</span>
           ))}
         </div>
+        <h2 style={{ ...titleS, fontSize: 26, color: stars >= 2 ? "#4ade80" : "#f59e0b" }}>
+          {stars === 3 ? "Perfect Match!" : stars === 2 ? "Well done!" : "Good try!"}
+        </h2>
+        <div style={{ fontSize: 50, fontWeight: 900, color: "#fff", margin: "4px 0" }}>{score}</div>
+        <p style={{ color: "#94a3b8", margin: "0 0 6px" }}>points</p>
+        <div style={{ display: "flex", gap: 16, marginBottom: 20 }}>
+          <div style={stat}><span style={{ color: "#a78bfa", fontSize: 22 }}>🔄</span><span style={{ color: "#f1f5f9", fontWeight: 700 }}>{moves} moves</span></div>
+          <div style={stat}><span style={{ color: "#34d399", fontSize: 22 }}>⏱</span><span style={{ color: "#f1f5f9", fontWeight: 700 }}>{elapsed}s</span></div>
+        </div>
+        <div style={{ display: "flex", gap: 10 }}>
+          <button onClick={initGame} style={btn("#7c3aed")}>🔄 Play Again</button>
+          <button onClick={() => onFinish(score, 100, score, score >= 60)} style={{ ...btn("#3b82f6"), background: "#1e3a5f" }}>🏠 Back</button>
+        </div>
+      </div>
+    </div>
+  );
 
-        {/* River */}
-        <div style={{ background: "#1e3a5f", borderRadius: 20, height: 20, position: "relative", overflow: "visible" }}>
-          {/* Water fill */}
-          <div style={{
-            width: `${waterLevel}%`, height: "100%",
-            background: "linear-gradient(90deg, #0c4a6e, #0ea5e9, #38bdf8)",
-            borderRadius: 20, transition: "width 0.6s ease",
-            position: "relative",
-          }}>
-            {/* Wave shimmer */}
-            <div style={{
-              position: "absolute", inset: 0, borderRadius: 20,
-              background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)",
-              animation: "shimmer 1.5s linear infinite",
-            }} />
-          </div>
+  return (
+    <div style={screen}>
+      <link rel="stylesheet" href={FONT_LINK} />
+      <style>{css}</style>
 
-          {/* Character on river */}
-          <div style={{
-            position: "absolute", top: "50%",
-            left: `${Math.max(2, Math.min(96, characterPos))}%`,
-            transform: "translate(-50%, -50%)",
-            fontSize: 22, zIndex: 5,
-            transition: "left 0.6s ease",
-            animation: dropAnimation ? "bounce 0.5s ease" : "float 2s ease-in-out infinite",
-          }}>
-            💧
+      <div style={{ display: "flex", alignItems: "center", padding: "10px 16px", borderBottom: "1px solid #2d1f4a", gap: 10 }}>
+        <img src={AVATAR_URL(username)} alt="avatar" style={ava(36)} />
+        <div style={{ flex: 1 }}>
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <span style={{ color: "#a78bfa", fontWeight: 700, fontSize: 13 }}>🃏 Memory Match</span>
+            <span style={{ color: "#f59e0b", fontSize: 12 }}>⏱ {elapsed}s</span>
           </div>
         </div>
-
-        {/* Water level label */}
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
-          <span style={{ color: "#0ea5e9", fontSize: 10 }}>🏔️ Source</span>
-          <span style={{ color: "#38bdf8", fontSize: 10 }}>🚰 Village</span>
+        <div style={{ background: "#2d1f4a", borderRadius: 10, padding: "4px 10px", color: "#f1f5f9", fontSize: 12, fontWeight: 700 }}>
+          {matched.length}/{totalPairs} pairs
         </div>
       </div>
 
-      {/* Question */}
-      <div style={{
-        background: "#0f2040", border: "1px solid #1e3a5f",
-        borderRadius: 12, padding: "14px 18px", margin: "10px 16px",
-        textAlign: "center",
-      }}>
-        <p style={{ fontSize: 17, fontWeight: 700, color: "#f1f5f9", margin: 0, lineHeight: 1.4 }}>
-          {currentQ.questionText}
-        </p>
-        {currentQ.hint && !answered && (
-          <p style={{ fontSize: 12, color: "#64748b", margin: "6px 0 0" }}>💡 Hint: {currentQ.hint}</p>
-        )}
+      <div style={{ textAlign: "center", padding: "8px 0", color: "#64748b", fontSize: 12 }}>
+        Moves: <strong style={{ color: "#a78bfa" }}>{moves}</strong>
+        {" · "}Matched: <strong style={{ color: "#34d399" }}>{matched.length}</strong>/{totalPairs}
       </div>
 
-      {/* Feedback */}
-      {feedback && (
-        <div style={{
-          margin: "0 16px 8px", padding: "10px 16px", borderRadius: 10,
-          background: feedback.correct ? "#052e1680" : "#450a0a80",
-          border: `1px solid ${feedback.correct ? "#16a34a" : "#dc2626"}`,
-          color: feedback.correct ? "#4ade80" : "#f87171",
-          fontWeight: 700, fontSize: 13, textAlign: "center",
-          animation: "fadeIn 0.3s ease",
-        }}>
-          {feedback.text}
-        </div>
-      )}
-
-      {/* Answer options */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, padding: "0 16px 16px" }}>
-        {currentQ.options.map((opt, i) => {
-          const isSelected = selected === opt;
-          const isCorrectOpt = opt === currentQ.correctAnswer;
-          let bg = "#0f2040";
-          let border = "#1e3a5f";
-          let color = "#cbd5e1";
-          if (answered) {
-            if (isCorrectOpt) { bg = "#052e1680"; border = "#16a34a"; color = "#4ade80"; }
-            else if (isSelected && !isCorrectOpt) { bg = "#450a0a80"; border = "#dc2626"; color = "#f87171"; }
-          }
-          const DROPS = ["💧", "🌊", "⛲", "🏞️"];
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, padding: "8px 16px 16px", flex: 1 }}>
+        {cards.map(card => {
+          const isFaceUp = flipped.find(c => c.id === card.id) || matched.includes(card.pairId);
+          const isMatched = matched.includes(card.pairId);
+          const isWrong = wrongPair.includes(card.id);
+          const color = PAIR_COLORS[card.pairId % PAIR_COLORS.length];
           return (
-            <button key={i} onClick={() => handleAnswer(opt)} disabled={answered} style={{
-              padding: "14px 12px", borderRadius: 14, cursor: answered ? "default" : "pointer",
-              background: bg, border: `2px solid ${border}`, color,
-              fontSize: 13, fontWeight: 700, fontFamily: "'Nunito', sans-serif",
-              textAlign: "center", transition: "all 0.2s", lineHeight: 1.3,
-              display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
-            }}
-              onMouseEnter={e => !answered && (e.currentTarget.style.borderColor = "#0ea5e9")}
-              onMouseLeave={e => !answered && (e.currentTarget.style.borderColor = "#1e3a5f")}
-            >
-              <span style={{ fontSize: 20 }}>{DROPS[i]}</span>
-              <span>{opt}</span>
-            </button>
+            <div key={card.id} onClick={() => !isFaceUp && handleFlip(card)} style={{ aspectRatio: "1 / 1.2", borderRadius: 14, cursor: isFaceUp ? "default" : "pointer", perspective: 600, position: "relative" }}>
+              <div style={{
+                width: "100%", height: "100%", position: "relative",
+                transformStyle: "preserve-3d", transition: "transform 0.35s ease",
+                transform: isFaceUp ? "rotateY(180deg)" : "rotateY(0deg)",
+                animation: isWrong ? "mshake 0.5s ease" : isMatched ? "matchPop 0.4s ease" : "none",
+              }}>
+                <div style={{ position: "absolute", inset: 0, backfaceVisibility: "hidden", borderRadius: 14, background: "linear-gradient(135deg, #2d1f4a, #1a1035)", border: "2px solid #4c1d95", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>❓</div>
+                <div style={{ position: "absolute", inset: 0, backfaceVisibility: "hidden", transform: "rotateY(180deg)", borderRadius: 14, background: isMatched ? `linear-gradient(135deg, ${color}33, ${color}11)` : "linear-gradient(135deg, #1e1035, #0f0a2a)", border: `2px solid ${isMatched ? color : "#4c1d95"}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 6, gap: 4, boxShadow: isMatched ? `0 0 16px ${color}44` : "none" }}>
+                  {card.type === "emoji"
+                    ? <span style={{ fontSize: 30 }}>{card.content}</span>
+                    : <span style={{ fontSize: 11, fontWeight: 800, color: isMatched ? color : "#e2e8f0", textAlign: "center", lineHeight: 1.2 }}>{card.content}</span>
+                  }
+                </div>
+              </div>
+            </div>
           );
         })}
       </div>
@@ -290,39 +226,20 @@ export default function WaterDropAdventure({ game, username, onFinish }) {
   );
 }
 
-const fullScreenStyle = {
-  minHeight: "100vh", background: "#060e1a",
-  display: "flex", flexDirection: "column",
-  fontFamily: "'Nunito', sans-serif",
-};
-const cardStyle = {
-  margin: "auto", maxWidth: 420, width: "100%",
-  padding: "32px 24px", display: "flex",
-  flexDirection: "column", alignItems: "center", textAlign: "center",
-};
-const avatarStyle = (size) => ({
-  width: size, height: size, borderRadius: "50%",
-  border: "3px solid #0ea5e9", background: "#0f2040", flexShrink: 0,
-});
-const titleStyle = {
-  fontSize: 30, color: "#f1f5f9", margin: "12px 0 8px",
-  fontFamily: "'Fredoka One', cursive",
-};
-const subStyle = { color: "#94a3b8", fontSize: 14, margin: "0 0 12px" };
-const pillsRow = { display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center", marginBottom: 20 };
-const pill = (c) => ({ padding: "4px 12px", borderRadius: 20, background: c + "22", border: `1px solid ${c}`, color: c, fontSize: 12, fontWeight: 700 });
-const btnStyle = (c) => ({
-  padding: "14px 32px", background: c, color: "#fff",
-  fontSize: 16, fontWeight: 800, border: "none", borderRadius: 16,
-  cursor: "pointer", fontFamily: "'Nunito', sans-serif",
-  boxShadow: `0 4px 20px ${c}66`,
-});
+const screen = { minHeight: "100vh", background: "#0a0520", display: "flex", flexDirection: "column", fontFamily: "'Nunito', sans-serif" };
+const cardS  = { margin: "auto", maxWidth: 400, width: "100%", padding: "28px 24px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" };
+const ava    = (s) => ({ width: s, height: s, borderRadius: "50%", border: "3px solid #7c3aed", background: "#1a0a35", flexShrink: 0 });
+const titleS = { fontSize: 30, color: "#f1f5f9", margin: "10px 0 6px", fontFamily: "'Fredoka One', cursive" };
+const sub    = { color: "#94a3b8", fontSize: 14, margin: "0 0 10px" };
+const pills  = { display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center", marginBottom: 20 };
+const pl     = (c) => ({ padding: "4px 12px", borderRadius: 20, background: c + "22", border: `1px solid ${c}`, color: c, fontSize: 12, fontWeight: 700 });
+const btn    = (c) => ({ padding: "13px 28px", background: c, color: "#fff", fontSize: 15, fontWeight: 800, border: "none", borderRadius: 14, cursor: "pointer", fontFamily: "'Nunito', sans-serif", boxShadow: `0 4px 16px ${c}55` });
+const stat   = { display: "flex", flexDirection: "column", alignItems: "center", gap: 2, background: "#1a0a35", borderRadius: 10, padding: "8px 16px" };
 
 const css = `
-  @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;800;900&display=swap');
-  @keyframes float { 0%,100% { transform: translate(-50%,-50%) translateY(0); } 50% { transform: translate(-50%,-50%) translateY(-8px); } }
-  @keyframes bounce { 0%,100% { transform: translate(-50%,-50%) scale(1); } 50% { transform: translate(-50%,-50%) scale(1.5); } }
-  @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.15); } }
-  @keyframes fadeIn { from { opacity:0; transform: translateY(-6px); } to { opacity:1; transform: translateY(0); } }
-  @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(200%); } }
+  @keyframes mspin   { 0% { transform: rotateY(0deg); } 100% { transform: rotateY(360deg); } }
+  @keyframes mshake  { 0%,100% { transform: translateX(0); } 20%,60% { transform: translateX(-6px); } 40%,80% { transform: translateX(6px); } }
+  @keyframes matchPop { 0% { transform: scale(1); } 50% { transform: scale(1.12); } 100% { transform: scale(1); } }
+  @keyframes starPop { 0% { transform: scale(0) rotate(-20deg); opacity:0; } 80% { transform: scale(1.2); } 100% { transform: scale(1); opacity:1; } }
+  @keyframes fadeIn  { from { opacity:0; } to { opacity:1; } }
 `;

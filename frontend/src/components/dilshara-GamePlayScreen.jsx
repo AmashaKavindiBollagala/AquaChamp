@@ -66,10 +66,8 @@ export default function GamePlayScreen() {
 
   if (finalResult) return (
     <div style={centerStyle}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;900&display=swap');
-        @keyframes pop { 0% { transform:scale(0.5);opacity:0; } 80% { transform:scale(1.1); } 100% { transform:scale(1);opacity:1; } }
-      `}</style>
+     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;900&display=swap" />
+<style>{`@keyframes pop { 0% { transform:scale(0.5);opacity:0; } 80% { transform:scale(1.1); } 100% { transform:scale(1);opacity:1; } }`}</style>
       <div style={{ animation: "pop 0.5s ease both", textAlign: "center" }}>
         <div style={{ fontSize: 72 }}>{finalResult.passed ? "🏆" : "💪"}</div>
         <h2 style={{ color: "#f1f5f9", fontFamily: "'Fredoka One', cursive", fontSize: 28, margin: "12px 0 4px" }}>
@@ -144,7 +142,7 @@ function StandardQuiz({ game, username, onFinish }) {
 
   return (
     <div style={{ minHeight: "100vh", background: "#060e1a", fontFamily: "'Nunito',sans-serif", display: "flex", flexDirection: "column" }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap');`}</style>
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" />
       <div style={{ display: "flex", alignItems: "center", padding: "12px 16px", borderBottom: "1px solid #1e3a5f", gap: 10 }}>
         <img src={AVATAR} alt="avatar" style={{ width: 38, height: 38, borderRadius: "50%", border: "2px solid #3b82f6" }} />
         <div style={{ flex: 1 }}>

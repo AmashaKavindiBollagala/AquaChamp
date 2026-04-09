@@ -39,7 +39,10 @@ function App() {
 
         {/* game admin dashboard */}
         <Route path="/game-dashboard" element={<DilsharaGameAdminDashboard />} />
-        
+         {/* game with 3rd party api */}
+        <Route path="/play/:gameId" element={<GamePlayScreen />} />
+
+
       </Routes>
     </BrowserRouter>
   );
