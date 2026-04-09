@@ -213,6 +213,7 @@ function CreateGameForm({ token, onSuccess }) {
     topicName:  "",
     ageGroup:   "5-10",
     difficulty: "easy",
+    subType:    "quiz",
     title:      "",
     description:"",
   });
