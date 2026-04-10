@@ -1,18 +1,17 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useState } from "react";
+import BadgeAnimation from "./components/dushani-BadgeAnimation";
 
 // Existing pages
 import UserLogin from "./pages/amasha-login";
 import UserRegistration from "./pages/User-Registration";
 import KaveeshaUserProfile from "./pages/kaveesha-userProfile";
-import DushaniStudentProgress from "./pages/dushani-studentProgress.jsx";
+import DushaniStudentProgress from "./pages/dushani-studentProgress";
 import DilsharaSuperAdminDashboard from "./pages/dilshara-SuperAdminDashboard";
 import DilsharaAdminLogin from "./pages/dilshara-AdminLogin";
 import VerifyEmail from "./pages/kaveesha-verifyEmail";
 import EmailVerified from "./pages/kaveesha-emailVerified";
 import ResetPassword from "./pages/kaveesha-resetPassword";
-import ActivityAdminDashboard from "./components/amasha-ActivityAdminDashboard";
-import UserActivityView from "./components/amasha-UserActivityView";
 
 // Dashboard pages
 import Sidebar from "./components/dushani-Sidebar.jsx";
@@ -45,6 +44,9 @@ function DashboardLayout() {
 function App() {
   return (
     <BrowserRouter>
+      {/* Badge Celebration Animation - Works across all pages */}
+      <BadgeAnimation />
+      
       <Routes>
         {/* Default page */}
         <Route path="/" element={<UserLogin />} />
@@ -57,13 +59,8 @@ function App() {
         <Route path="/profile" element={<KaveeshaUserProfile />} />
         <Route path="/my-progress" element={<DushaniStudentProgress />} />
 
-        {/* super admin dashboard */}
-      <Route path="/super-admin" element={<DilsharaSuperAdminDashboard />} />
-
-       {/* admin login*/}
-       <Route path="/admin-login" element={<DilsharaAdminLogin />} />
-       <Route path="/activity-dashboard" element={<ActivityAdminDashboard />} />
-       <Route path="/my-activities" element={<UserActivityView />} />
+        {/* Super Admin Dashboard */}
+        <Route path="/super-admin" element={<DilsharaSuperAdminDashboard />} />
 
         {/* Admin Login */}
         <Route path="/admin-login" element={<DilsharaAdminLogin />} />

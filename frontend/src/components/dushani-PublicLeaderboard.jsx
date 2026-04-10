@@ -64,9 +64,11 @@ export default function PublicLeaderboard() {
     let currentRank = 1;
 
     for (let i = 0; i < studentList.length; i++) {
+      // Only increment rank if current student has LESS points than previous
       if (i > 0 && studentList[i].totalPoints < studentList[i - 1].totalPoints) {
         currentRank = i + 1;
       }
+      // If points are equal, they keep the same rank
 
       rankedList.push({
         ...studentList[i],
@@ -129,40 +131,57 @@ export default function PublicLeaderboard() {
   const top3 = rankedAllStudents.filter(s => s.rank <= 3);
   const allStudentsList = rankedStudents;
 
+  // Get students for each rank position
   const rank1Students = top3.filter(s => s.rank === 1);
   const rank2Students = top3.filter(s => s.rank === 2);
   const rank3Students = top3.filter(s => s.rank === 3);
 
   let podiumStudents = [];
 
-  if (rank1Students.length === 1 && rank2Students.length >= 1 && rank3Students.length >= 1) {
-    podiumStudents = [
-      { student: rank2Students[0], position: 'left', medal: '🥈', highlight: false },
-      { student: rank1Students[0], position: 'center', medal: '🥇', highlight: true },
-      { student: rank3Students[0], position: 'right', medal: '🥉', highlight: false }
-    ];
-  } else if (rank1Students.length === 2) {
-    podiumStudents = [
-      { student: rank1Students[0], position: 'left', medal: '🥇', highlight: true },
-      { student: rank1Students[1], position: 'right', medal: '🥇', highlight: true },
-      ...(rank3Students.length > 0 ? [{ student: rank3Students[0], position: 'hidden', medal: '🥉', highlight: false }] : [])
-    ];
-  } else if (rank1Students.length === 3) {
-    podiumStudents = [
-      { student: rank1Students[0], position: 'left', medal: '🥇', highlight: true },
-      { student: rank1Students[1], position: 'center', medal: '🥇', highlight: true },
-      { student: rank1Students[2], position: 'right', medal: '🥇', highlight: true }
-    ];
-  } else if (rank1Students.length > 3) {
-    podiumStudents = [
-      { student: rank1Students[0], position: 'left', medal: '🥇', highlight: true },
-      { student: rank1Students[1], position: 'center', medal: '🥇', highlight: true },
-      { student: rank1Students[2], position: 'right', medal: '🥇', highlight: true }
-    ];
-  } else if (rank1Students.length === 1 && rank2Students.length === 0) {
-    podiumStudents = [
-      { student: rank1Students[0], position: 'center', medal: '🥇', highlight: true }
-    ];
+  // If we have at least one rank 1 student
+  if (rank1Students.length > 0) {
+    // If there's only 1 first place
+    if (rank1Students.length === 1) {
+      // Normal 3-tier podium
+      if (rank2Students.length > 0 && rank3Students.length > 0) {
+        podiumStudents = [
+          { student: rank2Students[0], position: 'left', medal: '🥈', highlight: false },
+          { student: rank1Students[0], position: 'center', medal: '🥇', highlight: true },
+          { student: rank3Students[0], position: 'right', medal: '🥉', highlight: false }
+        ];
+      } else if (rank2Students.length > 0) {
+        // Only 1st and 2nd place
+        podiumStudents = [
+          { student: rank2Students[0], position: 'left', medal: '🥈', highlight: false },
+          { student: rank1Students[0], position: 'center', medal: '🥇', highlight: true }
+        ];
+      } else {
+        // Only 1st place
+        podiumStudents = [
+          { student: rank1Students[0], position: 'center', medal: '🥇', highlight: true }
+        ];
+      }
+    } 
+    // If there are 2 students tied for 1st
+    else if (rank1Students.length === 2) {
+      podiumStudents = [
+        { student: rank1Students[0], position: 'left', medal: '🥇', highlight: true },
+        { student: rank1Students[1], position: 'right', medal: '🥇', highlight: true }
+      ];
+      // Add 3rd place if exists (would actually be rank 3, not rank 2)
+      if (rank3Students.length > 0) {
+        podiumStudents.push({ student: rank3Students[0], position: 'hidden', medal: '🥉', highlight: false });
+      }
+    } 
+    // If there are 3 or more students tied for 1st
+    else if (rank1Students.length >= 3) {
+      podiumStudents = rank1Students.slice(0, 3).map((student, index) => ({
+        student,
+        position: index === 0 ? 'left' : index === 1 ? 'center' : 'right',
+        medal: '🥇',
+        highlight: true
+      }));
+    }
   }
 
   return (
@@ -290,10 +309,25 @@ export default function PublicLeaderboard() {
               ))}
             </div>
 
+            {/* Tie messages */}
             {rank1Students.length > 1 && (
               <div className="mt-6 text-center">
                 <div className="inline-block px-5 py-2.5 bg-[#FFF4DD] border border-[#EF9F27]/30 rounded-xl shadow-sm">
                   <span className="text-[#C97900] font-bold">🏆 {rank1Students.length} students tied for 1st place!</span>
+                </div>
+              </div>
+            )}
+            {rank2Students.length > 1 && (
+              <div className="mt-6 text-center">
+                <div className="inline-block px-5 py-2.5 bg-[#E6F1FB] border border-[#185FA5]/30 rounded-xl shadow-sm">
+                  <span className="text-[#185FA5] font-bold">🥈 {rank2Students.length} students tied for 2nd place!</span>
+                </div>
+              </div>
+            )}
+            {rank3Students.length > 1 && (
+              <div className="mt-6 text-center">
+                <div className="inline-block px-5 py-2.5 bg-[#E1F5EE] border border-[#1D9E75]/30 rounded-xl shadow-sm">
+                  <span className="text-[#1D9E75] font-bold">🥉 {rank3Students.length} students tied for 3rd place!</span>
                 </div>
               </div>
             )}
