@@ -13,7 +13,8 @@ export default function KaveeshaStudentDashboard() {
   const [progress, setProgress] = useState({});
   const [loading, setLoading] = useState(true);
   const [showBasic, setShowBasic] = useState(false);
-  const ageGroup = user?.age >= 6 && user?.age <= 10 ? "6-10" : "11-15";
+  const isYoung = user?.age >= 5 && user?.age <= 10;
+  const ageGroup = isYoung ? "6-10" : "11-15";
 
   useEffect(() => {
     const token =
@@ -41,18 +42,25 @@ export default function KaveeshaStudentDashboard() {
         axios.get(`${API}/api/topics`),
         axios.get(`${API}/api/subtopics`, { params: { ageGroup } }),
       ]);
-      setTopics(topicsRes.data || []);
+      const allTopics = topicsRes.data || [];
       const subs = Array.isArray(subsRes.data)
         ? subsRes.data
         : subsRes.data?.subtopics || [];
       setSubtopics(subs);
+      const topicIdsWithLessons = new Set(
+        subs.map((s) => String(s.topicId?._id || s.topicId))
+      );
+      const filteredTopics = allTopics.filter((t) =>
+        topicIdsWithLessons.has(String(t._id))
+      );
+      setTopics(filteredTopics);
 
       // Build progress map
       const token =
         localStorage.getItem("aquachamp_token") ||
         sessionStorage.getItem("aquachamp_token");
       const progressMap = {};
-      for (const topic of topicsRes.data || []) {
+      for (const topic of filteredTopics) {
         try {
           const r = await axios.post(
             `${API}/api/subtopics/progress/topic`,
@@ -77,22 +85,20 @@ export default function KaveeshaStudentDashboard() {
       (s) => s.topicId === topicId || s.topicId?._id === topicId
     );
 
-  const isYoung = ageGroup === "6-10";
-
   const bgGradient = isYoung
-    ? "from-[#fff9f0] via-[#fff0fa] to-[#f0f8ff]"
-    : "from-[#f0f4ff] via-[#f5f0ff] to-[#f0fff8]";
+    ? "from-slate-50 via-white to-blue-50"
+    : "from-slate-50 via-white to-blue-50";
 
-  const accentColor = isYoung ? "#FF6B6B" : "#6C63FF";
-  const accentColor2 = isYoung ? "#FFD93D" : "#00D4AA";
+  const accentColor = isYoung ? "#0ea5e9" : "#2563eb";
+  const accentColor2 = isYoung ? "#06b6d4" : "#0891b2";
 
   return (
-    <div className={`min-h-screen bg-linear-to-br ${bgGradient} font-sans`}>
+    <div className={`min-h-screen bg-gradient-to-br ${bgGradient} font-sans`}>
       {/* Google Fonts */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Baloo+2:wght@400;600;700;800&display=swap');
-        body { font-family: 'Nunito', sans-serif; }
-        .display-font { font-family: 'Baloo 2', cursive; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Nunito:wght@400;600;700;800;900&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .display-font { font-family: 'Nunito', sans-serif; }
         @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
         @keyframes pop { 0%{transform:scale(0.8);opacity:0} 100%{transform:scale(1);opacity:1} }
         @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
@@ -105,14 +111,14 @@ export default function KaveeshaStudentDashboard() {
 
       <KaveeshaStudentNav user={user} ageGroup={ageGroup} />
 
-      <main className="max-w-6xl mx-auto px-4 py-8">
+      <main className="max-w-6xl mx-auto px-4 py-8 pb-16">
         {/* Welcome Hero */}
         <div
-          className="rounded-3xl p-8 mb-8 relative overflow-hidden shadow-2xl"
+          className="rounded-3xl p-8 mb-8 relative overflow-hidden shadow-xl"
           style={{
             background: isYoung
-              ? "linear-gradient(135deg, #FF6B6B, #FFD93D, #6BCB77)"
-              : "linear-gradient(135deg, #6C63FF, #00D4AA, #3B82F6)",
+              ? "linear-gradient(135deg, #0ea5e9, #06b6d4, #0891b2)"
+              : "linear-gradient(135deg, #2563eb, #0891b2, #0d9488)",
           }}
         >
           {/* Decorative bubbles */}
@@ -132,22 +138,26 @@ export default function KaveeshaStudentDashboard() {
           <div className="relative z-10">
             <div className="flex items-center gap-4 mb-3">
               <div className="text-5xl float">
-                {isYoung ? "🐠" : "🏊"}
+                {isYoung ? "💧" : "🌍"}
               </div>
               <div>
                 <h1 className="display-font text-4xl font-extrabold text-white drop-shadow-md">
                   Hey {user?.firstName}! 👋
                 </h1>
-                <p className="text-white/90 font-semibold text-lg mt-1">
+                <p className="text-white/95 font-semibold text-lg mt-1">
                   {isYoung
-                    ? "Ready for a fun swimming adventure? 🌊"
-                    : "Level up your swimming skills today! 💪"}
+                    ? "Learn about clean water & staying healthy! 🚰✨"
+                    : "Explore WASH lessons — safe water, hygiene & our planet! 🧼💙"}
                 </p>
               </div>
             </div>
             <div className="flex gap-4 mt-4 flex-wrap">
               {[
-                { icon: "🎯", label: `Age Group`, value: `${ageGroup} years` },
+                {
+                  icon: "🎯",
+                  label: "Age group",
+                  value: isYoung ? "5–10" : "11–15",
+                },
                 { icon: "📚", label: "Topics", value: topics.length },
                 {
                   icon: "⭐",
@@ -179,13 +189,13 @@ export default function KaveeshaStudentDashboard() {
           <div className="mb-8">
             <button
               onClick={() => setShowBasic(!showBasic)}
-              className="flex items-center gap-3 px-6 py-3 rounded-2xl font-extrabold text-white shadow-lg transition-all hover:scale-105 active:scale-95"
+              className="flex items-center gap-3 px-6 py-3 rounded-2xl font-bold text-white shadow-lg transition-all hover:scale-105 active:scale-95"
               style={{
-                background: "linear-gradient(135deg, #F59E0B, #EF4444)",
+                background: "linear-gradient(135deg, #0891b2, #0e7490)",
               }}
             >
               <span className="text-2xl">📖</span>
-              {showBasic ? "Hide" : "Show"} Basic Lessons (Age 6–10)
+              {showBasic ? "Hide" : "Show"} Basic lessons (age 5–10)
               <span className="ml-2 text-xl">{showBasic ? "▲" : "▼"}</span>
             </button>
             {showBasic && (
@@ -196,13 +206,13 @@ export default function KaveeshaStudentDashboard() {
 
         {/* Main Lessons Section */}
         <div className="mb-6">
-          <h2 className="display-font text-3xl font-extrabold text-gray-800 mb-2">
-            {isYoung ? "🌟 Your Lessons" : "🚀 Your Main Lessons"}
+          <h2 className="display-font text-3xl font-extrabold text-slate-800 mb-2">
+            {isYoung ? "🌟 Your water & health lessons" : "🚀 Your main lessons"}
           </h2>
-          <p className="text-gray-500 font-semibold">
+          <p className="text-slate-600 font-medium">
             {isYoung
-              ? "Tap a lesson to start learning!"
-              : "Continue your advanced swimming journey"}
+              ? "Tap a card to start — finish each step to unlock the next! 💧"
+              : "Your core lessons are here; open \"Basic\" anytime to review simpler topics."}
           </p>
         </div>
 
@@ -211,19 +221,18 @@ export default function KaveeshaStudentDashboard() {
             {[...Array(6)].map((_, i) => (
               <div
                 key={i}
-                className="h-64 rounded-3xl animate-pulse"
-                style={{ background: "linear-gradient(135deg, #e0e7ff, #f0fdf4)" }}
+                className="h-64 rounded-3xl animate-pulse bg-white/30"
               />
             ))}
           </div>
         ) : topics.length === 0 ? (
-          <div className="text-center py-20">
-            <div className="text-8xl mb-4 float">🏊</div>
-            <p className="text-2xl font-extrabold text-gray-400">
+          <div className="text-center py-20 rounded-3xl bg-white/95 shadow-xl mx-2">
+            <div className="text-8xl mb-4 float">🚰</div>
+            <p className="text-2xl font-extrabold text-teal-800">
               No lessons yet!
             </p>
-            <p className="text-gray-400 mt-2">
-              Your teacher is preparing awesome lessons for you!
+            <p className="text-teal-700 mt-2 font-semibold">
+              Your teacher is adding clean water & hygiene lessons for you! 💙
             </p>
           </div>
         ) : (
@@ -231,7 +240,6 @@ export default function KaveeshaStudentDashboard() {
             {topics.map((topic, i) => {
               const topicSubs = getSubtopicsForTopic(topic._id);
               const pct = progress[topic._id] || 0;
-              const completedSubs = topicSubs.filter((s) => !s.isLocked).length;
 
               return (
                 <TopicCard
@@ -239,12 +247,10 @@ export default function KaveeshaStudentDashboard() {
                   topic={topic}
                   subtopics={topicSubs}
                   progress={pct}
-                  completedSubs={completedSubs}
                   index={i}
-                  isYoung={isYoung}
                   onClick={() =>
                     navigate(`/student/topic/${topic._id}`, {
-                      state: { topic, ageGroup, userId: user?._id },
+                      state: { topic, ageGroup, userId: user?._id, colorIndex: i },
                     })
                   }
                 />
@@ -258,62 +264,102 @@ export default function KaveeshaStudentDashboard() {
 }
 
 /* ─── Topic Card ─── */
-function TopicCard({ topic, subtopics, progress, completedSubs, index, isYoung, onClick }) {
+function TopicCard({ topic, subtopics, progress, index, onClick }) {
+  const API = "http://localhost:4000";
   const CARD_COLORS = [
-    { from: "#FF6B6B", to: "#FF8E53", emoji: "🏊" },
-    { from: "#6C63FF", to: "#3B82F6", emoji: "🌊" },
-    { from: "#00D4AA", to: "#10B981", emoji: "🐬" },
-    { from: "#FFD93D", to: "#F59E0B", emoji: "⭐" },
-    { from: "#FF6BCB", to: "#A855F7", emoji: "🦋" },
-    { from: "#4ADE80", to: "#06B6D4", emoji: "🐟" },
+    { from: "#ec4899", to: "#db2777", accent: "#db2777", hover: "#fce7f3", emoji: "💧" },
+    { from: "#3b82f6", to: "#2563eb", accent: "#2563eb", hover: "#dbeafe", emoji: "🚰" },
+    { from: "#22c55e", to: "#16a34a", accent: "#16a34a", hover: "#dcfce7", emoji: "🌿" },
+    { from: "#f59e0b", to: "#d97706", accent: "#d97706", hover: "#fef3c7", emoji: "☀️" },
+    { from: "#8b5cf6", to: "#7c3aed", accent: "#7c3aed", hover: "#ede9fe", emoji: "🧼" },
+    { from: "#06b6d4", to: "#0891b2", accent: "#0891b2", hover: "#cffafe", emoji: "🌍" },
   ];
   const color = CARD_COLORS[index % CARD_COLORS.length];
+  const hasImage = topic.imageUrl && topic.imageUrl.trim() !== "";
+  const imageUrl = hasImage 
+    ? (topic.imageUrl.startsWith("/") ? `${API}${topic.imageUrl}` : topic.imageUrl)
+    : null;
 
   return (
     <div
-      className="card-hover cursor-pointer rounded-3xl overflow-hidden shadow-xl pop"
-      style={{ animationDelay: `${index * 0.1}s` }}
+      className="card-hover cursor-pointer rounded-3xl overflow-hidden shadow-xl pop bg-white"
+      style={{ 
+        animationDelay: `${index * 0.1}s`,
+        border: `2px solid ${color.from}30`
+      }}
       onClick={onClick}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.borderColor = color.from;
+        e.currentTarget.style.boxShadow = `0 12px 32px ${color.from}30`;
+        e.currentTarget.style.transform = "translateY(-8px) scale(1.02)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.borderColor = `${color.from}30`;
+        e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.1)";
+        e.currentTarget.style.transform = "translateY(0) scale(1)";
+      }}
     >
-      {/* Card Header */}
-      <div
-        className="p-6 relative overflow-hidden"
-        style={{
-          background: `linear-gradient(135deg, ${color.from}, ${color.to})`,
-        }}
-      >
-        <div className="absolute -right-4 -top-4 text-8xl opacity-20">
-          {color.emoji}
-        </div>
-        <div className="relative z-10">
-          <div className="text-4xl mb-2 float">{color.emoji}</div>
-          <h3 className="display-font text-xl font-extrabold text-white leading-tight">
-            {topic.title}
-          </h3>
-          {topic.description && (
-            <p className="text-white/80 text-sm mt-1 font-semibold line-clamp-2">
-              {topic.description}
-            </p>
-          )}
-        </div>
+      {/* Card Image/Header */}
+      <div className="relative overflow-hidden" style={{ height: "200px" }}>
+        {imageUrl ? (
+          <>
+            <img 
+              src={imageUrl} 
+              alt={topic.title}
+              className="w-full h-full object-cover transition-transform duration-300"
+            />
+            <div 
+              className="absolute inset-0"
+              style={{
+                background: `linear-gradient(to bottom, rgba(0,0,0,0.05), rgba(0,0,0,0.5))`
+              }}
+            />
+          </>
+        ) : (
+          <div
+            className="absolute inset-0 transition-transform duration-300"
+            style={{
+              background: `linear-gradient(135deg, ${color.from}, ${color.to})`,
+            }}
+          >
+            <div className="absolute -right-4 -top-4 text-9xl opacity-20">
+              {color.emoji}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Card Body */}
-      <div className="bg-white p-5">
+      <div className="p-5">
+        {/* Topic Title */}
+        <h3 
+          className="display-font text-xl font-extrabold mb-2 leading-tight transition-colors duration-300"
+          style={{ color: color.accent }}
+        >
+          {topic.title}
+        </h3>
+        
+        {/* Description */}
+        {topic.description && (
+          <p className="text-slate-600 text-sm mb-4 font-medium line-clamp-2">
+            {topic.description}
+          </p>
+        )}
+        
         {/* Progress */}
         <div className="mb-4">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-extrabold text-gray-600">
+            <span className="text-sm font-bold text-slate-600">
               Progress
             </span>
             <span
-              className="text-sm font-extrabold"
+              className="text-sm font-bold"
               style={{ color: color.from }}
             >
               {progress}%
             </span>
           </div>
-          <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+          <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
             <div
               className="progress-bar h-full rounded-full"
               style={{
@@ -326,31 +372,41 @@ function TopicCard({ topic, subtopics, progress, completedSubs, index, isYoung, 
 
         {/* Stats */}
         <div className="flex justify-between items-center">
-          <span className="text-xs font-bold text-gray-400">
+          <span className="text-xs font-bold text-slate-500">
             📂 {subtopics.length} lessons
           </span>
           {progress === 100 ? (
-            <span className="text-xs bg-green-100 text-green-600 font-extrabold px-3 py-1 rounded-full">
+            <span 
+              className="text-xs font-bold px-3 py-1.5 rounded-full transition-colors duration-300"
+              style={{ background: color.hover, color: color.accent }}
+            >
               ✅ Completed!
             </span>
           ) : progress > 0 ? (
             <span
-              className="text-xs font-extrabold px-3 py-1 rounded-full text-white"
+              className="text-xs font-bold px-3 py-1.5 rounded-full text-white transition-all duration-300"
               style={{ background: color.from }}
             >
               Keep going! 🔥
             </span>
           ) : (
-            <span className="text-xs bg-gray-100 text-gray-500 font-extrabold px-3 py-1 rounded-full">
+            <span className="text-xs bg-slate-100 text-slate-600 font-bold px-3 py-1.5 rounded-full">
               Start now! ✨
             </span>
           )}
         </div>
 
         <button
-          className="w-full mt-4 py-3 rounded-2xl font-extrabold text-white shadow-md transition-all hover:shadow-lg active:scale-95"
+          className="w-full mt-4 py-3 rounded-2xl font-bold text-white shadow-md transition-all duration-300 hover:shadow-lg active:scale-95"
           style={{
             background: `linear-gradient(135deg, ${color.from}, ${color.to})`,
+            boxShadow: `0 4px 12px ${color.from}40`
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.boxShadow = `0 8px 20px ${color.from}60`;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.boxShadow = `0 4px 12px ${color.from}40`;
           }}
         >
           {progress > 0 ? "Continue Learning →" : "Start Learning →"}
@@ -370,26 +426,34 @@ function KaveeshaBasicLessonsPanel({ userId, navigate }) {
       axios.get(`${API}/api/topics`),
       axios.get(`${API}/api/subtopics`, { params: { ageGroup: "6-10" } }),
     ])
-      .then(([topicsRes]) => {
-        setTopics(topicsRes.data || []);
+      .then(([topicsRes, subsRes]) => {
+        const basicSubs = Array.isArray(subsRes.data)
+          ? subsRes.data
+          : subsRes.data?.subtopics || [];
+        const ids = new Set(
+          basicSubs.map((s) => String(s.topicId?._id || s.topicId))
+        );
+        setTopics(
+          (topicsRes.data || []).filter((t) => ids.has(String(t._id)))
+        );
       })
       .finally(() => setLoading(false));
   }, []);
 
   if (loading)
     return (
-      <div className="mt-4 p-6 bg-amber-50 rounded-3xl text-center text-amber-600 font-bold">
-        Loading basic lessons...
+      <div className="mt-4 p-6 bg-slate-800/90 text-white rounded-3xl text-center font-bold shadow-lg">
+        Loading basic lessons… 💧
       </div>
     );
 
   return (
-    <div className="mt-4 bg-linear-to-br from-amber-50 to-orange-50 rounded-3xl p-6 border-2 border-amber-200 shadow-lg">
-      <h3 className="display-font text-2xl font-extrabold text-amber-700 mb-4">
-        📖 Basic Lessons — Age 6–10
+    <div className="mt-4 rounded-3xl p-6 border-2 border-slate-200 shadow-xl bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900">
+      <h3 className="display-font text-2xl font-bold text-white mb-2">
+        📖 Basic lessons — ages 5–10
       </h3>
-      <p className="text-amber-600 font-semibold mb-5 text-sm">
-        Want to review the basics? These are great for building a strong foundation! 🌟
+      <p className="text-slate-300 font-medium mb-5 text-sm">
+        Quick, friendly topics on clean water & hygiene — perfect for a refresher! 🚰✨
       </p>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {topics.map((topic, i) => (
@@ -400,14 +464,14 @@ function KaveeshaBasicLessonsPanel({ userId, navigate }) {
                 state: { topic, ageGroup: "6-10", userId, isBasic: true },
               })
             }
-            className="card-hover bg-white rounded-2xl p-4 text-left shadow-md border-2 border-amber-100 hover:border-amber-300"
+            className="card-hover bg-white rounded-2xl p-4 text-left shadow-md border-2 border-slate-200 hover:border-blue-400"
           >
             <div className="text-3xl mb-2">
-              {["🏊", "🌊", "🐬", "⭐", "🦋", "🐟"][i % 6]}
+              {["💧", "🧼", "🚰", "🌿", "⭐", "🌍"][i % 6]}
             </div>
-            <p className="font-extrabold text-gray-700 text-sm">{topic.title}</p>
-            <p className="text-xs text-amber-500 font-bold mt-1">
-              Tap to explore →
+            <p className="font-bold text-slate-800 text-sm">{topic.title}</p>
+            <p className="text-xs text-slate-500 font-medium mt-1">
+              Tap to learn →
             </p>
           </button>
         ))}

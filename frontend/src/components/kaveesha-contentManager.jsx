@@ -91,7 +91,7 @@ export default function KaveeshaContentManager({ selectedSubtopic, onBack }) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" style={{ minHeight: "100vh", paddingBottom: "40px" }}>
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
@@ -112,8 +112,8 @@ export default function KaveeshaContentManager({ selectedSubtopic, onBack }) {
         {onBack && (
           <button
             onClick={onBack}
-            className="px-4 py-2.5 rounded-xl text-sm font-bold transition-all hover:-translate-y-0.5"
-            style={{ background: "#f0f4ff", border: "2px solid #e0e7ff", color: "#4338ca" }}
+            className="px-5 py-2.5 rounded-xl text-sm font-bold transition-all hover:-translate-y-0.5 shadow-md hover:shadow-lg"
+            style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)", border: "2px solid #4338ca", color: "#ffffff" }}
           >
             ← Back to Subtopics
           </button>
@@ -1490,10 +1490,10 @@ function QuizPanel({ subtopic, onMiniQuizFilledChange }) {
           {questions.map((q, qi) => (
             <div
               key={questionRowKey(q, qi)}
-              className="rounded-xl p-5 space-y-3 transition-all"
-              style={{ background: "linear-gradient(135deg, #fffbeb, #fef9ee)", border: "2px solid #fde68a" }}
+              className="rounded-xl p-6 space-y-4 transition-all"
+              style={{ background: "#fff", border: "2px solid #fcd34d", boxShadow: "0 4px 16px rgba(245,158,11,0.12)" }}
             >
-              <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center justify-between flex-wrap gap-3 pb-3" style={{ borderBottom: "2px solid #fef3c7" }}>
                 <div className="flex items-center gap-2">
                   <span
                     className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold"
@@ -1518,9 +1518,9 @@ function QuizPanel({ subtopic, onMiniQuizFilledChange }) {
                 value={q.question}
                 onChange={(e) => updateQuestionField(qi, "question", e.target.value)}
                 placeholder="Enter question text..."
-                style={{ ...inputStyle, border: "2px solid #fcd34d", background: "#fff" }}
-                onFocus={(e) => { e.target.style.borderColor = "#f59e0b"; }}
-                onBlur={(e) => { e.target.style.borderColor = "#fcd34d"; }}
+                style={{ ...inputStyle, border: "2px solid #fcd34d", background: "#fff", padding: "12px 16px", fontSize: "15px", fontWeight: "500" }}
+                onFocus={(e) => { e.target.style.borderColor = "#f59e0b"; e.target.style.boxShadow = "0 0 0 3px rgba(245,158,11,0.1)"; }}
+                onBlur={(e) => { e.target.style.borderColor = "#fcd34d"; e.target.style.boxShadow = "none"; }}
               />
 
               <div className="flex items-center justify-between flex-wrap gap-2">
@@ -1535,44 +1535,47 @@ function QuizPanel({ subtopic, onMiniQuizFilledChange }) {
                 </button>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {q.options.map((opt, oi) => {
                   const isMarked =
                     q.correctAnswer !== "" && q.correctAnswer === opt && opt.trim() !== "";
                   return (
                     <div
                       key={oi}
-                      className="flex gap-2 items-stretch px-3 py-2 rounded-xl transition-all flex-wrap sm:flex-nowrap"
+                      className="flex gap-3 items-center px-4 py-3 rounded-xl transition-all flex-wrap sm:flex-nowrap"
                       style={{
                         background: isMarked ? "#f0fdf4" : "#fff",
-                        border: `2px solid ${isMarked ? "#86efac" : "#fde68a"}`,
+                        border: `2px solid ${isMarked ? "#22c55e" : "#fde68a"}`,
+                        boxShadow: isMarked ? "0 2px 8px rgba(34,197,94,0.1)" : "none",
                       }}
                     >
-                      <label className="flex items-center gap-2 shrink-0 cursor-pointer">
+                      <label className="flex items-center gap-2 shrink-0 cursor-pointer min-w-[90px]">
                         <input
                           type="radio"
                           name={`correct-${questionRowKey(q, qi)}`}
                           checked={isMarked}
                           onChange={() => setCorrectAnswer(qi, opt)}
-                          className="shrink-0"
+                          className="shrink-0 w-4 h-4"
                           style={{ accentColor: "#22c55e" }}
                           title="Mark as correct answer"
                         />
-                        <span className="text-[10px] font-bold text-amber-800 uppercase whitespace-nowrap">Correct</span>
+                        <span className="text-xs font-bold text-amber-800 uppercase whitespace-nowrap">Correct</span>
                       </label>
                       <input
                         value={opt}
                         onChange={(e) => updateOption(qi, oi, e.target.value)}
                         placeholder={`Option ${oi + 1}`}
-                        className="min-w-0 flex-1 py-1 px-2 rounded-lg text-sm"
-                        style={{ border: "1px solid #fde68a", outline: "none", color: "#1e293b" }}
+                        className="min-w-0 flex-1 py-2 px-3 rounded-lg text-sm font-medium"
+                        style={{ border: "1.5px solid #fde68a", outline: "none", color: "#1e293b", background: "#fff" }}
+                        onFocus={(e) => { e.target.style.borderColor = "#f59e0b"; }}
+                        onBlur={(e) => { e.target.style.borderColor = "#fde68a"; }}
                       />
                       <button
                         type="button"
                         onClick={() => removeOption(qi, oi)}
                         disabled={q.options.length <= 2}
-                        className="text-xs font-bold px-2 py-1.5 rounded-lg transition-all shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
-                        style={{ background: "#fef2f2", color: "#991b1b", border: "1px solid #fecaca" }}
+                        className="text-xs font-bold px-3 py-2 rounded-lg transition-all shrink-0 disabled:opacity-40 disabled:cursor-not-allowed hover:scale-105"
+                        style={{ background: "#fef2f2", color: "#991b1b", border: "1.5px solid #fecaca" }}
                       >
                         Remove
                       </button>
@@ -1583,10 +1586,10 @@ function QuizPanel({ subtopic, onMiniQuizFilledChange }) {
 
               {q.correctAnswer.trim() !== "" && (
                 <div
-                  className="flex items-center gap-2 text-xs font-bold px-3 py-2 rounded-lg"
-                  style={{ background: "#dcfce7", color: "#166534", border: "1px solid #86efac" }}
+                  className="flex items-center gap-2 text-sm font-bold px-4 py-3 rounded-xl"
+                  style={{ background: "#dcfce7", color: "#166534", border: "2px solid #86efac" }}
                 >
-                  ✅ Marked correct: {q.correctAnswer}
+                  ✅ Correct Answer: {q.correctAnswer}
                 </div>
               )}
             </div>

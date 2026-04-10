@@ -13,7 +13,7 @@ export default function KaveeshaStudentProgress() {
   const [topicProgress, setTopicProgress] = useState({});
   const [subtopicProgress, setSubtopicProgress] = useState({});
   const [loading, setLoading] = useState(true);
-  const ageGroup = user?.age >= 6 && user?.age <= 10 ? "6-10" : "11-15";
+  const ageGroup = user?.age >= 5 && user?.age <= 10 ? "6-10" : "11-15";
   const isYoung = ageGroup === "6-10";
 
   useEffect(() => {
