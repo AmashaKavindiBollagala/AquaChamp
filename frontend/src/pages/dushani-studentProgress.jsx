@@ -22,7 +22,7 @@ const Wave = ({ color = "#185FA520" }) => (
   </svg>
 );
 
-export default function KaveeshaStudentProgress() {
+export default function DushaniStudentProgress() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [progressData, setProgressData] = useState({

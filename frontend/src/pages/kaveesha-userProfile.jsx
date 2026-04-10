@@ -482,19 +482,6 @@ export default function KaveeshaUserProfile() {
     badgesCount: 0,
     badges: []
   });
-  const [showBadgesDropdown, setShowBadgesDropdown] = useState(false);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (showBadgesDropdown && !event.target.closest('[data-badges-container]')) {
-        setShowBadgesDropdown(false);
-      }
-    };
-
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, [showBadgesDropdown]);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -775,51 +762,22 @@ export default function KaveeshaUserProfile() {
         {/* Right — XP chips */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, position: "relative" }} data-badges-container>
           {[
-            { emoji: "🏅", val: studentStats.badgesCount.toString(), label: "Badges", bg: "linear-gradient(135deg,#E6F1FB,#C8E6FA)", color: "#185FA5", border: "#185FA550", clickable: studentStats.badgesCount > 0 },
+            { emoji: "🏅", val: studentStats.badgesCount.toString(), label: "Badges", bg: "linear-gradient(135deg,#E6F1FB,#C8E6FA)", color: "#185FA5", border: "#185FA550" },
             { emoji: "⭐", val: studentStats.currentLevel, label: "Level", bg: "linear-gradient(135deg,#FEF6E8,#FDE9BF)", color: "#EF9F27", border: "#EF9F2750" },
             { emoji: "🏆", val: studentStats.rank, label: "Rank", bg: "linear-gradient(135deg,#E1F5EE,#B2EDD8)", color: "#1D9E75", border: "#1D9E7550" },
-          ].map(({ emoji, val, label, bg, color, border, clickable }) => (
+          ].map(({ emoji, val, label, bg, color, border }) => (
             <div 
               key={label} 
-              onClick={() => {
-                if (label === "Badges" && clickable) {
-                  setShowBadgesDropdown(!showBadgesDropdown);
-                }
-              }}
               style={{
                 display: "flex", flexDirection: "column", alignItems: "center",
                 padding: "10px 18px", borderRadius: 18, background: bg,
                 border: `2.5px solid ${border}`, minWidth: 64,
-                boxShadow: "0 3px 12px rgba(24,95,165,0.1)",
-                cursor: clickable ? "pointer" : "default",
-                transition: clickable ? "all 0.2s" : "none",
-                position: "relative"
-              }}
-              onMouseOver={(e) => {
-                if (clickable) {
-                  e.currentTarget.style.transform = "scale(1.05)";
-                  e.currentTarget.style.boxShadow = "0 5px 18px rgba(24,95,165,0.2)";
-                }
-              }}
-              onMouseOut={(e) => {
-                if (clickable) {
-                  e.currentTarget.style.transform = "scale(1)";
-                  e.currentTarget.style.boxShadow = "0 3px 12px rgba(24,95,165,0.1)";
-                }
+                boxShadow: "0 3px 12px rgba(24,95,165,0.1)"
               }}
             >
               <span style={{ fontSize: 20 }}>{emoji}</span>
               <span style={{ fontSize: 16, fontWeight: 900, color, lineHeight: 1.1 }}>{val}</span>
               <span style={{ fontSize: 10, fontWeight: 800, color: "#185FA5", opacity: 0.7 }}>{label}</span>
-              {label === "Badges" && clickable && (
-                <span style={{ 
-                  fontSize: 10, 
-                  marginTop: 2,
-                  color: "#185FA5",
-                  transform: showBadgesDropdown ? "rotate(180deg)" : "rotate(0deg)",
-                  transition: "transform 0.2s"
-                }}>▼</span>
-              )}
             </div>
           ))}
 
@@ -853,97 +811,6 @@ export default function KaveeshaUserProfile() {
             <span style={{ fontSize: 11, fontWeight: 900, color: "#EF9F27", lineHeight: 1.1 }}>My</span>
             <span style={{ fontSize: 10, fontWeight: 800, color: "#185FA5", opacity: 0.7 }}>Progress</span>
           </button>
-
-          {/* Badges Dropdown */}
-          {showBadgesDropdown && studentStats.badges.length > 0 && (
-            <div style={{
-              position: "absolute",
-              top: "calc(100% + 10px)",
-              right: 0,
-              background: "rgba(255,255,255,0.98)",
-              borderRadius: 20,
-              border: "3px solid #185FA5",
-              boxShadow: "0 8px 32px rgba(24,95,165,0.25)",
-              padding: "16px",
-              minWidth: 280,
-              maxHeight: 400,
-              overflowY: "auto",
-              zIndex: 1000,
-              backdropFilter: "blur(10px)"
-            }}>
-              <div style={{ 
-                fontSize: 14, 
-                fontWeight: 900, 
-                color: "#042C53",
-                marginBottom: 12,
-                paddingBottom: 8,
-                borderBottom: "2px solid #E6F1FB",
-                fontFamily: "'Nunito', sans-serif"
-              }}>
-                🏅 My Badges ({studentStats.badgesCount})
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {studentStats.badges.map((badge, index) => (
-                  <div 
-                    key={badge.badgeId || index}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 12,
-                      padding: "10px 12px",
-                      borderRadius: 14,
-                      background: "linear-gradient(135deg,#F4F9FF,#E6F1FB)",
-                      border: "2px solid #B8D4EE",
-                      transition: "all 0.2s"
-                    }}
-                  >
-                    <div style={{
-                      width: 42,
-                      height: 42,
-                      borderRadius: "50%",
-                      background: "linear-gradient(135deg,#185FA5,#1D9E75)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: 22,
-                      flexShrink: 0,
-                      boxShadow: "0 3px 10px rgba(24,95,165,0.25)"
-                    }}>
-                      {badge.badgeIcon}
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ 
-                        fontSize: 13, 
-                        fontWeight: 900, 
-                        color: "#042C53",
-                        fontFamily: "'Nunito', sans-serif"
-                      }}>
-                        {badge.badgeName}
-                      </div>
-                      <div style={{ 
-                        fontSize: 11, 
-                        color: "#185FA5",
-                        fontWeight: 700,
-                        marginTop: 2,
-                        fontFamily: "'Nunito', sans-serif"
-                      }}>
-                        {badge.description}
-                      </div>
-                      <div style={{ 
-                        fontSize: 10, 
-                        color: "#7A8CA5",
-                        fontWeight: 600,
-                        marginTop: 3,
-                        fontFamily: "'Nunito', sans-serif"
-                      }}>
-                        Earned: {new Date(badge.earnedAt).toLocaleDateString()}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
@@ -1038,22 +905,6 @@ export default function KaveeshaUserProfile() {
                       <span style={{ fontSize: 9, fontWeight: 900, color: "#185FA5", marginTop: 4, textAlign: "center" }}>{badge.badgeName}</span>
                     </div>
                   ))}
-                  {studentStats.badgesCount > 5 && (
-                    <div style={{
-                      display: "flex", flexDirection: "column", alignItems: "center",
-                      padding: "10px 14px", borderRadius: 16, 
-                      background: "linear-gradient(135deg,#FEF6E8,#FDE9BF)",
-                      border: "2.5px solid #EF9F2740", 
-                      minWidth: 90,
-                      boxShadow: "0 2px 8px rgba(24,95,165,0.08)",
-                      cursor: "pointer"
-                    }}
-                    onClick={() => setShowBadgesDropdown(true)}
-                    >
-                      <span style={{ fontSize: 22 }}>➕</span>
-                      <span style={{ fontSize: 9, fontWeight: 900, color: "#EF9F27", marginTop: 4, textAlign: "center" }}>+{studentStats.badgesCount - 5} More</span>
-                    </div>
-                  )}
                 </div>
               ) : (
                 <div style={{ 
