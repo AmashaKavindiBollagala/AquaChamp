@@ -11,6 +11,50 @@ function diskPathForSubtopicImage(imagePath) {
   return path.join(process.cwd(), rel);
 }
 
+async function miniQuizExistsForSubtopic(subtopicId) {
+  const q = await MiniQuiz.findOne({ subtopicId });
+  return !!q;
+}
+
+function getSubtopicContentRequirements(subtopic, hasMiniQuiz) {
+  return {
+    video: !!(subtopic.videoUrl && String(subtopic.videoUrl).trim()),
+    text: !!(
+      (subtopic.content && String(subtopic.content).trim()) ||
+      (subtopic.contentFiles && subtopic.contentFiles.length > 0)
+    ),
+    images: !!(subtopic.images && subtopic.images.length > 0),
+    miniQuiz: !!hasMiniQuiz,
+  };
+}
+
+function countRequirements(req) {
+  return Object.values(req).filter(Boolean).length;
+}
+
+function completedCountForRequirements(progress, req) {
+  let n = 0;
+  if (req.video && progress.videoCompleted) n++;
+  if (req.text && progress.textCompleted) n++;
+  if (req.images && progress.imagesCompleted) n++;
+  if (req.miniQuiz && progress.miniQuizCompleted) n++;
+  return n;
+}
+
+function isSubtopicFullyDone(progress, req) {
+  const total = countRequirements(req);
+  if (total === 0) return false;
+  return completedCountForRequirements(progress, req) >= total;
+}
+
+function percentageFromProgress(progress, req) {
+  const total = countRequirements(req);
+  if (total === 0) return 0;
+  return Math.round(
+    (completedCountForRequirements(progress, req) / total) * 100,
+  );
+}
+
 // ------------------ SUBTOPIC CRUD ------------------
 
 // Create subtopic
@@ -132,7 +176,7 @@ export const getLessonsByUserAge = async (req, res) => {
   try {
     const age = parseInt(req.params.age);
 
-    if (age >= 6 && age <= 10) {
+    if (age >= 5 && age <= 10) {
       const lessons = await Subtopic.find({ ageGroup: "6-10" }).sort({
         order: 1,
       });
@@ -604,54 +648,39 @@ export const completeSubtopicContent = async (req, res) => {
     else if (contentType === "images") progress.imagesCompleted = true;
     // MiniQuiz
     else if (contentType === "miniQuiz") {
-      if (!miniQuizAnswers || miniQuizAnswers.length === 0) {
-        return res.status(400).json({ message: "No quiz answers provided" });
-      }
-
-      // Fetch quiz questions
       const quiz = await MiniQuiz.findOne({ subtopicId });
-      if (!quiz) return res.status(404).json({ message: "MiniQuiz not found" });
-
-      // Validate answers
-      let allCorrect = true;
-      for (const ans of miniQuizAnswers) {
-        const question = quiz.questions.id(ans.questionId);
-        if (!question || question.correctAnswer !== ans.selectedOption) {
-          allCorrect = false;
-          break;
+      if (!quiz) {
+        progress.miniQuizCompleted = true;
+      } else if (miniQuizAnswers && miniQuizAnswers.length > 0) {
+        let allCorrect = true;
+        for (const ans of miniQuizAnswers) {
+          const question = quiz.questions.id(ans.questionId);
+          if (!question || question.correctAnswer !== ans.selectedOption) {
+            allCorrect = false;
+            break;
+          }
         }
-      }
 
-      if (!allCorrect) {
-        return res.json({
-          message: "Some answers are incorrect. Retry the quiz.",
-          progress,
-        });
-      }
+        if (!allCorrect) {
+          return res.json({
+            message: "Some answers are incorrect. Retry the quiz.",
+            progress,
+          });
+        }
 
-      progress.miniQuizCompleted = true;
+        progress.miniQuizCompleted = true;
+      } else {
+        progress.miniQuizCompleted = true;
+      }
     }
 
-    // Fully completed?
-    if (
-      progress.videoCompleted &&
-      progress.textCompleted &&
-      progress.imagesCompleted &&
-      progress.miniQuizCompleted
-    ) {
+    const subForReq = await Subtopic.findById(subtopicId);
+    const hasMq = await miniQuizExistsForSubtopic(subtopicId);
+    const reqSlots = getSubtopicContentRequirements(subForReq, hasMq);
+
+    if (isSubtopicFullyDone(progress, reqSlots)) {
       progress.isSubtopicCompleted = true;
       progress.completedAt = new Date();
-
-      // Unlock next subtopic
-      const currentSubtopic = await Subtopic.findById(subtopicId);
-      const nextSubtopic = await Subtopic.findOne({
-        topicId: currentSubtopic.topicId,
-        order: currentSubtopic.order + 1,
-      });
-      if (nextSubtopic) {
-        nextSubtopic.isLocked = false;
-        await nextSubtopic.save();
-      }
     }
 
     await progress.save();
@@ -682,27 +711,19 @@ export const getSubtopicProgress = async (req, res) => {
       return res.status(404).json({ message: "Subtopic not found" });
     }
 
-    // Check if user has any progress
+    const hasMq = await miniQuizExistsForSubtopic(subtopicId);
+    const reqSlots = getSubtopicContentRequirements(subtopic, hasMq);
+
     const progress = await KaveeshaLessonsProgress.findOne({
       userId,
       subtopicId,
     });
     if (!progress) {
-      return res.status(404).json({
-        message:
-          "User has no progress for this subtopic or user does not exist",
-      });
+      return res.json({ percentage: 0, progress: null, requirements: reqSlots });
     }
 
-    const totalItems = 4; // video, text, images, miniQuiz
-    let completedItems = 0;
-    if (progress.videoCompleted) completedItems++;
-    if (progress.textCompleted) completedItems++;
-    if (progress.imagesCompleted) completedItems++;
-    if (progress.miniQuizCompleted) completedItems++;
-
-    const percentage = Math.round((completedItems / totalItems) * 100);
-    res.json({ percentage, progress });
+    const percentage = percentageFromProgress(progress, reqSlots);
+    res.json({ percentage, progress, requirements: reqSlots });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -726,25 +747,30 @@ export const getTopicProgress = async (req, res) => {
     if (subtopics.length === 0) return res.json({ percentage: 0 });
 
     let totalProgress = 0;
+    let weightedTopics = 0;
 
     for (const sub of subtopics) {
+      const hasMq = await miniQuizExistsForSubtopic(sub._id);
+      const reqSlots = getSubtopicContentRequirements(sub, hasMq);
+      const denom = countRequirements(reqSlots);
+      if (denom === 0) continue;
+
+      weightedTopics += 1;
       const prog = await KaveeshaLessonsProgress.findOne({
         userId,
         subtopicId: sub._id,
       });
 
       if (prog) {
-        let completed = 0;
-        if (prog.videoCompleted) completed++;
-        if (prog.textCompleted) completed++;
-        if (prog.imagesCompleted) completed++;
-        if (prog.miniQuizCompleted) completed++;
-
-        totalProgress += completed / 4;
+        totalProgress +=
+          completedCountForRequirements(prog, reqSlots) / denom;
       }
     }
 
-    const percentage = Math.round((totalProgress / subtopics.length) * 100);
+    const percentage =
+      weightedTopics === 0
+        ? 0
+        : Math.round((totalProgress / weightedTopics) * 100);
 
     res.json({ percentage });
   } catch (error) {

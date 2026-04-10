@@ -29,8 +29,8 @@ export default function KaveeshaStudentNav({ user, ageGroup }) {
         className="sticky top-0 z-50 shadow-lg"
         style={{
           background: isYoung
-            ? "linear-gradient(135deg, #FF6B6B, #FF8E53)"
-            : "linear-gradient(135deg, #6C63FF, #3B82F6)",
+            ? "linear-gradient(135deg, #0d9488, #0891b2)"
+            : "linear-gradient(135deg, #0369a1, #2563eb)",
         }}
       >
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -46,8 +46,8 @@ export default function KaveeshaStudentNav({ user, ageGroup }) {
               <div className="nav-font text-xl font-extrabold text-white leading-none">
                 AquaChamp
               </div>
-              <div className="text-white/80 text-[10px] font-bold uppercase tracking-widest">
-                {isYoung ? "Young Explorer 🐠" : "Advanced Swimmer 🏊"}
+              <div className="text-white/90 text-[10px] font-bold uppercase tracking-widest">
+                {isYoung ? "Water hero 💧" : "WASH explorer 🌍"}
               </div>
             </div>
           </div>
