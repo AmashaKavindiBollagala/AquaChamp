@@ -1,12 +1,29 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useState } from "react";
+
+// Existing pages
 import UserLogin from "./pages/amasha-login";
 import UserRegistration from "./pages/User-Registration";
 import KaveeshaUserProfile from "./pages/kaveesha-userProfile";
+import DushaniStudentProgress from "./pages/dushani-studentProgress.jsx";
 import DilsharaSuperAdminDashboard from "./pages/dilshara-SuperAdminDashboard";
 import DilsharaAdminLogin from "./pages/dilshara-AdminLogin";
 import VerifyEmail from "./pages/kaveesha-verifyEmail";
 import EmailVerified from "./pages/kaveesha-emailVerified";
 import ResetPassword from "./pages/kaveesha-resetPassword";
+import ActivityAdminDashboard from "./components/amasha-ActivityAdminDashboard";
+import UserActivityView from "./components/amasha-UserActivityView";
+
+// Dashboard pages
+import Sidebar from "./components/dushani-Sidebar.jsx";
+import OverviewPage from "./components/dushani-ProgressAdmin_Dashboard.jsx";
+import BadgesPage from "./components/dushani-Badges.jsx";
+import LevelsPage from "./components/dushani-Levels.jsx";
+import ProgressPage from "./components/dushani-StudentProgress.jsx";
+import PublicLeaderboard from "./components/dushani-PublicLeaderboard.jsx";
+
+function DashboardLayout() {
+  const [activePage, setActivePage] = useState("overview");
 
 import KaveeshaLessonsDashboard from "./components/kaveesha-lessonsDashboard";
 
@@ -15,6 +32,22 @@ import KaveeshaTopicDetail from "./components/kaveesha-topicDetail";
 import KaveeshaSubtopicLearn from "./components/kaveesha-subtopicLearn";
 import KaveeshaStudentProgress from "./components/kaveesha-studentProgress";
 
+  const pages = {
+    overview: <OverviewPage />,
+    badges: <BadgesPage />,
+    levels: <LevelsPage />,
+    progress: <ProgressPage />,
+  };
+
+  return (
+    <div className="flex h-screen min-h-[580px] overflow-hidden border border-gray-200 rounded-xl font-sans">
+      <Sidebar activePage={activePage} onNavigate={setActivePage} />
+      <div className="flex-1 overflow-y-auto bg-gray-50">
+        {pages[activePage]}
+      </div>
+    </div>
+  );
+}
 
 function App() {
   return (
@@ -29,18 +62,24 @@ function App() {
 
         {/* Profile page */}
         <Route path="/profile" element={<KaveeshaUserProfile />} />
+        <Route path="/my-progress" element={<DushaniStudentProgress />} />
 
         {/* super admin dashboard */}
-<Route path="/super-admin" element={<DilsharaSuperAdminDashboard />} />
+      <Route path="/super-admin" element={<DilsharaSuperAdminDashboard />} />
 
-{/* admin login*/}
-<Route path="/admin-login" element={<DilsharaAdminLogin />} />
+       {/* admin login*/}
+       <Route path="/admin-login" element={<DilsharaAdminLogin />} />
+       <Route path="/activity-dashboard" element={<ActivityAdminDashboard />} />
+       <Route path="/my-activities" element={<UserActivityView />} />
 
+        {/* Admin Login */}
+        <Route path="/admin-login" element={<DilsharaAdminLogin />} />
 
+        {/* Email Verification */}
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/email-verified" element={<EmailVerified />} />
-        
-        {/* Reset Password page */}
+
+        {/* Reset Password */}
         <Route path="/reset-password/:token" element={<ResetPassword />} />
 
       
@@ -49,6 +88,12 @@ function App() {
         <Route path="/student/topic/:topicId" element={<KaveeshaTopicDetail />} />
         <Route path="/student/subtopic/:subtopicId" element={<KaveeshaSubtopicLearn />} />
         <Route path="/student/progress" element={<KaveeshaStudentProgress />} />
+        {/* New Dashboard with Sidebar */}
+        <Route path="/dashboard" element={<DashboardLayout />} />
+        <Route path="/progress-dashboard" element={<DashboardLayout />} />
+
+        {/* Public Leaderboard (No Sidebar) */}
+        <Route path="/leaderboard" element={<PublicLeaderboard />} />
       </Routes>
     </BrowserRouter>
   );

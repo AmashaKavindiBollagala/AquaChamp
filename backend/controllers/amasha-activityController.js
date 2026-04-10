@@ -1,9 +1,13 @@
 import Activity from "../models/amasha-activity.js";
 import User from "../models/dushani-User.js";
 
-// Helper: get full user document from token username 
+import Admin from "../models/dilshara-Admin.js";
+
 const getUser = async (req) => {
-  return await User.findOne({ username: req.user }); 
+  const user = await User.findOne({ username: req.user });
+  if (user) return user;
+  // Fallback: check Admin collection (for admin dashboard access)
+  return await Admin.findOne({ username: req.user });
 };
 
 //  Admin: Create a System Activity 
@@ -60,10 +64,13 @@ export const getAllActivities = async (req, res) => {
     const dbUser = await getUser(req);
     if (!dbUser) return res.status(404).json({ success: false, message: "User not found" });
 
-    const activities = await Activity.find({
-      isActive: true,
-      $or: [{ source: "system" }, { userId: dbUser._id }],
-    }).sort({ source: -1, createdAt: 1 });
+    const isAdmin = req.roles?.includes("Activity_ADMIN");
+    const query = isAdmin
+      ? {}  // Admin sees ALL activities
+      : { isActive: true, $or: [{ source: "system" }, { userId: dbUser._id }] };
+
+    const activities = await Activity.find(query).sort({ source: -1, createdAt: 1 })
+    .populate("userId", "name email age");
 
     return res.status(200).json({ success: true, count: activities.length, data: activities });
   } catch (error) {
@@ -120,10 +127,9 @@ export const deleteActivity = async (req, res) => {
       return res.status(403).json({ success: false, message: "You can only delete your own activities" });
     }
 
-    activity.isActive = false;
-    await activity.save();
+ await Activity.findByIdAndDelete(id);
 
-    return res.status(200).json({ success: true, message: "Activity removed from list" });
+return res.status(200).json({ success: true, message: "Activity permanently deleted" });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }
