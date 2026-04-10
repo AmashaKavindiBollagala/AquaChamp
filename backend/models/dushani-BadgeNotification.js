@@ -84,6 +84,8 @@ badgeNotificationSchema.statics.getUntriggeredAnimations = async function(userId
 
 // Static method to create badge notification
 badgeNotificationSchema.statics.createNotification = async function(userId, badge) {
+  console.log(`🎬 [BadgeNotification] Creating notification for user ${userId}, badge: ${badge.badgeName}`);
+  
   const notification = new this({
     userId,
     badgeId: badge._id,
@@ -96,6 +98,7 @@ badgeNotificationSchema.statics.createNotification = async function(userId, badg
   });
   
   await notification.save();
+  console.log(`✅ [BadgeNotification] Notification created successfully: ${notification._id}`);
   return notification;
 };
 

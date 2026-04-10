@@ -1,5 +1,25 @@
 import { useState, useEffect } from 'react';
 
+const levelColorSchemes = [
+  { bar: '#185FA5', bg: '#E6F1FB', color: '#185FA5', border: '#93c5fd', icon: '🥇' },
+  { bar: '#0ea5e9', bg: '#e0f2fe', color: '#0369a1', border: '#7dd3fc', icon: '🥈' },
+  { bar: '#0F6E56', bg: '#ecfdf5', color: '#065f46', border: '#6ee7b7', icon: '🥉' },
+  { bar: '#EF9F27', bg: '#faeeda', color: '#854d0e', border: '#fcd34d', icon: '🏊' },
+  { bar: '#0284c7', bg: '#f0f9ff', color: '#075985', border: '#bae6fd', icon: '🌊' },
+  { bar: '#64748b', bg: '#f1f5f9', color: '#334155', border: '#cbd5e1', icon: '⭐' },
+];
+
+const inputStyle = {
+  background: '#f8faff',
+  border: '1px solid #bfdbfe',
+  color: '#0b2540',
+  borderRadius: '12px',
+  padding: '10px 14px',
+  fontSize: '13px',
+  outline: 'none',
+  fontFamily: "'Segoe UI', sans-serif",
+};
+
 export default function ProgressPage() {
   const [activeTab, setActiveTab] = useState('all');
   const [selectedStudent, setSelectedStudent] = useState(null);
@@ -19,16 +39,13 @@ export default function ProgressPage() {
           }
         });
         const data = await res.json();
-        if (data.success) {
-          setStudents(data.students || []);
-        }
+        if (data.success) setStudents(data.students || []);
       } catch (error) {
         console.error('Error fetching students:', error);
       } finally {
         setLoading(false);
       }
     };
-
     fetchStudents();
   }, []);
 
@@ -63,34 +80,63 @@ export default function ProgressPage() {
 
   const initials = name => name.split(' ').map(x => x[0]).join('');
 
+  const getLevelScheme = (levelName) => {
+    if (!levelName) return levelColorSchemes[5];
+    const num = parseInt(levelName.replace(/\D/g, '')) || 0;
+    return levelColorSchemes[(num - 1) % levelColorSchemes.length] || levelColorSchemes[0];
+  };
+
+  const maxPoints = students.length > 0 ? Math.max(...students.map(s => s.totalPoints || 0), 1) : 1;
+
   if (loading) {
     return (
-      <div>
-        <div className="bg-white border-b border-gray-200 px-6 py-3.5">
-          <h1 className="text-base font-medium text-gray-900">Student progress</h1>
-        </div>
-        <div className="p-6">
-          <div className="text-center text-gray-500">Loading students...</div>
+      <div style={{ background: '#f0f4f8', minHeight: '100%', fontFamily: "'Segoe UI', sans-serif", display: 'flex', alignItems: 'center', justifyContent: 'center', height: '256px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+          <div style={{ width: '48px', height: '48px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', background: 'linear-gradient(135deg, #0ea5e9, #185FA5)' }}>
+            🎓
+          </div>
+          <p style={{ fontSize: '13px', fontWeight: '600', color: '#185FA5', letterSpacing: '0.05em', margin: 0 }}>Loading students…</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div>
-      <div className="bg-white border-b border-gray-200 px-6 py-3.5">
-        <h1 className="text-base font-medium text-gray-900">Student progress</h1>
+    <div style={{ background: '#f0f4f8', minHeight: '100%', fontFamily: "'Segoe UI', sans-serif" }}>
+
+      {/* Page Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 32px', background: 'linear-gradient(90deg, #ffffff 0%, #e6f1fb 100%)', borderBottom: '1px solid #bfdbfe', boxShadow: '0 2px 12px rgba(24,95,165,0.08)' }}>
+        <div>
+          <h1 style={{ fontSize: '20px', fontWeight: '700', color: '#0b2540', margin: 0, letterSpacing: '-0.01em' }}>🎓 Student Progress</h1>
+          <p style={{ fontSize: '11px', fontWeight: '600', color: '#185FA5', margin: '2px 0 0', letterSpacing: '0.08em' }}>AquaChamp · Monitoring</p>
+        </div>
+        <span style={{ fontSize: '11px', fontWeight: '700', padding: '6px 12px', borderRadius: '12px', background: '#E6F1FB', color: '#185FA5', border: '1px solid #93c5fd' }}>
+          {students.length} student{students.length !== 1 ? 's' : ''}
+        </span>
       </div>
 
-      <div className="p-6">
+      <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+
         {/* Tabs */}
-        <div className="flex border-b border-gray-200 mb-5">
+        <div style={{ display: 'flex', borderBottom: '1px solid #bfdbfe' }}>
           {[{ id: 'all', label: 'All students' }, { id: 'details', label: 'Student details' }].map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-2.5 text-[13px] cursor-pointer border-0 bg-transparent border-b-2 -mb-px transition-colors
-                ${activeTab === tab.id ? 'text-[#185FA5] border-[#185FA5] font-medium' : 'text-gray-400 border-transparent hover:text-gray-600'}`}
+              style={{
+                padding: '10px 16px',
+                fontSize: '11px',
+                fontWeight: '700',
+                cursor: 'pointer',
+                border: 'none',
+                background: 'transparent',
+                borderBottom: activeTab === tab.id ? '2px solid #185FA5' : '2px solid transparent',
+                color: activeTab === tab.id ? '#185FA5' : '#94a3b8',
+                marginBottom: '-1px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+                transition: 'color 0.15s',
+              }}
             >
               {tab.label}
             </button>
@@ -99,16 +145,20 @@ export default function ProgressPage() {
 
         {/* All Students Tab */}
         {activeTab === 'all' && (
-          <div>
-            <div className="flex gap-2 mb-4">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+            {/* Filters */}
+            <div style={{ display: 'flex', gap: '10px' }}>
               <input
-                className="flex-1 px-3 py-2 border border-gray-200 rounded-md text-[13px] text-gray-900 focus:outline-none focus:border-[#185FA5] placeholder-gray-400"
-                placeholder="Search by name or username..."
+                style={{ ...inputStyle, flex: 1 }}
+                placeholder="Search by name or username…"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
+                onFocus={e => { e.target.style.border = '1px solid #0ea5e9'; e.target.style.boxShadow = '0 0 0 3px rgba(14,165,233,0.15)'; }}
+                onBlur={e => { e.target.style.border = '1px solid #bfdbfe'; e.target.style.boxShadow = 'none'; }}
               />
               <select
-                className="w-40 px-2.5 py-2 border border-gray-200 rounded-md text-[13px] text-gray-900 focus:outline-none focus:border-[#185FA5] bg-white cursor-pointer"
+                style={{ ...inputStyle, width: '160px', cursor: 'pointer' }}
                 value={levelFilter}
                 onChange={e => setLevelFilter(e.target.value)}
               >
@@ -117,35 +167,85 @@ export default function ProgressPage() {
               </select>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-              <table className="w-full text-[13px]">
-                <thead>
-                  <tr>
-                    {['Student', 'Points', 'Level', 'Badges', 'Last active', ''].map(h => (
-                      <th key={h} className="text-left text-[11px] font-medium text-gray-400 uppercase tracking-wide px-3 py-2 border-b border-gray-100">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map(s => (
-                    <tr key={s.studentId} className="hover:bg-gray-50 border-b border-gray-100 last:border-0">
-                      <td className="px-3 py-2.5">
-                        <div className="font-medium text-gray-800">{s.studentName}</div>
-                        <div className="text-[11px] text-gray-400">@{s.username}</div>
-                      </td>
-                      <td className="px-3 py-2.5 font-medium text-[#EF9F27]">{s.totalPoints.toLocaleString()}</td>
-                      <td className="px-3 py-2.5">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-[#E6F1FB] text-[#185FA5]">{s.currentLevel || 'N/A'}</span>
-                      </td>
-                      <td className="px-3 py-2.5 text-gray-400">{s.badgesEarned}</td>
-                      <td className="px-3 py-2.5 text-gray-400 text-xs">{s.lastActivity ? new Date(s.lastActivity).toLocaleDateString() : 'N/A'}</td>
-                      <td className="px-3 py-2.5">
-                        <button onClick={() => viewStudent(s.studentId)} className="px-2.5 py-1 border border-gray-200 rounded text-[12px] text-gray-600 hover:bg-gray-50 cursor-pointer bg-white">View</button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            {/* Table */}
+            <div style={{ borderRadius: '16px', overflow: 'hidden', background: '#ffffff', border: '1px solid #bfdbfe', boxShadow: '0 4px 16px rgba(24,95,165,0.08)' }}>
+
+              {/* Table Header */}
+              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 2fr 90px', padding: '10px 20px', background: 'linear-gradient(90deg, #e6f1fb, #f0f8ff)', borderBottom: '1px solid #bfdbfe', fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#185FA5' }}>
+                <span>Student</span>
+                <span>Points</span>
+                <span>Level</span>
+                <span>Badges</span>
+                <span>Distribution</span>
+                <span></span>
+              </div>
+
+              {filtered.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '56px 0', color: '#94a3b8' }}>
+                  <div style={{ fontSize: '36px', marginBottom: '8px' }}>🎓</div>
+                  <p style={{ fontSize: '13px', fontWeight: '600', margin: '0 0 4px' }}>No students found</p>
+                  <p style={{ fontSize: '11px', margin: 0 }}>Try adjusting your search or filter</p>
+                </div>
+              ) : (
+                filtered.map((s, idx) => {
+                  const scheme = getLevelScheme(s.currentLevel);
+                  const pct = Math.round((s.totalPoints / maxPoints) * 100);
+                  return (
+                    <div
+                      key={s.studentId}
+                      style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 2fr 90px', alignItems: 'center', padding: '12px 20px', borderBottom: idx < filtered.length - 1 ? '1px solid #e0eeff' : 'none', transition: 'background 0.15s' }}
+                      onMouseEnter={e => { e.currentTarget.style.background = '#f7f9ff'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                    >
+                      {/* Student */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: '#E6F1FB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700', color: '#185FA5', border: '1px solid #93c5fd', flexShrink: 0 }}>
+                          {initials(s.studentName)}
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '13px', fontWeight: '700', color: '#0b2540' }}>{s.studentName}</div>
+                          <div style={{ fontSize: '11px', color: '#94a3b8' }}>@{s.username}</div>
+                        </div>
+                      </div>
+
+                      {/* Points */}
+                      <div style={{ fontSize: '14px', fontWeight: '700', color: '#EF9F27' }}>{s.totalPoints.toLocaleString()}</div>
+
+                      {/* Level badge */}
+                      <div>
+                        <span style={{ fontSize: '11px', fontWeight: '700', padding: '4px 10px', borderRadius: '8px', background: scheme.bg, color: scheme.color, border: `1px solid ${scheme.border}` }}>
+                          {s.currentLevel || 'N/A'}
+                        </span>
+                      </div>
+
+                      {/* Badges */}
+                      <div style={{ fontSize: '13px', color: '#94a3b8', fontWeight: '600' }}>{s.badgesCount || 0}</div>
+
+                      {/* Distribution bar */}
+                      <div style={{ paddingRight: '16px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                          <span style={{ fontSize: '10px', fontWeight: '700', color: '#94a3b8' }}>{pct}%</span>
+                        </div>
+                        <div style={{ height: '10px', borderRadius: '9999px', overflow: 'hidden', background: '#f0f4f8' }}>
+                          <div style={{ height: '10px', borderRadius: '9999px', width: `${pct}%`, background: `linear-gradient(90deg, ${scheme.bar}, ${scheme.bar}cc)`, boxShadow: `0 0 8px ${scheme.bar}55`, transition: 'width 0.7s' }} />
+                        </div>
+                      </div>
+
+                      {/* View button */}
+                      <div>
+                        <button
+                          onClick={() => viewStudent(s.studentId)}
+                          style={{ padding: '6px 14px', borderRadius: '12px', fontSize: '12px', fontWeight: '700', background: '#E6F1FB', color: '#185FA5', border: '1px solid #93c5fd', cursor: 'pointer', transition: 'background 0.15s' }}
+                          onMouseEnter={e => { e.currentTarget.style.background = '#bfdbfe'; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = '#E6F1FB'; }}
+                        >
+                          View
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
         )}
@@ -154,151 +254,146 @@ export default function ProgressPage() {
         {activeTab === 'details' && (
           <div>
             {!selectedStudent ? (
-              <div className="flex items-center gap-2 px-3.5 py-2.5 bg-[#E6F1FB] text-[#185FA5] rounded-md text-[13px]">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '14px 16px', background: '#E6F1FB', border: '1px solid #93c5fd', borderRadius: '12px', fontSize: '13px', color: '#185FA5', fontWeight: '600' }}>
                 ℹ️ Click "View" on any student in the All Students tab to see their full breakdown here.
               </div>
-            ) : (
-              <div>
-                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden mb-4">
-                  <div className="p-4">
-                    {/* Header */}
-                    <div className="flex items-center gap-3.5 mb-5">
-                      <div className="w-12 h-12 rounded-full bg-[#E6F1FB] flex items-center justify-center font-medium text-base text-[#185FA5]">
+            ) : (() => {
+              const scheme = getLevelScheme(selectedStudent.currentLevel);
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div style={{ borderRadius: '16px', overflow: 'hidden', background: '#ffffff', border: '1px solid #bfdbfe', boxShadow: '0 4px 20px rgba(24,95,165,0.1)' }}>
+
+                    {/* Card header */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '16px 24px', background: 'linear-gradient(90deg, #e6f1fb, #f0f8ff)', borderBottom: '1px solid #bfdbfe' }}>
+                      <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#E6F1FB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: '700', color: '#185FA5', border: '2px solid #93c5fd', flexShrink: 0 }}>
                         {initials(selectedStudent.studentName)}
                       </div>
                       <div>
-                        <div className="font-medium text-[15px] text-gray-900">{selectedStudent.studentName}</div>
-                        <div className="text-xs text-gray-400">@{selectedStudent.username}</div>
+                        <div style={{ fontSize: '15px', fontWeight: '700', color: '#0b2540' }}>{selectedStudent.studentName}</div>
+                        <div style={{ fontSize: '12px', color: '#94a3b8' }}>@{selectedStudent.username}</div>
                       </div>
-                      <span className="ml-auto inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-[#E6F1FB] text-[#185FA5]">
+                      <span style={{ marginLeft: 'auto', fontSize: '11px', fontWeight: '700', padding: '5px 14px', borderRadius: '12px', background: scheme.bg, color: scheme.color, border: `1px solid ${scheme.border}` }}>
                         {selectedStudent.currentLevel || 'N/A'}
                       </span>
                     </div>
 
-                    {/* Stats grid */}
-                    <div className="grid grid-cols-3 gap-3 mb-4">
-                      <div className="bg-gray-50 rounded-lg p-3">
-                        <div className="text-[11px] text-gray-400 mb-1">Total points</div>
-                        <div className="text-xl font-medium text-[#EF9F27]">{selectedStudent.totalPoints.toLocaleString()}</div>
+                    <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+
+                      {/* Stats grid */}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+                        {[
+                          { label: 'Total points', value: selectedStudent.totalPoints.toLocaleString(), color: '#EF9F27' },
+                          { label: 'Badges earned', value: selectedStudent.badgesEarned?.length || 0, color: '#185FA5' },
+                          { label: 'Last active', value: selectedStudent.lastActivity ? new Date(selectedStudent.lastActivity).toLocaleDateString() : 'N/A', color: '#0b2540', small: true },
+                        ].map(stat => (
+                          <div key={stat.label} style={{ background: '#f8faff', border: '1px solid #e0eeff', borderRadius: '12px', padding: '14px' }}>
+                            <div style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#185FA5', marginBottom: '6px' }}>{stat.label}</div>
+                            <div style={{ fontSize: stat.small ? '15px' : '24px', fontWeight: '700', color: stat.color }}>{stat.value}</div>
+                          </div>
+                        ))}
                       </div>
-                      <div className="bg-gray-50 rounded-lg p-3">
-                        <div className="text-[11px] text-gray-400 mb-1">Badges earned</div>
-                        <div className="text-xl font-medium text-[#185FA5]">{selectedStudent.badgesEarned?.length || 0}</div>
-                      </div>
-                      <div className="bg-gray-50 rounded-lg p-3">
-                        <div className="text-[11px] text-gray-400 mb-1">Last active</div>
-                        <div className="text-sm font-medium text-gray-800">{selectedStudent.lastActivity ? new Date(selectedStudent.lastActivity).toLocaleDateString() : 'N/A'}</div>
-                      </div>
-                    </div>
 
-                    {/* Points breakdown */}
-                    <div className="mt-5">
-                      <div className="text-sm font-medium text-gray-700 mb-3">Points Breakdown</div>
-                      <div className="bg-gray-50 rounded-lg p-4">
-                        <div className="grid grid-cols-2 gap-4 mb-4">
-                          {/* Quiz Points */}
-                          <div className="bg-white rounded-lg p-3 border border-gray-200">
-                            <div className="flex items-center gap-2 mb-2">
-                              <div className="w-8 h-8 rounded-full bg-[#E6F1FB] flex items-center justify-center text-base">📝</div>
-                              <div className="text-xs text-gray-500">Quiz Points</div>
-                            </div>
-                            <div className="text-2xl font-semibold text-[#185FA5]">
-                              {selectedStudent.pointsBreakdown?.quizPoints || 0}
-                            </div>
-                            <div className="text-[11px] text-gray-400 mt-1">
-                              From quiz completions
-                            </div>
+                      {/* Points breakdown */}
+                      <div>
+                        <div style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#185FA5', marginBottom: '12px' }}>Points breakdown</div>
+                        <div style={{ background: '#f8faff', border: '1px solid #e0eeff', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+                            {[
+                              { label: 'Game points', value: selectedStudent.pointsBreakdown?.gamePoints || 0, sub: `From ${(selectedStudent.pointsBreakdown?.games || []).length} games played`, icon: '🎮', color: '#185FA5', bg: '#E6F1FB', border: '#93c5fd' },
+                              { label: 'Daily login', value: selectedStudent.pointsBreakdown?.dailyLoginPoints || 0, sub: '10 pts per daily login', icon: '📅', color: '#854d0e', bg: '#faeeda', border: '#fcd34d' },
+                              { label: 'Other activity', value: selectedStudent.pointsBreakdown?.userPoints || 0, sub: 'From other activities', icon: '⭐', color: '#334155', bg: '#f1f5f9', border: '#cbd5e1' },
+                            ].map(item => (
+                              <div key={item.label} style={{ background: '#ffffff', borderRadius: '10px', padding: '12px', border: `1px solid ${item.border}` }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                                  <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: item.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>{item.icon}</div>
+                                  <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '600' }}>{item.label}</div>
+                                </div>
+                                <div style={{ fontSize: '22px', fontWeight: '700', color: item.color }}>{item.value.toLocaleString()}</div>
+                                <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '4px' }}>{item.sub}</div>
+                              </div>
+                            ))}
                           </div>
 
-                          {/* True/False Points */}
-                          <div className="bg-white rounded-lg p-3 border border-gray-200">
-                            <div className="flex items-center gap-2 mb-2">
-                              <div className="w-8 h-8 rounded-full bg-[#E1F5EE] flex items-center justify-center text-base">✅</div>
-                              <div className="text-xs text-gray-500">True/False Points</div>
-                            </div>
-                            <div className="text-2xl font-semibold text-[#0F6E56]">
-                              {selectedStudent.pointsBreakdown?.trueFalsePoints || 0}
-                            </div>
-                            <div className="text-[11px] text-gray-400 mt-1">
-                              From true/false questions
-                            </div>
-                          </div>
-
-                          {/* Daily Login Points */}
-                          <div className="bg-white rounded-lg p-3 border border-gray-200">
-                            <div className="flex items-center gap-2 mb-2">
-                              <div className="w-8 h-8 rounded-full bg-[#FAEEDA] flex items-center justify-center text-base">📅</div>
-                              <div className="text-xs text-gray-500">Daily Login Points</div>
-                            </div>
-                            <div className="text-2xl font-semibold text-[#854F0B]">
-                              {selectedStudent.pointsBreakdown?.dailyLoginPoints || 0}
-                            </div>
-                            <div className="text-[11px] text-gray-400 mt-1">
-                              10 pts per daily login
-                            </div>
-                          </div>
-
-                          {/* User Points */}
-                          <div className="bg-white rounded-lg p-3 border border-gray-200">
-                            <div className="flex items-center gap-2 mb-2">
-                              <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-base">⭐</div>
-                              <div className="text-xs text-gray-500">User Points</div>
-                            </div>
-                            <div className="text-2xl font-semibold text-gray-600">
-                              {selectedStudent.pointsBreakdown?.userPoints || 0}
-                            </div>
-                            <div className="text-[11px] text-gray-400 mt-1">
-                              From other activities
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Total */}
-                        <div className="bg-gradient-to-r from-[#EF9F27] to-[#F5B85D] rounded-lg p-4 text-white">
-                          <div className="flex items-center justify-between">
+                          {/* Total banner */}
+                          <div style={{ background: 'linear-gradient(90deg, #EF9F27, #F5B85D)', borderRadius: '12px', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                             <div>
-                              <div className="text-sm font-medium opacity-90">Total Points</div>
-                              <div className="text-3xl font-bold mt-1">
-                                {selectedStudent.totalPoints.toLocaleString()}
-                              </div>
+                              <div style={{ fontSize: '12px', fontWeight: '600', color: 'rgba(255,255,255,0.85)' }}>Total points</div>
+                              <div style={{ fontSize: '28px', fontWeight: '700', color: '#ffffff', marginTop: '2px' }}>{selectedStudent.totalPoints.toLocaleString()}</div>
                             </div>
-                            <div className="text-right">
-                              <div className="text-sm opacity-90">Current Level</div>
-                              <div className="text-2xl font-bold mt-1">
-                                {selectedStudent.currentLevel || 'N/A'}
-                              </div>
+                            <div style={{ textAlign: 'right' }}>
+                              <div style={{ fontSize: '12px', fontWeight: '600', color: 'rgba(255,255,255,0.85)' }}>Current level</div>
+                              <div style={{ fontSize: '22px', fontWeight: '700', color: '#ffffff', marginTop: '2px' }}>{selectedStudent.currentLevel || 'N/A'}</div>
                             </div>
                           </div>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Badges Section */}
-                    {selectedStudent.badgesEarned && selectedStudent.badgesEarned.length > 0 && (
-                      <div className="mt-5">
-                        <div className="text-sm font-medium text-gray-700 mb-3">Earned Badges ({selectedStudent.badgesEarned.length})</div>
-                        <div className="flex gap-2 flex-wrap">
-                          {selectedStudent.badgesEarned.map((badge, idx) => (
-                            <div key={idx} className="bg-gradient-to-br from-[#FAEEDA] to-[#F5E6C8] border border-[#E8D5A8] rounded-lg p-3 flex items-center gap-2">
-                              <span className="text-2xl">{badge.badgeDetails?.badgeIcon || '🏆'}</span>
-                              <div>
-                                <div className="text-sm font-medium text-[#854F0B]">{badge.badgeDetails?.badgeName || 'Badge'}</div>
-                                <div className="text-[11px] text-[#A67B27]">
-                                  {badge.earnedAt ? new Date(badge.earnedAt).toLocaleDateString() : 'Recently'}
+                      {/* Game History */}
+                      {(selectedStudent.pointsBreakdown?.games || []).length > 0 && (
+                        <div>
+                          <div style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#185FA5', marginBottom: '12px' }}>
+                            Game history ({selectedStudent.pointsBreakdown.games.length})
+                          </div>
+                          <div style={{ borderRadius: '16px', overflow: 'hidden', border: '1px solid #bfdbfe' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', padding: '8px 16px', background: 'linear-gradient(90deg, #e6f1fb, #f0f8ff)', borderBottom: '1px solid #bfdbfe', fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#185FA5' }}>
+                              <span>Game</span><span>Score</span><span>Max / %</span><span>Date</span>
+                            </div>
+                            {selectedStudent.pointsBreakdown.games.map((game, idx) => (
+                              <div
+                                key={game.gameId || idx}
+                                style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', alignItems: 'center', padding: '10px 16px', borderBottom: idx < selectedStudent.pointsBreakdown.games.length - 1 ? '1px solid #e0eeff' : 'none', background: '#ffffff', transition: 'background 0.15s' }}
+                                onMouseEnter={e => { e.currentTarget.style.background = '#f7f9ff'; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = '#ffffff'; }}
+                              >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                  <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: '#E6F1FB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', border: '1px solid #93c5fd', flexShrink: 0 }}>🎮</div>
+                                  <span style={{ fontSize: '13px', fontWeight: '600', color: '#0b2540' }}>{game.gameName}</span>
+                                </div>
+                                <div style={{ fontSize: '14px', fontWeight: '700', color: '#185FA5' }}>{game.score}</div>
+                                <div style={{ fontSize: '12px', color: '#94a3b8' }}>/ {game.maxScore} <span style={{ color: '#185FA5', fontWeight: '600' }}>({game.percentage?.toFixed(1) || 0}%)</span></div>
+                                <div style={{ fontSize: '11px', color: '#94a3b8' }}>{game.playedAt ? new Date(game.playedAt).toLocaleDateString() : 'N/A'}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Badges */}
+                      {selectedStudent.badgesEarned?.length > 0 && (
+                        <div>
+                          <div style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#185FA5', marginBottom: '12px' }}>
+                            Earned badges ({selectedStudent.badgesEarned.length})
+                          </div>
+                          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                            {selectedStudent.badgesEarned.map((badge, idx) => (
+                              <div key={idx} style={{ background: 'linear-gradient(135deg, #faeeda, #F5E6C8)', border: '1px solid #E8D5A8', borderRadius: '12px', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <span style={{ fontSize: '22px' }}>{badge.badgeDetails?.badgeIcon || '🏆'}</span>
+                                <div>
+                                  <div style={{ fontSize: '12px', fontWeight: '700', color: '#854d0e' }}>{badge.badgeDetails?.badgeName || 'Badge'}</div>
+                                  <div style={{ fontSize: '10px', color: '#A67B27' }}>{badge.earnedAt ? new Date(badge.earnedAt).toLocaleDateString() : 'Recently'}</div>
                                 </div>
                               </div>
-                            </div>
-                          ))}
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Back button */}
+                  <div>
+                    <button
+                      onClick={backToAll}
+                      style={{ padding: '8px 18px', borderRadius: '12px', fontSize: '12px', fontWeight: '700', background: '#f0f4f8', color: '#64748b', border: '1px solid #bfdbfe', cursor: 'pointer', transition: 'background 0.15s' }}
+                      onMouseEnter={e => { e.currentTarget.style.background = '#e2e8f0'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = '#f0f4f8'; }}
+                    >
+                      ← Back to all students
+                    </button>
                   </div>
                 </div>
-                <button onClick={backToAll} className="px-3.5 py-1.5 border border-gray-200 rounded-md text-[13px] text-gray-600 hover:bg-gray-50 cursor-pointer bg-white">
-                  ← Back to all students
-                </button>
-              </div>
-            )}
+              );
+            })()}
           </div>
         )}
       </div>

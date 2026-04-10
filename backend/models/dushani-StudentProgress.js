@@ -106,25 +106,38 @@ studentProgressSchema.methods.addPoints = async function(points) {
 
 // Check if student has earned a specific badge
 studentProgressSchema.methods.hasBadge = function(badgeId) {
+  // STRICT comparison using toString() to handle ObjectId vs string
   return this.badgesEarned.some(badge => 
     badge.badgeId.toString() === badgeId.toString()
   );
 };
 
-// Add badge to student
+// Add badge to student (DUPLICATE-SAFE)
 studentProgressSchema.methods.addBadge = function(badge) {
-  if (!this.hasBadge(badge._id)) {
-    this.badgesEarned.push({
-      badgeId: badge._id,
-      badgeDetails: {
-        badgeName: badge.badgeName,
-        badgeIcon: badge.badgeIcon,
-        description: badge.description
-      }
-    });
-    return true;
+  // STRICT check for existing badge using toString()
+  const alreadyExists = this.badgesEarned.some(b => 
+    b.badgeId.toString() === badge._id.toString()
+  );
+
+  // Prevent duplicate - return false if already exists
+  if (alreadyExists) {
+    console.log(`⚠️  addBadge: Duplicate prevented for badge ${badge.badgeName} (${badge._id})`);
+    return false;
   }
-  return false;
+
+  // Add new badge
+  this.badgesEarned.push({
+    badgeId: badge._id,
+    badgeDetails: {
+      badgeName: badge.badgeName,
+      badgeIcon: badge.badgeIcon,
+      description: badge.description
+    },
+    earnedAt: new Date()
+  });
+  
+  console.log(`✅ addBadge: Added badge ${badge.badgeName} (${badge._id})`);
+  return true;
 };
 
 // Check section completion

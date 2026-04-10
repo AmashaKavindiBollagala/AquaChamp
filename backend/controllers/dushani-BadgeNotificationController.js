@@ -78,9 +78,36 @@ export const getBadgeNotifications = async (req, res) => {
 export const getBadgeAnimations = async (req, res) => {
   try {
     const userId = await getCurrentUserId(req);
+    console.log(`🔍 [BadgeAnimation] Fetching untriggered animations for user: ${userId}`);
 
-    // Get untriggered animations
+    // Get ALL untriggered animations first to see what's there
+    const allUntriggered = await BadgeNotification.find({
+      userId,
+      animationTriggered: false
+    }).sort({ earnedAt: -1 });
+    
+    console.log(`📊 [BadgeAnimation] Found ${allUntriggered.length} untriggered notification(s)`);
+    if (allUntriggered.length > 0) {
+      allUntriggered.forEach((notif, idx) => {
+        console.log(`  ${idx + 1}. ${notif.badgeDetails?.badgeName || 'Unknown'} - Earned: ${notif.earnedAt}`);
+      });
+    }
+    
+    // CLEANUP: Only mark as triggered if older than 1 hour (give time for animation to show)
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    const oldNotifications = allUntriggered.filter(n => new Date(n.earnedAt) < oneHourAgo);
+    
+    if (oldNotifications.length > 0) {
+      console.log(`🧹 [BadgeAnimation] Found ${oldNotifications.length} old notification(s) (>1 hour), marking as triggered`);
+      for (const notification of oldNotifications) {
+        notification.animationTriggered = true;
+        await notification.save();
+      }
+    }
+
+    // Get untriggered animations (only recent ones within last hour)
     const animations = await BadgeNotification.getUntriggeredAnimations(userId);
+    console.log(`✅ [BadgeAnimation] Returning ${animations.length} animation(s) to frontend`);
     
     res.status(200).json({
       success: true,
