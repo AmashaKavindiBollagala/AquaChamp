@@ -21,16 +21,14 @@ import BadgesPage from "./components/dushani-Badges.jsx";
 import LevelsPage from "./components/dushani-Levels.jsx";
 import ProgressPage from "./components/dushani-StudentProgress.jsx";
 import PublicLeaderboard from "./components/dushani-PublicLeaderboard.jsx";
-
-function DashboardLayout() {
-  const [activePage, setActivePage] = useState("overview");
-
 import KaveeshaLessonsDashboard from "./components/kaveesha-lessonsDashboard";
-
 import KaveeshaStudentDashboard from "./components/kaveesha-studentDashboard";
 import KaveeshaTopicDetail from "./components/kaveesha-topicDetail";
 import KaveeshaSubtopicLearn from "./components/kaveesha-subtopicLearn";
 import KaveeshaStudentProgress from "./components/kaveesha-studentProgress";
+
+function DashboardLayout() {
+  const [activePage, setActivePage] = useState("overview");
 
   const pages = {
     overview: <OverviewPage />,
@@ -65,12 +63,15 @@ function App() {
         <Route path="/my-progress" element={<DushaniStudentProgress />} />
 
         {/* super admin dashboard */}
-      <Route path="/super-admin" element={<DilsharaSuperAdminDashboard />} />
+        <Route path="/super-admin" element={<DilsharaSuperAdminDashboard />} />
 
-       {/* admin login*/}
-       <Route path="/admin-login" element={<DilsharaAdminLogin />} />
-       <Route path="/activity-dashboard" element={<ActivityAdminDashboard />} />
-       <Route path="/my-activities" element={<UserActivityView />} />
+        {/* admin login*/}
+        <Route path="/admin-login" element={<DilsharaAdminLogin />} />
+        <Route
+          path="/activity-dashboard"
+          element={<ActivityAdminDashboard />}
+        />
+        <Route path="/my-activities" element={<UserActivityView />} />
 
         {/* Admin Login */}
         <Route path="/admin-login" element={<DilsharaAdminLogin />} />
@@ -82,11 +83,22 @@ function App() {
         {/* Reset Password */}
         <Route path="/reset-password/:token" element={<ResetPassword />} />
 
-      
-        <Route path="/lesson-dashboard" element={<KaveeshaLessonsDashboard />} />
-        <Route path="/student/dashboard" element={<KaveeshaStudentDashboard />} />
-        <Route path="/student/topic/:topicId" element={<KaveeshaTopicDetail />} />
-        <Route path="/student/subtopic/:subtopicId" element={<KaveeshaSubtopicLearn />} />
+        <Route
+          path="/lesson-dashboard"
+          element={<KaveeshaLessonsDashboard />}
+        />
+        <Route
+          path="/student/dashboard"
+          element={<KaveeshaStudentDashboard />}
+        />
+        <Route
+          path="/student/topic/:topicId"
+          element={<KaveeshaTopicDetail />}
+        />
+        <Route
+          path="/student/subtopic/:subtopicId"
+          element={<KaveeshaSubtopicLearn />}
+        />
         <Route path="/student/progress" element={<KaveeshaStudentProgress />} />
         {/* New Dashboard with Sidebar */}
         <Route path="/dashboard" element={<DashboardLayout />} />
