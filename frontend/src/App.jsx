@@ -12,6 +12,11 @@ import DilsharaAdminLogin from "./pages/dilshara-AdminLogin";
 import VerifyEmail from "./pages/kaveesha-verifyEmail";
 import EmailVerified from "./pages/kaveesha-emailVerified";
 import ResetPassword from "./pages/kaveesha-resetPassword";
+import DilsharaGameAdminDashboard from "./components/dilshara-gameAdmin-dashboard";
+import GamePlayScreen from "./components/dilshara-GamePlayScreen";
+import GameSelectionPage from "./components/dilshara-GameSelectionPage";
+import ActivityAdminDashboard from "./components/amasha-ActivityAdminDashboard";
+import UserActivityView from "./components/amasha-UserActivityView";
 
 // Dashboard pages
 import Sidebar from "./components/dushani-Sidebar.jsx";
@@ -20,6 +25,11 @@ import BadgesPage from "./components/dushani-Badges.jsx";
 import LevelsPage from "./components/dushani-Levels.jsx";
 import ProgressPage from "./components/dushani-StudentProgress.jsx";
 import PublicLeaderboard from "./components/dushani-PublicLeaderboard.jsx";
+import KaveeshaLessonsDashboard from "./components/kaveesha-lessonsDashboard";
+import KaveeshaStudentDashboard from "./components/kaveesha-studentDashboard";
+import KaveeshaTopicDetail from "./components/kaveesha-topicDetail";
+import KaveeshaSubtopicLearn from "./components/kaveesha-subtopicLearn";
+import KaveeshaStudentProgress from "./components/kaveesha-studentProgress";
 
 function DashboardLayout() {
   const [activePage, setActivePage] = useState("overview");
@@ -59,8 +69,16 @@ function App() {
         <Route path="/profile" element={<KaveeshaUserProfile />} />
         <Route path="/my-progress" element={<DushaniStudentProgress />} />
 
-        {/* Super Admin Dashboard */}
+        {/* super admin dashboard */}
         <Route path="/super-admin" element={<DilsharaSuperAdminDashboard />} />
+
+        {/* admin login*/}
+        <Route path="/admin-login" element={<DilsharaAdminLogin />} />
+        <Route
+          path="/activity-dashboard"
+          element={<ActivityAdminDashboard />}
+        />
+        <Route path="/my-activities" element={<UserActivityView />} />
 
         {/* Admin Login */}
         <Route path="/admin-login" element={<DilsharaAdminLogin />} />
@@ -72,6 +90,31 @@ function App() {
         {/* Reset Password */}
         <Route path="/reset-password/:token" element={<ResetPassword />} />
 
+        {/* game admin dashboard */}
+        <Route path="/game-dashboard" element={<DilsharaGameAdminDashboard />} />
+         {/* game with 3rd party api */}
+        
+
+<Route path="/games/topic/:topicId" element={<GameSelectionPage />} />  
+        <Route path="/games/play/:gameId"   element={<GamePlayScreen />} />
+
+        <Route
+          path="/lesson-dashboard"
+          element={<KaveeshaLessonsDashboard />}
+        />
+        <Route
+          path="/student/dashboard"
+          element={<KaveeshaStudentDashboard />}
+        />
+        <Route
+          path="/student/topic/:topicId"
+          element={<KaveeshaTopicDetail />}
+        />
+        <Route
+          path="/student/subtopic/:subtopicId"
+          element={<KaveeshaSubtopicLearn />}
+        />
+        <Route path="/student/progress" element={<KaveeshaStudentProgress />} />
         {/* New Dashboard with Sidebar */}
         <Route path="/dashboard" element={<DashboardLayout />} />
         <Route path="/progress-dashboard" element={<DashboardLayout />} />

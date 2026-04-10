@@ -1,62 +1,60 @@
+// models/dilshara-Game.js
 import mongoose from 'mongoose';
 
-// store the games
+const questionSchema = new mongoose.Schema({
+  questionText:  { type: String, required: true, trim: true },
+  options: {
+    type: [String],
+    validate: {
+      validator: arr => arr.length === 4,
+      message: 'Each question must have exactly 4 options',
+    },
+  },
+  correctAnswer: { type: String, required: true, trim: true },
+  hint:          { type: String, trim: true },
+});
 
 const gameSchema = new mongoose.Schema(
-    {
-        title: {
-            type: String,
-            required: [true, 'Game title is required'],
-            trim: true,
-        },
-
-        description: {
-            type: String,
-            required: [true, 'Game description is required'],
-            trim: true,
-        },
-
-        // Which lesson the game/quiz have
-        
-        lessonTopic: {
-            type: String,
-            enum: [
-                'Safe Drinking Water',
-                'Handwashing and Personal Hygiene',
-                'Toilet and Sanitation Practices',
-                'Water-Borne Diseases and Prevention',
-                'Water Conservation and Environmental Care'
-            ],
-            required: [true, 'Lesson topic is required'],
-        },
-
-        difficulty: {
-            type: String,
-            enum: ['easy', 'medium', 'hard'],
-            default: 'easy',
-        },
-
-        // The maximum score user can get (student/children)
-        maxScore: {
-            type: Number,
-            required: [true, 'Max score is required'],
-            min: [1, 'Max score must be at least 1'],
-        },
-
-        // deactivate the game if admin wants
-        active: {
-            type: Boolean,
-            default: true,
-        },
-
-        // the person who create the game
-        createdBy: {
-            type: String,
-        },
+  {
+    title:       { type: String, required: true, trim: true },
+    description: { type: String, trim: true },
+    gameType: {
+      type: String,
+      enum: ['quiz', 'truefalse', 'memory'],
+      default: 'quiz',
     },
-    {
-        timestamps: true, // auto adds createdAt and updatedAt
-    }
+    subType: {
+      type: String,
+      enum: ['quiz', 'germcatcher', 'waterdrop', 'memory', 'cleanordirty'],
+      default: 'quiz',
+    },
+    lessonTopic: {
+      type: String,
+      required: true,
+      enum: [
+        'Safe Drinking Water',
+        'Handwashing and Personal Hygiene',
+        'Toilet and Sanitation Practices',
+        'Water-Borne Diseases and Prevention',
+        'Water Conservation and Environmental Care',
+      ],
+    },
+    topicId:    { type: String },
+    ageGroup:   { type: String, enum: ['5-10', '11-15'], default: '5-10' },
+    difficulty: { type: String, enum: ['easy', 'medium', 'hard'], default: 'easy' },
+    questions:  { type: [questionSchema], default: [] },
+    pointsPerQuestion: { type: Number, default: 10 },
+    timeLimit:         { type: Number, default: 30 },
+    passMark:          { type: Number, default: 60 },
+    totalPoints:       { type: Number, default: 0 },
+    active:            { type: Boolean, default: true },
+    createdBy:         { type: String },
+  },
+  { timestamps: true }
 );
+
+gameSchema.pre('save', async function () {
+  this.totalPoints = (this.questions?.length || 0) * this.pointsPerQuestion;
+});
 
 export default mongoose.model('Game', gameSchema);

@@ -15,6 +15,8 @@ import progressRoutes from './routes/dushani-progressRoutes.js';
 import pointsRoutes from './routes/dushani-pointsRoutes.js';
 import levelRoutes from './routes/dushani-levelRoutes.js';
 import badgeNotificationRoutes from './routes/dushani-badgeNotificationRoutes.js';
+
+
 //dilshara
 import adminRoutes from './routes/dilshara-adminRoutes.js';
 import gameRoutes from './routes/dilshara-gameRoutes.js';
@@ -55,10 +57,12 @@ app.use('/api/levels', levelRoutes);
 app.use('/api/badge-notifications', badgeNotificationRoutes);
 //dilshara
 app.use('/api/admin', adminRoutes);
-app.use('/games', gameRoutes);
+//app.use('/games', gameRoutes);
 app.use('/quizzes', quizRoutes);
 app.use('/truefalse', trueFalseRoutes);
 app.use('/api/security', securityRoutes);
+app.use('/api/games', gameRoutes)
+
 // Component 4 routes
 app.use('/api/activities', activityRoutes);
 app.use('/api/water', waterRoutes);
