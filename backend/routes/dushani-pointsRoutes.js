@@ -4,7 +4,8 @@ import {
   addGamePoints,
   getPointsStatus,
   getStudentGamePoints,
-  getAllStudentsPoints
+  getAllStudentsPoints,
+  getMyPointsStatus
 } from '../controllers/dushani-PointsController.js';
 import verifyJWT from '../middleware/amasha-verifyJWT.js';
 
@@ -21,6 +22,9 @@ router.post('/add', addGamePoints);
 
 // Get current points status
 router.get('/status', getPointsStatus);
+
+// Get current user's points, level, and rank
+router.get('/my-status', getMyPointsStatus);
 
 // Get specific student's game points (admin)
 router.get('/student/:userId', getStudentGamePoints);

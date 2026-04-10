@@ -528,3 +528,136 @@ export const getAllStudentsPoints = async (req, res) => {
     });
   }
 };
+
+// Get current user's points, level, and rank - GET /api/points/my-status
+export const getMyPointsStatus = async (req, res) => {
+  try {
+    const { user, userId } = await getCurrentUserAndId(req);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // DYNAMICALLY CALCULATE POINTS FROM ALL SOURCES
+    const TrueFalseResult = (await import('../models/dilshara-TrueFalseResult.js')).default;
+    const QuizResult = (await import('../models/dilshara-QuizResult.js')).default;
+    const UserPoints = (await import('../models/amasha-userPoints.js')).default;
+    const DailyLogin = (await import('../models/dushani-points.js')).default;
+    const StudentProgress = (await import('../models/dushani-StudentProgress.js')).default;
+    const Level = (await import('../models/dushani-Level.js')).default;
+
+    // Get points from all sources
+    const trueFalseResults = await TrueFalseResult.find({ userId: user.username });
+    const totalTrueFalsePoints = trueFalseResults.reduce((sum, result) => sum + result.pointsEarned, 0);
+
+    const quizResults = await QuizResult.find({ userId: user.username });
+    const totalQuizPoints = quizResults.reduce((sum, result) => sum + result.score, 0);
+
+    const userPointsRecord = await UserPoints.findOne({ userId: userId });
+    const userPoints = userPointsRecord ? userPointsRecord.totalPoints : 0;
+
+    const dailyLoginRecords = await DailyLogin.find({ userId: userId });
+    const totalDailyLoginPoints = dailyLoginRecords.reduce((sum, record) => sum + (record.pointsAwarded || 10), 0);
+
+    // Calculate TOTAL dynamic points
+    const dynamicTotalPoints = totalTrueFalsePoints + totalQuizPoints + userPoints + totalDailyLoginPoints;
+
+    // Get or create student progress
+    let studentProgress = await StudentProgress.findOne({ userId });
+    if (!studentProgress) {
+      studentProgress = new StudentProgress({ 
+        userId,
+        totalPoints: dynamicTotalPoints
+      });
+      await studentProgress.save();
+    } else {
+      // Update with calculated total if different
+      if (studentProgress.totalPoints !== dynamicTotalPoints) {
+        studentProgress.totalPoints = dynamicTotalPoints;
+        studentProgress.currentLevel = await studentProgress.calculateLevel();
+        await studentProgress.save();
+      }
+    }
+
+    // Get current level
+    const levels = await Level.getActiveLevels();
+    let currentLevelDoc = null;
+    if (dynamicTotalPoints > 0) {
+      currentLevelDoc = levels.find(level => {
+        const max = level.maxPoints ?? Infinity;
+        return dynamicTotalPoints >= level.minPoints && dynamicTotalPoints <= max;
+      });
+    }
+
+    // Calculate rank by getting all students and sorting by points
+    const allProgress = await StudentProgress.find().populate('userId', 'firstName lastName username');
+    const studentsPoints = [];
+    
+    for (const progress of allProgress) {
+      if (!progress.userId) continue;
+      
+      const stuUsername = progress.userId.username;
+      
+      // Calculate points for each student
+      const tfResults = await TrueFalseResult.find({ userId: stuUsername });
+      const tfPoints = tfResults.reduce((sum, r) => sum + r.pointsEarned, 0);
+      
+      const qResults = await QuizResult.find({ userId: stuUsername });
+      const qPoints = qResults.reduce((sum, r) => sum + r.score, 0);
+      
+      const uPointsRecord = await UserPoints.findOne({ userId: progress.userId._id });
+      const uPoints = uPointsRecord ? uPointsRecord.totalPoints : 0;
+      
+      const dlRecords = await DailyLogin.find({ userId: progress.userId._id });
+      const dlPoints = dlRecords.reduce((sum, r) => sum + (r.pointsAwarded || 10), 0);
+      
+      const totalPts = tfPoints + qPoints + uPoints + dlPoints;
+      
+      studentsPoints.push({
+        userId: progress.userId._id,
+        username: stuUsername,
+        totalPoints: totalPts
+      });
+    }
+    
+    // Sort by totalPoints descending
+    studentsPoints.sort((a, b) => b.totalPoints - a.totalPoints);
+    
+    // Find current user's rank
+    const userRankIndex = studentsPoints.findIndex(s => s.userId.toString() === userId.toString());
+    const userRank = userRankIndex !== -1 ? userRankIndex + 1 : null;
+
+    res.status(200).json({
+      success: true,
+      data: {
+        totalPoints: dynamicTotalPoints,
+        currentLevel: currentLevelDoc ? currentLevelDoc.levelName : 'N/A',
+        rank: userRank ? `#${userRank}` : 'N/A',
+        rankNumber: userRank,
+        badgesCount: studentProgress.badgesEarned.length,
+        badges: studentProgress.badgesEarned.map(badge => ({
+          badgeId: badge.badgeId,
+          badgeName: badge.badgeDetails?.badgeName || 'Unknown Badge',
+          badgeIcon: badge.badgeDetails?.badgeIcon || '⭐',
+          description: badge.badgeDetails?.description || '',
+          earnedAt: badge.earnedAt
+        })),
+        pointsBreakdown: {
+          trueFalsePoints: totalTrueFalsePoints,
+          quizPoints: totalQuizPoints,
+          userPoints: userPoints,
+          dailyLoginPoints: totalDailyLoginPoints
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Get my points status error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
