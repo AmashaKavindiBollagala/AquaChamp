@@ -15,18 +15,18 @@ const TOPIC_MAP = {
 // ─── CREATE GAME ──────────────────────────────────────────────────────────────
 export const createGame = asyncHandler(async (req, res) => {
   const {
-    title, description, topicId, lessonTopic,
-    ageGroup, difficulty, questions,
-    pointsPerQuestion, timeLimit, passMark,
-    gameType, subType, createdBy,
-  } = req.body;
+  title, description, topicId, lessonTopic,
+  ageGroup, difficulty, questions,
+  pointsPerQuestion, timeLimit, passMark,
+  gameType, subType, createdBy,
+} = req.body;
 
-  const resolvedTopic = lessonTopic || TOPIC_MAP[topicId];
+const resolvedTopic = TOPIC_MAP[topicId];
   if (!resolvedTopic) return res.status(400).json({ message: 'Valid topic is required' });
   if (!title?.trim()) return res.status(400).json({ message: 'Title is required' });
 
   const resolvedSubType = subType || 'quiz';
-  const NON_QUIZ_TYPES  = ['germcatcher', 'waterdrop', 'memory', 'cleanordirty'];
+  const NON_QUIZ_TYPES  = ['germcatcher', 'waterdrop', 'memory', 'cleanordirty', 'cleandirtygame'];
   const isNonQuiz       = NON_QUIZ_TYPES.includes(resolvedSubType);
 
   if (!isNonQuiz) {
@@ -91,13 +91,19 @@ export const updateGame = asyncHandler(async (req, res) => {
   const game = await Game.findById(req.params.id);
   if (!game) return res.status(404).json({ message: 'Game not found' });
 
-  const fields = [
-    'title','description','lessonTopic','topicId','ageGroup',
-    'difficulty','questions','pointsPerQuestion','timeLimit',
-    'passMark','gameType','subType','active',
-  ];
-  fields.forEach(f => { if (req.body[f] !== undefined) game[f] = req.body[f]; });
-  await game.save();
+const fields = [
+  'title','description','topicId','ageGroup',
+  'difficulty','questions','pointsPerQuestion','timeLimit',
+  'passMark','gameType','subType','active',
+];
+fields.forEach(f => { if (req.body[f] !== undefined) game[f] = req.body[f]; });
+
+// Always resolve lessonTopic from TOPIC_MAP so it matches the enum
+if (req.body.topicId && TOPIC_MAP[req.body.topicId]) {
+  game.lessonTopic = TOPIC_MAP[req.body.topicId];
+}
+
+await game.save();
   res.status(200).json({ message: 'Game updated successfully', game });
 });
 

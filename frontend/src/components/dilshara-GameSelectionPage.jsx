@@ -137,7 +137,7 @@ export default function GameSelectionPage() {
     if (!isUnlocked(diff)) return;
     const game = getGameForDiff(diff);
     if (!game) { setError(`No ${diff} game found for this topic and age group.`); return; }
-    navigate(`/games/play/${game._id}`);
+    navigate(`/games/topic/${game.topicId}`);
   };
 
   // ── AGE GROUP SCREEN ──────────────────────────────────────────────────────
