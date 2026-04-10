@@ -1,21 +1,27 @@
 import { useState, useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import Lottie from "lottie-react";
 import axios from "axios";
 
+// Import animation files directly from src/assets (Vite handles these properly)
+import confettiAnimation from "../assets/animations/confetti.json";
+import awardAnimation from "../assets/animations/award.json";
+import premiumAnimation from "../assets/animations/Premium.json";
+
 // Animation mapping based on badge type
 const badgeAnimations = {
-  'Milestone': '/animations/confetti.json',
-  'Section Completion': '/animations/award.json',
-  'Special': '/animations/Premium.json'
+  'Milestone': confettiAnimation,
+  'Section Completion': awardAnimation,
+  'Special': premiumAnimation
 };
 
-// Helper function to get animation URL based on badge type
-const getAnimationURL = (badgeType) => {
-  const localPath = badgeAnimations[badgeType] || badgeAnimations['Milestone'];
-  return localPath;
+// Helper function to get animation data based on badge type
+const getAnimationData = (badgeType) => {
+  return badgeAnimations[badgeType] || badgeAnimations['Milestone'];
 };
 
 export default function BadgeAnimation() {
+  const location = useLocation();
   const [currentBadge, setCurrentBadge] = useState(null);
   const [showAnimation, setShowAnimation] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -23,7 +29,26 @@ export default function BadgeAnimation() {
   const pollingRef = useRef(null);
   const timeoutRef = useRef(null);
 
+  // List of admin paths where animation should NOT appear
+  const adminPaths = [
+    '/dashboard',
+    '/progress-dashboard',
+    '/super-admin',
+    '/admin-login',
+    '/game-dashboard',
+    '/activity-dashboard'
+  ];
+
+  // Check if current path is an admin page
+  const isAdminPage = adminPaths.some(path => location.pathname.startsWith(path));
+
   useEffect(() => {
+    // Do NOT start polling if on admin page
+    if (isAdminPage) {
+      console.log('⏸️ [BadgeAnimation] Admin page detected, skipping animation polling');
+      return;
+    }
+
     // Start polling for untriggered badge animations
     startPolling();
 
@@ -36,27 +61,32 @@ export default function BadgeAnimation() {
         clearTimeout(timeoutRef.current);
       }
     };
-  }, []);
+  }, [isAdminPage, location.pathname]);
 
   // Load animation when badge is detected
   useEffect(() => {
     if (currentBadge && showAnimation) {
       const badgeType = currentBadge.badgeDetails?.badgeType || 'Milestone';
-      const animationPath = getAnimationURL(badgeType);
-
-      // Load local animation
-      fetch(animationPath)
-        .then((res) => {
-          if (!res.ok) throw new Error(`Animation file not found: ${animationPath}`);
-          return res.json();
-        })
-        .then((data) => {
-          console.log(`✅ Loaded local animation for ${badgeType}: ${animationPath}`);
-          setAnimationData(data);
-        })
-        .catch((err) => {
-          console.error(`❌ Error loading animation: ${err.message}`);
-        });
+      
+      // Set loading state
+      setLoading(true);
+      
+      // Load animation data directly (no fetch needed)
+      try {
+        const animData = getAnimationData(badgeType);
+        if (animData) {
+          console.log(`✅ Loaded animation for ${badgeType}`);
+          setAnimationData(animData);
+        } else {
+          console.error(`❌ Animation data not found for ${badgeType}, using fallback`);
+          setAnimationData(confettiAnimation); // Fallback to confetti
+        }
+      } catch (err) {
+        console.error(`❌ Error loading animation: ${err.message}, using fallback`);
+        setAnimationData(confettiAnimation); // Fallback to confetti
+      } finally {
+        setLoading(false);
+      }
     }
   }, [currentBadge, showAnimation]);
 
@@ -74,12 +104,18 @@ export default function BadgeAnimation() {
 
   const checkForUntriggeredAnimations = async () => {
     try {
-      let token = localStorage.getItem("aquachamp_token");
+      // Try multiple token keys
+      let token = localStorage.getItem("aquachamp_token") || 
+                  localStorage.getItem("token") || 
+                  sessionStorage.getItem("aquachamp_token") || 
+                  sessionStorage.getItem("token");
+
       if (!token) {
-        token = sessionStorage.getItem("aquachamp_token");
+        console.log('⏸️ [BadgeAnimation] No token found, skipping check');
+        return;
       }
 
-      if (!token) return;
+      console.log('🔍 [BadgeAnimation] Checking for untriggered animations...');
 
       const config = {
         headers: { 
@@ -93,20 +129,46 @@ export default function BadgeAnimation() {
         config
       );
 
+      console.log('📦 [BadgeAnimation] Response:', response.data);
+
       if (response.data.success && response.data.animations.length > 0) {
+        console.log('🎉 [BadgeAnimation] Found animation to show!');
         // Get the most recent untriggered animation
         const latestAnimation = response.data.animations[0];
         
-        if (!showAnimation) {
+        // Check if this animation was already shown in this session
+        const shownAnimations = JSON.parse(localStorage.getItem('shownBadgeAnimations') || '[]');
+        const alreadyShown = shownAnimations.includes(latestAnimation._id);
+        
+        console.log('🔎 [BadgeAnimation] Already shown?', alreadyShown, 'Current showAnimation state:', showAnimation);
+        
+        // Only show if animation hasn't been displayed yet
+        if (!showAnimation && !alreadyShown) {
+          console.log('🎬 [BadgeAnimation] SHOWING animation for badge:', latestAnimation.badgeDetails?.badgeName);
           setCurrentBadge(latestAnimation);
           setShowAnimation(true);
+          
+          // Mark this animation as shown in session storage
+          shownAnimations.push(latestAnimation._id);
+          localStorage.setItem('shownBadgeAnimations', JSON.stringify(shownAnimations));
 
-          // Mark as triggered after animation starts
+          // Mark as triggered in database IMMEDIATELY to prevent showing again
+          const marked = await markAsTriggered(latestAnimation._id);
+          
+          // If marking failed, we still showed it but logged the error
+          if (!marked) {
+            console.warn("⚠️ [BadgeAnimation] Failed to mark as triggered in DB, but prevented re-show via localStorage");
+          }
+        } else if (alreadyShown) {
+          console.log('✅ [BadgeAnimation] Animation already shown, marking as triggered in DB');
+          // Mark it as triggered in DB to clean up old records
           await markAsTriggered(latestAnimation._id);
         }
+      } else {
+        console.log('⏸️ [BadgeAnimation] No animations to show');
       }
     } catch (error) {
-      console.error("❌ [BadgeAnimation] Error checking animations:", error);
+      console.error("❌ [BadgeAnimation] Error checking animations:", error.response?.data || error.message);
     }
   };
 
@@ -117,7 +179,7 @@ export default function BadgeAnimation() {
         token = sessionStorage.getItem("aquachamp_token");
       }
 
-      if (!token) return;
+      if (!token) return false;
 
       const config = {
         headers: { 
@@ -126,15 +188,20 @@ export default function BadgeAnimation() {
         timeout: 10000
       };
 
-      await axios.put(
+      const response = await axios.put(
         `http://localhost:4000/api/badge-notifications/${notificationId}/triggered`,
         {},
         config
       );
 
-      console.log("✅ [BadgeAnimation] Marked as triggered");
+      if (response.data.success) {
+        console.log("✅ [BadgeAnimation] Marked as triggered");
+        return true;
+      }
+      return false;
     } catch (error) {
       console.error("❌ [BadgeAnimation] Error marking as triggered:", error);
+      return false;
     }
   };
 
@@ -207,13 +274,26 @@ export default function BadgeAnimation() {
       >
         {/* Confetti Lottie Animation */}
         <div style={{ width: 150, height: 150, marginBottom: -10 }}>
-          {animationData && (
+          {animationData ? (
             <Lottie
               animationData={animationData}
               loop={false}
               autoplay={true}
               style={{ width: "100%", height: "100%" }}
             />
+          ) : (
+            // Fallback: Animated emoji while loading
+            <div style={{ 
+              width: "100%", 
+              height: "100%", 
+              display: "flex", 
+              alignItems: "center", 
+              justifyContent: "center",
+              fontSize: 80,
+              animation: "bounce 0.8s ease-in-out infinite"
+            }}>
+              🎉
+            </div>
           )}
         </div>
 

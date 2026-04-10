@@ -2,8 +2,8 @@ import DailyLogin from '../models/dushani-points.js';
 import StudentProgress from '../models/dushani-StudentProgress.js';
 import User from '../models/dushani-User.js';
 import UserPoints from '../models/amasha-userPoints.js';
-import TrueFalseResult from '../models/dilshara-TrueFalseResult.js';
-import QuizResult from '../models/dilshara-QuizResult.js';
+import GameScore from '../models/dilshara-GameScore.js';
+import Game from '../models/dilshara-Game.js';
 import mongoose from 'mongoose';
 
 // Helper: get current user and id from username in JWT
@@ -219,31 +219,93 @@ export const getPointsStatus = async (req, res) => {
   }
 };
 
+// Helper function to remove duplicate badges
+const removeDuplicateBadges = (studentProgress) => {
+  const seen = new Set();
+  const beforeCount = studentProgress.badgesEarned.length;
+  
+  studentProgress.badgesEarned = studentProgress.badgesEarned.filter(b => {
+    const id = b.badgeId.toString();
+    if (seen.has(id)) {
+      console.log(`🗑️  Removing duplicate badge: ${b.badgeDetails?.badgeName || id}`);
+      return false;
+    }
+    seen.add(id);
+    return true;
+  });
+  
+  const removed = beforeCount - studentProgress.badgesEarned.length;
+  if (removed > 0) {
+    console.log(`🧹 Removed ${removed} duplicate badge(s) from student`);
+  }
+};
+
 // Check and award milestone badges
 const checkAndAwardMilestoneBadges = async (studentProgress) => {
   try {
     const Badge = (await import('../models/dushani-Badge.js')).default;
+    const BadgeNotification = (await import('../models/dushani-BadgeNotification.js')).default;
     
+    // Get all active milestone badges
     const activeMilestoneBadges = await Badge.find({
       badgeType: 'Milestone',
       status: 'Active'
     }).sort({ pointsRequired: 1 });
 
+    // STEP 1: Award eligible badges that student doesn't have
+    let badgesAwarded = 0;
+    const newlyAwardedBadges = [];
+    
     for (const badge of activeMilestoneBadges) {
-      // Check if student qualifies for this badge and hasn't earned it yet
-      if (studentProgress.totalPoints >= badge.pointsRequired && 
-          !studentProgress.hasBadge(badge._id)) {
-        
+      const qualifies = studentProgress.totalPoints >= badge.pointsRequired;
+      const alreadyHas = studentProgress.hasBadge(badge._id);
+      
+      console.log(`🔍 Checking badge "${badge.badgeName}" (${badge.pointsRequired} pts): qualifies=${qualifies}, alreadyHas=${alreadyHas}`);
+      
+      // ONLY award if qualifies AND doesn't have it yet
+      if (qualifies && !alreadyHas) {
         studentProgress.addBadge(badge);
         
         // Update badge earned count
         await Badge.findByIdAndUpdate(badge._id, {
           $inc: { earnedCount: 1 }
         });
+        
+        // Create badge notification for animation (ONLY for newly earned badges)
+        await BadgeNotification.createNotification(studentProgress.userId, badge);
+        badgesAwarded++;
+        newlyAwardedBadges.push(badge.badgeName);
+        
+        console.log(`🏅 NEW BADGE EARNED: "${badge.badgeName}" (Points: ${studentProgress.totalPoints} >= ${badge.pointsRequired})`);
+      } else if (qualifies && alreadyHas) {
+        console.log(`✅ Already has badge "${badge.badgeName}" - skipping (no duplicate)`);
       }
     }
     
-    await studentProgress.save();
+    // STEP 2: Remove badges that student no longer qualifies for
+    const badgesBefore = studentProgress.badgesEarned.length;
+    studentProgress.badgesEarned = studentProgress.badgesEarned.filter(badgeEntry => {
+      const badge = activeMilestoneBadges.find(b => b._id.toString() === badgeEntry.badgeId.toString());
+      // Keep badge only if it exists, is active, and student still qualifies
+      const shouldKeep = badge && badge.status === 'Active' && studentProgress.totalPoints >= badge.pointsRequired;
+      if (!shouldKeep) {
+        console.log(`⚠️  Removing badge "${badgeEntry.badgeDetails?.badgeName || 'Unknown'}" - no longer qualifies`);
+      }
+      return shouldKeep;
+    });
+    const badgesRemoved = badgesBefore - studentProgress.badgesEarned.length;
+    
+    // CRITICAL: Clean duplicates BEFORE saving
+    removeDuplicateBadges(studentProgress);
+    
+    // Only save if there were changes
+    if (studentProgress.isModified() || badgesAwarded > 0 || badgesRemoved > 0) {
+      await studentProgress.save();
+      console.log(`✅ Badge check complete: Awarded=${badgesAwarded}, Removed=${badgesRemoved}, Total=${studentProgress.badgesEarned.length}`);
+      if (newlyAwardedBadges.length > 0) {
+        console.log(`🎬 Notifications created for: ${newlyAwardedBadges.join(', ')}`);
+      }
+    }
   } catch (error) {
     console.error('Check milestone badges error:', error);
   }
@@ -339,13 +401,25 @@ export const getStudentGamePoints = async (req, res) => {
       });
     }
 
+    // FILTER: Return only unique badges
+    const uniqueBadges = [];
+    const seenBadgeIds = new Set();
+    
+    for (const badge of studentProgress.badgesEarned) {
+      const badgeIdStr = badge.badgeId.toString();
+      if (!seenBadgeIds.has(badgeIdStr)) {
+        seenBadgeIds.add(badgeIdStr);
+        uniqueBadges.push(badge);
+      }
+    }
+
     res.status(200).json({
       success: true,
       studentName: `${user.firstName} ${user.lastName}`,
       totalPoints: studentProgress.totalPoints,
       currentLevel: studentProgress.currentLevel,
-      badgesCount: studentProgress.badgesEarned.length,
-      badges: studentProgress.badgesEarned,
+      badgesCount: uniqueBadges.length,
+      badges: uniqueBadges,
       sectionProgress: studentProgress.sectionProgress
     });
   } catch (error) {
@@ -419,13 +493,9 @@ export const getAllStudentsPoints = async (req, res) => {
       const userId = progress.userId._id;
       const username = progress.userId.username;
       
-      // Get points from TrueFalseResult
-      const trueFalseResults = await TrueFalseResult.find({ userId: username });
-      const totalTrueFalsePoints = trueFalseResults.reduce((sum, result) => sum + result.pointsEarned, 0);
-      
-      // Get points from QuizResult
-      const quizResults = await QuizResult.find({ userId: username });
-      const totalQuizPoints = quizResults.reduce((sum, result) => sum + result.score, 0);
+      // Get points from GameScore
+      const gameScores = await GameScore.find({ userId: username });
+      const totalGamePoints = gameScores.reduce((sum, score) => sum + score.score, 0);
       
       // Get points from UserPoints
       const userPointsRecord = await UserPoints.findOne({ userId: userId });
@@ -436,7 +506,7 @@ export const getAllStudentsPoints = async (req, res) => {
       const totalDailyLoginPoints = dailyLoginRecords.reduce((sum, record) => sum + (record.pointsAwarded || 10), 0);
       
       // Calculate total from ALL sources
-      const calculatedTotalPoints = totalTrueFalsePoints + totalQuizPoints + userPoints + totalDailyLoginPoints;
+      const calculatedTotalPoints = totalGamePoints + userPoints + totalDailyLoginPoints;
       
       // Track what changed
       const pointsChanged = progress.totalPoints !== calculatedTotalPoints;
@@ -550,11 +620,8 @@ export const getMyPointsStatus = async (req, res) => {
     const Level = (await import('../models/dushani-Level.js')).default;
 
     // Get points from all sources
-    const trueFalseResults = await TrueFalseResult.find({ userId: user.username });
-    const totalTrueFalsePoints = trueFalseResults.reduce((sum, result) => sum + result.pointsEarned, 0);
-
-    const quizResults = await QuizResult.find({ userId: user.username });
-    const totalQuizPoints = quizResults.reduce((sum, result) => sum + result.score, 0);
+    const gameScores = await GameScore.find({ userId: user.username });
+    const totalGamePoints = gameScores.reduce((sum, score) => sum + score.score, 0);
 
     const userPointsRecord = await UserPoints.findOne({ userId: userId });
     const userPoints = userPointsRecord ? userPointsRecord.totalPoints : 0;
@@ -563,7 +630,7 @@ export const getMyPointsStatus = async (req, res) => {
     const totalDailyLoginPoints = dailyLoginRecords.reduce((sum, record) => sum + (record.pointsAwarded || 10), 0);
 
     // Calculate TOTAL dynamic points
-    const dynamicTotalPoints = totalTrueFalsePoints + totalQuizPoints + userPoints + totalDailyLoginPoints;
+    const dynamicTotalPoints = totalGamePoints + userPoints + totalDailyLoginPoints;
 
     // Get or create student progress
     let studentProgress = await StudentProgress.findOne({ userId });
@@ -602,11 +669,8 @@ export const getMyPointsStatus = async (req, res) => {
       const stuUsername = progress.userId.username;
       
       // Calculate points for each student
-      const tfResults = await TrueFalseResult.find({ userId: stuUsername });
-      const tfPoints = tfResults.reduce((sum, r) => sum + r.pointsEarned, 0);
-      
-      const qResults = await QuizResult.find({ userId: stuUsername });
-      const qPoints = qResults.reduce((sum, r) => sum + r.score, 0);
+      const gameScores = await GameScore.find({ userId: stuUsername });
+      const gamePoints = gameScores.reduce((sum, r) => sum + r.score, 0);
       
       const uPointsRecord = await UserPoints.findOne({ userId: progress.userId._id });
       const uPoints = uPointsRecord ? uPointsRecord.totalPoints : 0;
@@ -614,7 +678,7 @@ export const getMyPointsStatus = async (req, res) => {
       const dlRecords = await DailyLogin.find({ userId: progress.userId._id });
       const dlPoints = dlRecords.reduce((sum, r) => sum + (r.pointsAwarded || 10), 0);
       
-      const totalPts = tfPoints + qPoints + uPoints + dlPoints;
+      const totalPts = gamePoints + uPoints + dlPoints;
       
       studentsPoints.push({
         userId: progress.userId._id,
@@ -630,6 +694,18 @@ export const getMyPointsStatus = async (req, res) => {
     const userRankIndex = studentsPoints.findIndex(s => s.userId.toString() === userId.toString());
     const userRank = userRankIndex !== -1 ? userRankIndex + 1 : null;
 
+    // FILTER: Return only unique badges
+    const uniqueBadges = [];
+    const seenBadgeIds = new Set();
+    
+    for (const badge of studentProgress.badgesEarned) {
+      const badgeIdStr = badge.badgeId.toString();
+      if (!seenBadgeIds.has(badgeIdStr)) {
+        seenBadgeIds.add(badgeIdStr);
+        uniqueBadges.push(badge);
+      }
+    }
+
     res.status(200).json({
       success: true,
       data: {
@@ -637,8 +713,8 @@ export const getMyPointsStatus = async (req, res) => {
         currentLevel: currentLevelDoc ? currentLevelDoc.levelName : 'N/A',
         rank: userRank ? `#${userRank}` : 'N/A',
         rankNumber: userRank,
-        badgesCount: studentProgress.badgesEarned.length,
-        badges: studentProgress.badgesEarned.map(badge => ({
+        badgesCount: uniqueBadges.length,
+        badges: uniqueBadges.map(badge => ({
           badgeId: badge.badgeId,
           badgeName: badge.badgeDetails?.badgeName || 'Unknown Badge',
           badgeIcon: badge.badgeDetails?.badgeIcon || '⭐',
@@ -646,8 +722,7 @@ export const getMyPointsStatus = async (req, res) => {
           earnedAt: badge.earnedAt
         })),
         pointsBreakdown: {
-          trueFalsePoints: totalTrueFalsePoints,
-          quizPoints: totalQuizPoints,
+          gamePoints: totalGamePoints,
           userPoints: userPoints,
           dailyLoginPoints: totalDailyLoginPoints
         }

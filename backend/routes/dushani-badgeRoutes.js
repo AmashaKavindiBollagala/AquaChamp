@@ -7,7 +7,8 @@ import {
   deleteBadge,
   getActiveBadges,
   diagnosticAndAwardBadges,
-  clearAllBadges
+  clearAllBadges,
+  recalculateAllBadges
 } from '../controllers/dushani-BadgeController.js';
 import verifyJWT from '../middleware/amasha-verifyJWT.js';
 
@@ -39,5 +40,8 @@ router.post('/diagnostic-and-award', diagnosticAndAwardBadges);
 
 // Clear all badges from all students
 router.post('/clear-all-badges', clearAllBadges);
+
+// RECALCULATE all badges for all students (awards & removes based on points)
+router.post('/recalculate-all', recalculateAllBadges);
 
 export default router;

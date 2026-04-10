@@ -228,11 +228,23 @@ export const getStudentBadges = async (req, res) => {
       });
     }
 
+    // FILTER: Return only unique badges (prevent duplicates in response)
+    const uniqueBadges = [];
+    const seenBadgeIds = new Set();
+    
+    for (const badge of studentProgress.badgesEarned) {
+      const badgeIdStr = badge.badgeId.toString();
+      if (!seenBadgeIds.has(badgeIdStr)) {
+        seenBadgeIds.add(badgeIdStr);
+        uniqueBadges.push(badge);
+      }
+    }
+
     res.status(200).json({
       success: true,
       studentName: `${studentProgress.userId.firstName} ${studentProgress.userId.lastName}`,
-      badges: studentProgress.badgesEarned,
-      badgesCount: studentProgress.badgesEarned.length
+      badges: uniqueBadges,
+      badgesCount: uniqueBadges.length
     });
   } catch (error) {
     console.error('Get student badges error:', error);
@@ -243,19 +255,49 @@ export const getStudentBadges = async (req, res) => {
   }
 };
 
+// Helper function to remove duplicate badges
+const removeDuplicateBadges = (studentProgress) => {
+  const seen = new Set();
+  const beforeCount = studentProgress.badgesEarned.length;
+  
+  studentProgress.badgesEarned = studentProgress.badgesEarned.filter(b => {
+    const id = b.badgeId.toString();
+    if (seen.has(id)) {
+      console.log(`🗑️  Removing duplicate badge: ${b.badgeDetails?.badgeName || id}`);
+      return false;
+    }
+    seen.add(id);
+    return true;
+  });
+  
+  const removed = beforeCount - studentProgress.badgesEarned.length;
+  if (removed > 0) {
+    console.log(`🧹 Removed ${removed} duplicate badge(s) from student`);
+  }
+};
+
 // Check and award milestone badges
 const checkAndAwardMilestoneBadges = async (studentProgress) => {
   try {
+    const BadgeNotification = (await import('../models/dushani-BadgeNotification.js')).default;
+    
     const activeMilestoneBadges = await Badge.find({
       badgeType: 'Milestone',
       status: 'Active'
     }).sort({ pointsRequired: 1 });
 
+    // STEP 1: Award eligible badges (NO DUPLICATES)
+    let badgesAwarded = 0;
+    const newlyAwardedBadges = [];
+    
     for (const badge of activeMilestoneBadges) {
-      // Check if student qualifies for this badge and hasn't earned it yet
-      if (studentProgress.totalPoints >= badge.pointsRequired && 
-          !studentProgress.hasBadge(badge._id)) {
-        
+      const qualifies = studentProgress.totalPoints >= badge.pointsRequired;
+      const alreadyHas = studentProgress.hasBadge(badge._id);
+      
+      console.log(`🔍 Checking badge "${badge.badgeName}" (${badge.pointsRequired} pts): qualifies=${qualifies}, alreadyHas=${alreadyHas}`);
+      
+      // ONLY award if qualifies AND doesn't have it yet
+      if (qualifies && !alreadyHas) {
         studentProgress.addBadge(badge);
         
         // Update badge earned count
@@ -263,15 +305,39 @@ const checkAndAwardMilestoneBadges = async (studentProgress) => {
           $inc: { earnedCount: 1 }
         });
         
-        // Create badge notification
-        const BadgeNotification = (await import('../models/dushani-BadgeNotification.js')).default;
+        // Create badge notification (ONLY for newly earned badges)
         await BadgeNotification.createNotification(studentProgress.userId, badge);
+        badgesAwarded++;
+        newlyAwardedBadges.push(badge.badgeName);
+        
+        console.log(`🏅 NEW BADGE EARNED: "${badge.badgeName}" (Points: ${studentProgress.totalPoints} >= ${badge.pointsRequired})`);
+      } else if (qualifies && alreadyHas) {
+        console.log(`✅ Already has badge "${badge.badgeName}" - skipping (no duplicate)`);
       }
     }
     
+    // STEP 2: Remove badges student no longer qualifies for
+    const badgesBefore = studentProgress.badgesEarned.length;
+    studentProgress.badgesEarned = studentProgress.badgesEarned.filter(badgeEntry => {
+      const badge = activeMilestoneBadges.find(b => b._id.toString() === badgeEntry.badgeId.toString());
+      const shouldKeep = badge && badge.status === 'Active' && studentProgress.totalPoints >= badge.pointsRequired;
+      if (!shouldKeep) {
+        console.log(`⚠️  Removing badge "${badgeEntry.badgeDetails?.badgeName || 'Unknown'}" - no longer qualifies`);
+      }
+      return shouldKeep;
+    });
+    const badgesRemoved = badgesBefore - studentProgress.badgesEarned.length;
+    
+    // CRITICAL: Clean duplicates BEFORE saving
+    removeDuplicateBadges(studentProgress);
+    
     // Only save if there were changes
-    if (studentProgress.isModified()) {
+    if (studentProgress.isModified() || badgesAwarded > 0 || badgesRemoved > 0) {
       await studentProgress.save();
+      console.log(`✅ Badge check complete: Awarded=${badgesAwarded}, Removed=${badgesRemoved}, Total=${studentProgress.badgesEarned.length}`);
+      if (newlyAwardedBadges.length > 0) {
+        console.log(`🎬 Notifications created for: ${newlyAwardedBadges.join(', ')}`);
+      }
     }
   } catch (error) {
     console.error('Check milestone badges error:', error);
