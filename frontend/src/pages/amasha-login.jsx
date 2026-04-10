@@ -270,8 +270,9 @@ export default function UserLogin() {
         }
 
         setUserData(response.data.user);
-        setLoginSuccess(true);
+      setLoginSuccess(true);
 
+        console.log("   🚀 Navigating to /student/dashboard...");
         // 🎯 CLAIM DAILY LOGIN POINTS AUTOMATICALLY
         try {
           console.log("🎁 Attempting to claim daily login reward...");
@@ -297,7 +298,7 @@ export default function UserLogin() {
         console.log("   🚀 Navigating to /profile...");
         // Small delay to ensure storage is complete
         setTimeout(() => {
-          navigate("/profile");
+          navigate("/student/dashboard");
         }, 100);
       }
     } catch (error) {
@@ -459,15 +460,11 @@ export default function UserLogin() {
                       </span>
                     ))}
                   </div>
-                  <button
-                    onClick={() => {
-                      setLoginSuccess(false);
-                      setForm({ email: "", password: "" });
-                    }}
-                    className="mt-6 rounded-2xl bg-linear-to-r from-sky-700 to-emerald-500 px-8 py-3 text-sm font-extrabold text-white shadow-lg transition hover:-translate-y-1"
-                  >
-                    Continue to Dashboard →
-                  </button>
+                    <button onClick={() => navigate("/student/dashboard")}
+                  className="mt-6 rounded-2xl bg-linear-to-r from-sky-700 to-emerald-500 px-8 py-3 text-sm font-extrabold text-white shadow-lg transition hover:-translate-y-1"
+                >
+                  Continue to Dashboard →
+                </button>
                 </div>
               ) : (
                 /* ── Login Form ── */

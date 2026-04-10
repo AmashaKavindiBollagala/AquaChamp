@@ -1,5 +1,23 @@
 import Topic from "../models/kaveesha-topicModel.js";
 import Subtopic from "../models/kaveesha-subtopicModel.js";
+import fs from "fs";
+import path from "path";
+
+function diskPathForTopicImage(imageUrl) {
+  if (!imageUrl || !imageUrl.startsWith("/uploads/images/")) return null;
+  return path.join(process.cwd(), imageUrl.replace(/^\/+/, ""));
+}
+
+function unlinkTopicImageIfLocal(imageUrl) {
+  const p = diskPathForTopicImage(imageUrl);
+  if (p && fs.existsSync(p)) {
+    try {
+      fs.unlinkSync(p);
+    } catch (e) {
+      console.error("unlink topic image:", e);
+    }
+  }
+}
 
 // create topic
 export const createTopic = async (req, res) => {
@@ -73,12 +91,59 @@ export const updateTopic = async (req, res) => {
   }
 };
 
+export const uploadTopicImage = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "No image uploaded" });
+    }
+
+    const topic = await Topic.findById(req.params.id);
+    if (!topic) {
+      return res.status(404).json({ message: "Topic not found" });
+    }
+
+    if (topic.imageUrl) {
+      unlinkTopicImageIfLocal(topic.imageUrl);
+    }
+
+    topic.imageUrl = `/uploads/images/${req.file.filename}`;
+    await topic.save();
+    res.json(topic);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const deleteTopicImage = async (req, res) => {
+  try {
+    const topic = await Topic.findById(req.params.id);
+    if (!topic) {
+      return res.status(404).json({ message: "Topic not found" });
+    }
+
+    if (topic.imageUrl) {
+      unlinkTopicImageIfLocal(topic.imageUrl);
+    }
+
+    topic.imageUrl = null;
+    await topic.save();
+    res.json(topic);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // delete topic
 
 // delete topic with restrict check
 export const deleteTopic = async (req, res) => {
   try {
     const topicId = req.params.id;
+
+    const topicDoc = await Topic.findById(topicId);
+    if (!topicDoc) {
+      return res.status(404).json({ message: "Topic not found" });
+    }
 
     // Check if subtopics exist under this topic
     const subtopics = await Subtopic.find({ topicId });
@@ -89,7 +154,10 @@ export const deleteTopic = async (req, res) => {
       });
     }
 
-    // If no subtopics, delete the topic
+    if (topicDoc.imageUrl) {
+      unlinkTopicImageIfLocal(topicDoc.imageUrl);
+    }
+
     await Topic.findByIdAndDelete(topicId);
     res.json({ message: "Topic deleted successfully" });
   } catch (error) {

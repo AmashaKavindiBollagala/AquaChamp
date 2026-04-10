@@ -21,10 +21,24 @@ const subtopicSchema = new mongoose.Schema(
 
     // lesson content
     content: String,
+    contentType: { type: String, enum: ["text", "pdf", "presentation"], default: "text" },
+    contentFiles: {
+      type: [
+        {
+          name: { type: String },
+          url: { type: String },
+          type: { type: String },
+          size: { type: Number },
+          uploadedAt: { type: Date }
+        }
+      ],
+      default: []
+    },
 
     // multimedia
     images: [String],
     videoUrl: String,
+    videoType: { type: String, enum: ["youtube", "upload"], default: "youtube" },
 
     order: Number,
 

@@ -25,6 +25,13 @@ import PublicLeaderboard from "./components/dushani-PublicLeaderboard.jsx";
 function DashboardLayout() {
   const [activePage, setActivePage] = useState("overview");
 
+import KaveeshaLessonsDashboard from "./components/kaveesha-lessonsDashboard";
+
+import KaveeshaStudentDashboard from "./components/kaveesha-studentDashboard";
+import KaveeshaTopicDetail from "./components/kaveesha-topicDetail";
+import KaveeshaSubtopicLearn from "./components/kaveesha-subtopicLearn";
+import KaveeshaStudentProgress from "./components/kaveesha-studentProgress";
+
   const pages = {
     overview: <OverviewPage />,
     badges: <BadgesPage />,
@@ -75,6 +82,12 @@ function App() {
         {/* Reset Password */}
         <Route path="/reset-password/:token" element={<ResetPassword />} />
 
+      
+        <Route path="/lesson-dashboard" element={<KaveeshaLessonsDashboard />} />
+        <Route path="/student/dashboard" element={<KaveeshaStudentDashboard />} />
+        <Route path="/student/topic/:topicId" element={<KaveeshaTopicDetail />} />
+        <Route path="/student/subtopic/:subtopicId" element={<KaveeshaSubtopicLearn />} />
+        <Route path="/student/progress" element={<KaveeshaStudentProgress />} />
         {/* New Dashboard with Sidebar */}
         <Route path="/dashboard" element={<DashboardLayout />} />
         <Route path="/progress-dashboard" element={<DashboardLayout />} />

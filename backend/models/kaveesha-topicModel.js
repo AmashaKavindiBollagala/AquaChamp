@@ -8,7 +8,12 @@ const topicSchema = new mongoose.Schema(
       unique: true,    
       trim: true
     },
-    description: String
+    description: String,
+
+    imageUrl: {
+      type: String,
+      default: null,
+    },
   },
   { timestamps: true }
 );
