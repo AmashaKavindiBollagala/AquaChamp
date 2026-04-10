@@ -35,7 +35,7 @@ const levelSchema = new mongoose.Schema({
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: false
   }
 }, { timestamps: true });
 
@@ -64,10 +64,10 @@ levelSchema.statics.validateLevelRanges = async function (excludeId = null) {
 
 levelSchema.statics.getLevelByPoints = async function (points) {
 
-  // 0 points = No level
+  // 0 points = No level (N/A)
   if (points <= 0) return null;
 
-  return await this.findOne({
+  const level = await this.findOne({
     minPoints: { $lte: points },
     $or: [
       { maxPoints: { $gte: points } },
@@ -75,6 +75,8 @@ levelSchema.statics.getLevelByPoints = async function (points) {
     ],
     isActive: true
   });
+  
+  return level;
 };
 
 

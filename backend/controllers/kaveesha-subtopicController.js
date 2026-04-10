@@ -5,6 +5,12 @@ import mongoose from "mongoose";
 import fs from "fs";
 import path from "path";
 
+function diskPathForSubtopicImage(imagePath) {
+  if (!imagePath || !imagePath.startsWith("/uploads/images/")) return null;
+  const rel = imagePath.replace(/^\/+/, "");
+  return path.join(process.cwd(), rel);
+}
+
 // ------------------ SUBTOPIC CRUD ------------------
 
 // Create subtopic
@@ -152,11 +158,31 @@ export const getLessonsByUserAge = async (req, res) => {
 // Update video
 export const updateVideo = async (req, res) => {
   try {
+    const updateData = {};
+    
+    // Check if video file was uploaded
+    if (req.file) {
+      updateData.videoUrl = `/uploads/videos/${req.file.filename}`;
+      updateData.videoType = "upload";
+    } 
+    // Otherwise use YouTube URL from request body
+    else if (req.body.videoUrl) {
+      updateData.videoUrl = req.body.videoUrl;
+      updateData.videoType = req.body.videoType || "youtube";
+    } else {
+      return res.status(400).json({ message: "Please provide a video file or YouTube URL" });
+    }
+    
     const subtopic = await Subtopic.findByIdAndUpdate(
       req.params.id,
-      { videoUrl: req.body.videoUrl },
+      updateData,
       { new: true },
     );
+    
+    if (!subtopic) {
+      return res.status(404).json({ message: "Subtopic not found" });
+    }
+    
     res.json(subtopic);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -168,7 +194,7 @@ export const deleteVideo = async (req, res) => {
   try {
     const subtopic = await Subtopic.findByIdAndUpdate(
       req.params.id,
-      { videoUrl: null },
+      { videoUrl: null, videoType: null },
       { new: true },
     );
     res.json({ message: "Video deleted", subtopic });
@@ -180,9 +206,21 @@ export const deleteVideo = async (req, res) => {
 // Update text
 export const updateText = async (req, res) => {
   try {
+    const updateData = {};
+    
+    if (req.body.content !== undefined) {
+      updateData.content = req.body.content;
+    }
+    if (req.body.contentType !== undefined) {
+      updateData.contentType = req.body.contentType;
+    }
+    if (req.body.contentFiles !== undefined) {
+      updateData.contentFiles = req.body.contentFiles;
+    }
+    
     const subtopic = await Subtopic.findByIdAndUpdate(
       req.params.id,
-      { content: req.body.content },
+      updateData,
       { new: true },
     );
     res.json(subtopic);
@@ -196,10 +234,105 @@ export const deleteText = async (req, res) => {
   try {
     const subtopic = await Subtopic.findByIdAndUpdate(
       req.params.id,
-      { content: null },
+      { content: null, contentType: "text", contentFiles: [] },
       { new: true },
     );
-    res.json({ message: "Text deleted", subtopic });
+    res.json({ message: "Content deleted", subtopic });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Upload content file (PDF, Presentation)
+export const uploadContentFile = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "No file uploaded" });
+    }
+    
+    const subtopic = await Subtopic.findById(req.params.id);
+    if (!subtopic) {
+      return res.status(404).json({ message: "Subtopic not found" });
+    }
+    
+    // Initialize contentFiles array if it doesn't exist
+    if (!subtopic.contentFiles) {
+      subtopic.contentFiles = [];
+    }
+    
+    // Add new file to the array
+    const fileType = req.body.fileType || "pdf";
+    subtopic.contentFiles.push({
+      name: req.file.originalname,
+      url: `/uploads/content/${req.file.filename}`,
+      type: fileType,
+      size: req.file.size,
+      uploadedAt: new Date()
+    });
+    
+    // Set content type based on file type
+    subtopic.contentType = fileType;
+    
+    await subtopic.save();
+    
+    res.json({
+      message: "File uploaded successfully",
+      subtopic,
+      contentFiles: subtopic.contentFiles
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Delete individual content file
+export const deleteContentFile = async (req, res) => {
+  try {
+    const { fileId } = req.body;
+    const subtopic = await Subtopic.findById(req.params.id);
+    
+    if (!subtopic) {
+      return res.status(404).json({ message: "Subtopic not found" });
+    }
+    
+    if (!subtopic.contentFiles || subtopic.contentFiles.length === 0) {
+      return res.status(400).json({ message: "No files found" });
+    }
+    
+    // Find the file to delete
+    const fileToDelete = subtopic.contentFiles.id(fileId);
+    if (!fileToDelete) {
+      return res.status(404).json({ message: "File not found" });
+    }
+    
+    // Delete file from filesystem
+    const fs = await import('fs');
+    const path = await import('path');
+    const filePath = path.join(process.cwd(), fileToDelete.url);
+    
+    try {
+      if (fs.default.existsSync(filePath)) {
+        fs.default.unlinkSync(filePath);
+      }
+    } catch (err) {
+      console.error("Error deleting file from filesystem:", err);
+    }
+    
+    // Remove file from array
+    subtopic.contentFiles = subtopic.contentFiles.filter(f => f._id.toString() !== fileId);
+    
+    // If no files left, reset content type
+    if (subtopic.contentFiles.length === 0) {
+      subtopic.contentType = "text";
+    }
+    
+    await subtopic.save();
+    
+    res.json({
+      message: "File deleted successfully",
+      subtopic,
+      contentFiles: subtopic.contentFiles
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -229,7 +362,7 @@ export const updateImages = async (req, res) => {
     // Images uploaded from device
     if (req.files && req.files.length > 0) {
       const uploadedImages = req.files.map(
-        (file) => `/uploads/images/${file.originalname}`, // use originalname
+        (file) => `/uploads/images/${file.filename}`,
       );
       imagePaths = [...imagePaths, ...uploadedImages];
     }
@@ -281,6 +414,158 @@ export const deleteImages = async (req, res) => {
     await subtopic.save();
 
     res.json({ message: "Images deleted successfully", subtopic });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Append one uploaded image (does not remove existing)
+export const appendSubtopicImage = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "No image uploaded" });
+    }
+
+    const subtopic = await Subtopic.findById(req.params.id);
+    if (!subtopic) {
+      return res.status(404).json({ message: "Subtopic not found" });
+    }
+
+    if (!subtopic.images) subtopic.images = [];
+    subtopic.images.push(`/uploads/images/${req.file.filename}`);
+    await subtopic.save();
+
+    res.json({
+      message: "Image added",
+      subtopic,
+      images: subtopic.images,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Append one image URL
+export const appendSubtopicImageUrl = async (req, res) => {
+  try {
+    const raw = (req.body?.imageUrl ?? "").trim();
+    if (!raw) {
+      return res.status(400).json({ message: "imageUrl is required" });
+    }
+    if (!/^https?:\/\//i.test(raw)) {
+      return res.status(400).json({ message: "Invalid image URL" });
+    }
+
+    const subtopic = await Subtopic.findById(req.params.id);
+    if (!subtopic) {
+      return res.status(404).json({ message: "Subtopic not found" });
+    }
+
+    if (!subtopic.images) subtopic.images = [];
+    subtopic.images.push(raw);
+    await subtopic.save();
+
+    res.json({
+      message: "Image URL added",
+      subtopic,
+      images: subtopic.images,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Delete individual image
+export const deleteSingleImage = async (req, res) => {
+  try {
+    const { imagePath } = req.body;
+    const subtopic = await Subtopic.findById(req.params.id);
+    
+    if (!subtopic) {
+      return res.status(404).json({ message: "Subtopic not found" });
+    }
+    
+    if (!subtopic.images || subtopic.images.length === 0) {
+      return res.status(400).json({ message: "No images found" });
+    }
+    
+    const imageToDelete = imagePath;
+    const idx = subtopic.images.findIndex((img) => img === imageToDelete);
+    if (idx === -1) {
+      return res.status(404).json({ message: "Image not found" });
+    }
+    
+    const filePath = diskPathForSubtopicImage(imageToDelete);
+    if (filePath) {
+      try {
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      } catch (err) {
+        console.error("Error deleting image from filesystem:", err);
+      }
+    }
+    
+    subtopic.images.splice(idx, 1);
+    
+    await subtopic.save();
+    
+    res.json({
+      message: "Image deleted successfully",
+      subtopic,
+      images: subtopic.images
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Update individual image (replace with new upload)
+export const updateSingleImage = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "No image uploaded" });
+    }
+    
+    const { oldImagePath, imageIndex } = req.body;
+    const subtopic = await Subtopic.findById(req.params.id);
+    
+    if (!subtopic) {
+      return res.status(404).json({ message: "Subtopic not found" });
+    }
+    
+    if (!subtopic.images || subtopic.images.length === 0) {
+      return res.status(400).json({ message: "No images found to update" });
+    }
+    
+    let idx =
+      oldImagePath !== undefined && oldImagePath !== ""
+        ? subtopic.images.findIndex((img) => img === oldImagePath)
+        : -1;
+    if (idx === -1 && imageIndex !== undefined && imageIndex !== "") {
+      idx = parseInt(imageIndex, 10);
+    }
+    if (isNaN(idx) || idx < 0 || idx >= subtopic.images.length) {
+      return res.status(400).json({ message: "Image not found" });
+    }
+    
+    const oldPath = subtopic.images[idx];
+    const oldFilePath = diskPathForSubtopicImage(oldPath);
+    if (oldFilePath) {
+      try {
+        if (fs.existsSync(oldFilePath)) fs.unlinkSync(oldFilePath);
+      } catch (err) {
+        console.error("Error deleting old image:", err);
+      }
+    }
+    
+    subtopic.images[idx] = `/uploads/images/${req.file.filename}`;
+    
+    await subtopic.save();
+    
+    res.json({
+      message: "Image updated successfully",
+      subtopic,
+      images: subtopic.images
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

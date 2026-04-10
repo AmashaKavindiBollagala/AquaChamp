@@ -45,16 +45,32 @@ export default function DilsharaAdminLogin() {
         setServerError(data.message || "Login failed. Please try again.");
         return;
       }
+      
+      // Store token in BOTH locations for compatibility
       localStorage.setItem("superAdminToken", data.accessToken);
+      localStorage.setItem("aquachamp_token", data.accessToken); // For lessons admin
       localStorage.setItem("adminRoles", JSON.stringify(data.user.roles));
       localStorage.setItem("adminUsername", data.user.username);
+      
       const roles = data.user.roles;
-      if (roles.includes("SUPER_ADMIN"))        navigate("/super-admin");
-      else if (roles.includes("Game_ADMIN"))     navigate("/game-dashboard");
-      else if (roles.includes("Progress_ADMIN")) navigate("/progress-dashboard");
-      else if (roles.includes("Activity_ADMIN")) navigate("/activity-dashboard");
-      else if (roles.includes("Lesson_ADMIN"))   navigate("/lesson-dashboard");
-      else                                        navigate("/admin-dashboard");
+      console.log("🔑 Admin Login - User roles:", roles);
+      
+      // Redirect based on admin roles (priority order)
+      if (roles.includes("SUPER_ADMIN")) {
+        navigate("/super-admin");
+      } else if (roles.includes("Lesson_ADMIN") || roles.includes("Lessons_ADMIN")) {
+        // Lesson admins MUST use this login page
+        console.log("✅ Redirecting to Lesson Dashboard");
+        navigate("/lesson-dashboard");
+      } else if (roles.includes("Game_ADMIN")) {
+        navigate("/game-dashboard");
+      } else if (roles.includes("Progress_ADMIN")) {
+        navigate("/progress-dashboard");
+      } else if (roles.includes("Activity_ADMIN")) {
+        navigate("/activity-dashboard");
+      } else {
+        navigate("/admin-dashboard");
+      }
     } catch {
       setServerError("Unable to connect to server. Make sure backend is running.");
     } finally {

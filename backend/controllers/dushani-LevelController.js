@@ -35,7 +35,7 @@ export const createLevel = async (req, res) => {
       minPoints,
       maxPoints: maxPoints ?? null, // allow unlimited
       description: description || '',
-      createdBy
+      createdBy: createdBy || undefined // Only set if found
     });
 
     await level.save();
@@ -83,10 +83,83 @@ export const getAllLevels = async (req, res) => {
   try {
     const levels = await Level.find().sort({ minPoints: 1 });
 
+    // DYNAMICALLY calculate student count for each level
+    const StudentProgress = (await import('../models/dushani-StudentProgress.js')).default;
+    const TrueFalseResult = (await import('../models/dilshara-TrueFalseResult.js')).default;
+    const QuizResult = (await import('../models/dilshara-QuizResult.js')).default;
+    const UserPoints = (await import('../models/amasha-userPoints.js')).default;
+    const DailyLogin = (await import('../models/dushani-points.js')).default;
+    
+    const allStudents = await StudentProgress.find();
+    
+    // Calculate points for each student and assign to levels
+    const levelCounts = {};
+    levels.forEach(level => {
+      levelCounts[level._id.toString()] = 0;
+    });
+    
+    let naCount = 0;
+    
+    for (const student of allStudents) {
+      // Dynamically calculate total points
+      const user = await (await import('../models/dushani-User.js')).default.findById(student.userId);
+      if (!user) continue;
+      
+      const trueFalseResults = await TrueFalseResult.find({ userId: user.username });
+      const totalTrueFalsePoints = trueFalseResults.reduce((sum, result) => sum + result.pointsEarned, 0);
+      
+      const quizResults = await QuizResult.find({ userId: user.username });
+      const totalQuizPoints = quizResults.reduce((sum, result) => sum + result.score, 0);
+      
+      const userPointsRecord = await UserPoints.findOne({ userId: student.userId });
+      const userPoints = userPointsRecord ? userPointsRecord.totalPoints : 0;
+      
+      const dailyLoginRecords = await DailyLogin.find({ userId: student.userId });
+      const totalDailyLoginPoints = dailyLoginRecords.reduce((sum, record) => sum + (record.pointsAwarded || 10), 0);
+      
+      const dynamicTotalPoints = totalTrueFalsePoints + totalQuizPoints + userPoints + totalDailyLoginPoints;
+      
+      // Update student progress if needed
+      if (student.totalPoints !== dynamicTotalPoints) {
+        student.totalPoints = dynamicTotalPoints;
+      }
+      
+      // Calculate level
+      let studentLevel;
+      if (dynamicTotalPoints === 0) {
+        studentLevel = 'N/A';
+        naCount++;
+      } else {
+        studentLevel = await student.calculateLevel();
+        if (!studentLevel) {
+          studentLevel = 'N/A';
+          naCount++;
+        }
+      }
+      
+      student.currentLevel = studentLevel;
+      await student.save();
+      
+      // Count this student in their level
+      const matchingLevel = levels.find(l => l.levelName === studentLevel);
+      if (matchingLevel) {
+        levelCounts[matchingLevel._id.toString()]++;
+      }
+    }
+    
+    console.log(`📊 Level distribution: ${levels.map(l => `${l.levelName}: ${levelCounts[l._id.toString()]}`).join(', ')}, N/A: ${naCount}`);
+
+    // Add studentCount to each level
+    const levelsWithCounts = levels.map(level => ({
+      ...level.toObject(),
+      studentCount: levelCounts[level._id.toString()] || 0
+    }));
+
     res.status(200).json({
       success: true,
       count: levels.length,
-      levels
+      levels: levelsWithCounts,
+      naLevelCount: naCount
     });
 
   } catch (error) {
@@ -170,10 +243,87 @@ export const updateLevel = async (req, res) => {
     // Validate overlap AFTER updating
     await Level.validateLevelRanges(id);
 
+    // 🔄 RECALCULATE ALL STUDENTS' LEVELS after level thresholds changed
+    const StudentProgress = (await import('../models/dushani-StudentProgress.js')).default;
+    const TrueFalseResult = (await import('../models/dilshara-TrueFalseResult.js')).default;
+    const QuizResult = (await import('../models/dilshara-QuizResult.js')).default;
+    const UserPoints = (await import('../models/amasha-userPoints.js')).default;
+    const DailyLogin = (await import('../models/dushani-points.js')).default;
+    const Badge = (await import('../models/dushani-Badge.js')).default;
+    
+    const allStudents = await StudentProgress.find();
+    console.log(`🔄 Recalculating levels for ${allStudents.length} students after level update...`);
+    
+    let updatedCount = 0;
+    for (const student of allStudents) {
+      // Dynamically calculate total points from all sources
+      const user = await (await import('../models/dushani-User.js')).default.findById(student.userId);
+      if (!user) continue;
+      
+      const trueFalseResults = await TrueFalseResult.find({ userId: user.username });
+      const totalTrueFalsePoints = trueFalseResults.reduce((sum, result) => sum + result.pointsEarned, 0);
+      
+      const quizResults = await QuizResult.find({ userId: user.username });
+      const totalQuizPoints = quizResults.reduce((sum, result) => sum + result.score, 0);
+      
+      const userPointsRecord = await UserPoints.findOne({ userId: student.userId });
+      const userPoints = userPointsRecord ? userPointsRecord.totalPoints : 0;
+      
+      const dailyLoginRecords = await DailyLogin.find({ userId: student.userId });
+      const totalDailyLoginPoints = dailyLoginRecords.reduce((sum, record) => sum + (record.pointsAwarded || 10), 0);
+      
+      const dynamicTotalPoints = totalTrueFalsePoints + totalQuizPoints + userPoints + totalDailyLoginPoints;
+      
+      // Update student's total points
+      const pointsChanged = student.totalPoints !== dynamicTotalPoints;
+      student.totalPoints = dynamicTotalPoints;
+      
+      // Recalculate level
+      const newLevel = await student.calculateLevel();
+      const levelChanged = student.currentLevel !== newLevel;
+      student.currentLevel = newLevel;
+      
+      // Check and award eligible badges
+      const activeMilestoneBadges = await Badge.find({
+        badgeType: 'Milestone',
+        status: 'Active'
+      }).sort({ pointsRequired: 1 });
+      
+      let badgesAwarded = 0;
+      for (const badge of activeMilestoneBadges) {
+        if (dynamicTotalPoints >= badge.pointsRequired && !student.hasBadge(badge._id)) {
+          student.addBadge(badge);
+          await Badge.findByIdAndUpdate(badge._id, { $inc: { earnedCount: 1 } });
+          
+          // Create notification
+          const BadgeNotification = (await import('../models/dushani-BadgeNotification.js')).default;
+          await BadgeNotification.createNotification(student.userId, badge);
+          badgesAwarded++;
+        }
+      }
+      
+      // Remove inactive/invalid badges
+      student.badgesEarned = student.badgesEarned.filter(badgeEntry => {
+        const badge = activeMilestoneBadges.find(b => b._id.toString() === badgeEntry.badgeId.toString());
+        return badge && dynamicTotalPoints >= badge.pointsRequired;
+      });
+      
+      // Save if anything changed
+      if (pointsChanged || levelChanged || badgesAwarded > 0) {
+        await student.save();
+        updatedCount++;
+        console.log(`✅ Updated ${user.username}: Points=${dynamicTotalPoints}, Level=${newLevel}, Badges=${badgesAwarded}`);
+      }
+    }
+    
+    console.log(`✅ Total students updated: ${updatedCount}`);
+
     res.status(200).json({
       success: true,
       message: 'Level updated successfully',
-      level
+      level,
+      studentsUpdated: updatedCount,
+      totalStudentsProcessed: allStudents.length
     });
 
   } catch (error) {
@@ -268,10 +418,40 @@ export const getStudentProgressMonitoring = async (req, res) => {
   try {
     const { limit = 100 } = req.query;
 
+    // First, ensure ALL users have StudentProgress records
+    const AllUsers = (await import('../models/dushani-User.js')).default;
+    const allUsers = await AllUsers.find({}, '_id');
+    
+    console.log(`📊 Found ${allUsers.length} total users in database`);
+    
+    // Create StudentProgress records for users who don't have them
+    let createdCount = 0;
+    for (const user of allUsers) {
+      const existingProgress = await StudentProgress.findOne({ userId: user._id });
+      if (!existingProgress) {
+        // Create new StudentProgress record
+        const newProgress = new StudentProgress({
+          userId: user._id,
+          totalPoints: 0,
+          currentLevel: 'Level 1'
+        });
+        await newProgress.save();
+        createdCount++;
+        console.log(`✅ Created StudentProgress for user ${user._id}`);
+      }
+    }
+    
+    if (createdCount > 0) {
+      console.log(`✅ Created ${createdCount} new StudentProgress records`);
+    }
+
+    // Now fetch all progress records with user details
     const allProgress = await StudentProgress.find()
       .populate('userId', 'firstName lastName username email')
       .sort({ totalPoints: -1 })
       .limit(parseInt(limit));
+
+    console.log(`📈 Returning ${allProgress.length} student progress records`);
 
     const levels = await Level.getActiveLevels();
     const Badge = (await import('../models/dushani-Badge.js')).default;
@@ -281,6 +461,11 @@ export const getStudentProgressMonitoring = async (req, res) => {
     const DailyLogin = (await import('../models/dushani-points.js')).default;
 
     const studentsProgress = await Promise.all(allProgress.map(async (progress) => {
+      // Skip if userId population failed
+      if (!progress.userId) {
+        console.log('⚠️ Skipping progress record with missing user reference');
+        return null;
+      }
 
       let currentLevelDoc = null;
 
@@ -302,7 +487,19 @@ export const getStudentProgressMonitoring = async (req, res) => {
       // Update student progress with calculated points if different
       if (progress.totalPoints !== dynamicTotalPoints) {
         progress.totalPoints = dynamicTotalPoints;
-        progress.currentLevel = await progress.calculateLevel();
+      }
+      
+      // DYNAMICALLY calculate level - 0 points = N/A
+      let calculatedLevel;
+      if (dynamicTotalPoints === 0) {
+        calculatedLevel = 'N/A';
+      } else {
+        calculatedLevel = await progress.calculateLevel();
+        if (!calculatedLevel) calculatedLevel = 'N/A';
+      }
+      
+      if (progress.currentLevel !== calculatedLevel) {
+        progress.currentLevel = calculatedLevel;
         await progress.save();
       }
 
@@ -412,10 +609,13 @@ export const getStudentProgressMonitoring = async (req, res) => {
       };
     }));
 
+    // Filter out null entries (from skipped invalid records)
+    const validStudentsProgress = studentsProgress.filter(s => s !== null);
+
     res.status(200).json({
       success: true,
-      count: studentsProgress.length,
-      students: studentsProgress,
+      count: validStudentsProgress.length,
+      students: validStudentsProgress,
       totalLevels: levels.length
     });
 

@@ -270,12 +270,35 @@ export default function UserLogin() {
         }
 
         setUserData(response.data.user);
-        setLoginSuccess(true);
+      setLoginSuccess(true);
+
+        console.log("   🚀 Navigating to /student/dashboard...");
+        // 🎯 CLAIM DAILY LOGIN POINTS AUTOMATICALLY
+        try {
+          console.log("🎁 Attempting to claim daily login reward...");
+          const dailyLoginRes = await axios.post(
+            "http://localhost:4000/api/points/daily-login",
+            {},
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+          console.log("✅ Daily login response:", dailyLoginRes.data);
+        } catch (dailyLoginError) {
+          // If already claimed today, it will return 400 - that's OK
+          if (dailyLoginError.response?.status === 400) {
+            console.log("ℹ️  Daily login already claimed today");
+          } else {
+            console.warn("⚠️  Daily login claim failed:", dailyLoginError.message);
+          }
+        }
 
         console.log("   🚀 Navigating to /profile...");
         // Small delay to ensure storage is complete
         setTimeout(() => {
-          navigate("/profile");
+          navigate("/student/dashboard");
         }, 100);
       }
     } catch (error) {
@@ -437,15 +460,11 @@ export default function UserLogin() {
                       </span>
                     ))}
                   </div>
-                  <button
-                    onClick={() => {
-                      setLoginSuccess(false);
-                      setForm({ email: "", password: "" });
-                    }}
-                    className="mt-6 rounded-2xl bg-linear-to-r from-sky-700 to-emerald-500 px-8 py-3 text-sm font-extrabold text-white shadow-lg transition hover:-translate-y-1"
-                  >
-                    Continue to Dashboard →
-                  </button>
+                    <button onClick={() => navigate("/student/dashboard")}
+                  className="mt-6 rounded-2xl bg-linear-to-r from-sky-700 to-emerald-500 px-8 py-3 text-sm font-extrabold text-white shadow-lg transition hover:-translate-y-1"
+                >
+                  Continue to Dashboard →
+                </button>
                 </div>
               ) : (
                 /* ── Login Form ── */

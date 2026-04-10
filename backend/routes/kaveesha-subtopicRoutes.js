@@ -2,6 +2,8 @@ import express from "express";
 import verifyJWT from "../middleware/amasha-verifyJWT.js";
 import { verifyRoles } from "../middleware/dilshara-verifyRoles.js";
 import { upload } from "../middleware/kaveesha-uploadMiddleware.js";
+import { videoUpload } from "../middleware/kaveesha-videoUploadMiddleware.js";
+import { contentUpload } from "../middleware/kaveesha-contentFileUploadMiddleware.js";
 
 
 
@@ -21,6 +23,12 @@ import {
   completeSubtopicContent,
   getSubtopicProgress,
   getTopicProgress,
+  uploadContentFile,
+  deleteContentFile,
+  deleteSingleImage,
+  updateSingleImage,
+  appendSubtopicImage,
+  appendSubtopicImageUrl,
 } from "../controllers/kaveesha-subtopicController.js";
 
 const router = express.Router();
@@ -32,6 +40,7 @@ router.get("/user/:age", getLessonsByUserAge);
 router.put("/video/:id",
   verifyJWT,
   verifyRoles("Lessons_ADMIN", "SUPER_ADMIN"),
+  videoUpload.single("video"),
   updateVideo
 );
 
@@ -54,7 +63,34 @@ router.delete("/text/:id",
   deleteText
 );
 
+// ---------- CONTENT FILE UPLOAD (PDF, Presentations) ----------
+router.put("/content-file/:id",
+  verifyJWT,
+  verifyRoles("Lessons_ADMIN", "SUPER_ADMIN"),
+  contentUpload.single("contentFile"),
+  uploadContentFile
+);
+
+router.delete("/content-file/:id",
+  verifyJWT,
+  verifyRoles("Lessons_ADMIN", "SUPER_ADMIN"),
+  deleteContentFile
+);
+
 // ---------- IMAGES UPLOAD ----------
+router.put("/images/:id/append",
+  verifyJWT,
+  verifyRoles("Lessons_ADMIN", "SUPER_ADMIN"),
+  upload.single("image"),
+  appendSubtopicImage
+);
+
+router.put("/images/:id/url",
+  verifyJWT,
+  verifyRoles("Lessons_ADMIN", "SUPER_ADMIN"),
+  appendSubtopicImageUrl
+);
+
 router.put("/images/:id",
   verifyJWT,
   verifyRoles("Lessons_ADMIN", "SUPER_ADMIN"),
@@ -66,6 +102,20 @@ router.delete("/images/:id",
   verifyJWT,
   verifyRoles("Lessons_ADMIN", "SUPER_ADMIN"),
   deleteImages
+);
+
+// Single image operations
+router.delete("/image/:id",
+  verifyJWT,
+  verifyRoles("Lessons_ADMIN", "SUPER_ADMIN"),
+  deleteSingleImage
+);
+
+router.put("/image/:id",
+  verifyJWT,
+  verifyRoles("Lessons_ADMIN", "SUPER_ADMIN"),
+  upload.single("image"),
+  updateSingleImage
 );
 
 // ---------- PROGRESS ----------

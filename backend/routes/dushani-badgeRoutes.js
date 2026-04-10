@@ -5,7 +5,9 @@ import {
   getBadgeById,
   updateBadge,
   deleteBadge,
-  getActiveBadges
+  getActiveBadges,
+  diagnosticAndAwardBadges,
+  clearAllBadges
 } from '../controllers/dushani-BadgeController.js';
 import verifyJWT from '../middleware/amasha-verifyJWT.js';
 
@@ -31,5 +33,11 @@ router.delete('/:id', deleteBadge);
 
 // Public route for students to get active badges
 router.get('/public/active', getActiveBadges);
+
+// Diagnostic: Manually check and award all badges
+router.post('/diagnostic-and-award', diagnosticAndAwardBadges);
+
+// Clear all badges from all students
+router.post('/clear-all-badges', clearAllBadges);
 
 export default router;

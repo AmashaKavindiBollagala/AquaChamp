@@ -85,17 +85,12 @@ studentProgressSchema.methods.calculateLevel = async function() {
     // If a matching Level document is found, use its name
     if (levelDoc) return levelDoc.levelName;
 
-    // Fallback: derive a basic level name if no Level doc matches
-    const points = this.totalPoints || 0;
-    if (points <= 199) return 'Level 1';
-    if (points <= 399) return 'Level 2';
-    if (points <= 599) return 'Level 3';
-    if (points <= 799) return 'Level 4';
-    return 'Level 5';
+    // If no level matches (including 0 points), return 'N/A'
+    return 'N/A';
   } catch (error) {
     console.error('Calculate level error:', error);
     // On error, keep a sensible default instead of failing
-    return this.currentLevel || 'Level 1';
+    return this.currentLevel || 'N/A';
   }
 };
 
