@@ -1,5 +1,25 @@
+// ── Sri Lanka timezone helper ─────────────────────────────────────────────────
+// Uses Intl API with Asia/Colombo timezone — no manual offset math needed.
 
-export const todayString = () => new Date().toISOString().slice(0, 10);
+/**
+ * Returns today's date string in YYYY-MM-DD format using Sri Lanka time.
+ * en-CA locale natively produces YYYY-MM-DD format.
+ * @returns {string} e.g. "2026-04-11"
+ */
+export const todayString = () => {
+  return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Colombo" });
+};
+
+/**
+ * Returns a date string N days ago in YYYY-MM-DD format using Sri Lanka time.
+ * @param {number} daysAgo
+ * @returns {string} e.g. "2026-04-04"
+ */
+export const pastDateString = (daysAgo) => {
+  const d = new Date();
+  d.setDate(d.getDate() - daysAgo);
+  return d.toLocaleDateString("en-CA", { timeZone: "Asia/Colombo" });
+};
 
 /**
  * Returns the age group label based on numeric age.
@@ -15,7 +35,7 @@ export const getAgeGroup = (age) => {
 /**
  * Returns the recommended daily water cups for a given age group.
  * @param {"5-10"|"10-15"} ageGroup
- * @returns {number} 
+ * @returns {number}
  */
 export const getDailyWaterGoal = (ageGroup) => {
   const goals = { "5-10": 5, "10-15": 7 };
@@ -55,14 +75,13 @@ export const isConsecutiveDay = (prevDate, today) => {
   if (!prevDate) return false;
   const prev = new Date(prevDate);
   const curr = new Date(today);
-  const diffMs = curr - prev;
+  const diffMs   = curr - prev;
   const diffDays = diffMs / (1000 * 60 * 60 * 24);
   return diffDays === 1;
 };
 
 /**
  * Builds a motivational streak message based on current streak count.
- * No badges — only motivational comments.
  * @param {number} currentStreak
  * @returns {{ message: string, emoji: string }}
  */

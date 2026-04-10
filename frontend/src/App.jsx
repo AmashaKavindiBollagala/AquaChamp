@@ -13,6 +13,7 @@ import EmailVerified from "./pages/kaveesha-emailVerified";
 import ResetPassword from "./pages/kaveesha-resetPassword";
 import ActivityAdminDashboard from "./components/amasha-ActivityAdminDashboard";
 import UserActivityView from "./components/amasha-UserActivityView";
+import UserWaterView from "./components/amasha-userWaterView.jsx";
 
 // Dashboard pages
 import Sidebar from "./components/dushani-Sidebar.jsx";
@@ -38,7 +39,7 @@ function DashboardLayout() {
   };
 
   return (
-    <div className="flex h-screen min-h-[580px] overflow-hidden border border-gray-200 rounded-xl font-sans">
+    <div className="flex h-screen min-h-145 overflow-hidden border border-gray-200 rounded-xl font-sans">
       <Sidebar activePage={activePage} onNavigate={setActivePage} />
       <div className="flex-1 overflow-y-auto bg-gray-50">
         {pages[activePage]}
@@ -71,6 +72,7 @@ function App() {
           path="/activity-dashboard"
           element={<ActivityAdminDashboard />}
         />
+        <Route path="/water" element={<UserWaterView />} />
         <Route path="/my-activities" element={<UserActivityView />} />
 
         {/* Admin Login */}
