@@ -15,7 +15,7 @@ import progressRoutes from './routes/dushani-progressRoutes.js';
 import pointsRoutes from './routes/dushani-pointsRoutes.js';
 import levelRoutes from './routes/dushani-levelRoutes.js';
 import badgeNotificationRoutes from './routes/dushani-badgeNotificationRoutes.js';
-
+import analyticsRoutes from './routes/dilshara-analytics.js';
 
 //dilshara
 import adminRoutes from './routes/dilshara-adminRoutes.js';
@@ -73,7 +73,8 @@ app.use("/api/topics", topicRoutes);
 app.use("/api/subtopics", subtopicRoutes);
 app.use("/api/kaveesha-miniquiz", kaveeshaMiniQuizRoutes);
 
-
+//game admin analysis
+app.use("/api/analytics", analyticsRoutes);
 
 // DB
 connectDB().then(() => {

@@ -25,20 +25,20 @@ const gameSchema = new mongoose.Schema(
     },
     subType: {
       type: String,
-      enum: ['quiz', 'germcatcher', 'waterdrop', 'memory', 'cleanordirty'],
+      enum: ['quiz', 'germcatcher', 'waterdrop', 'memory', 'cleanordirty', 'cleandirtygame'],
       default: 'quiz',
     },
-    lessonTopic: {
-      type: String,
-      required: true,
-      enum: [
-        'Safe Drinking Water',
-        'Handwashing and Personal Hygiene',
-        'Toilet and Sanitation Practices',
-        'Water-Borne Diseases and Prevention',
-        'Water Conservation and Environmental Care',
-      ],
-    },
+   lessonTopic: {
+  type: String,
+  required: true,
+  enum: [
+    'Safe Drinking Water',
+    'Handwashing and Personal Hygiene',        
+    'Toilet and Sanitation Practices',
+    'Water-Borne Diseases and Prevention',
+    'Water Conservation and Environmental Care',
+  ],
+},
     topicId:    { type: String },
     ageGroup:   { type: String, enum: ['5-10', '11-15'], default: '5-10' },
     difficulty: { type: String, enum: ['easy', 'medium', 'hard'], default: 'easy' },

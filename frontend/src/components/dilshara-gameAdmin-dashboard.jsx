@@ -5,10 +5,10 @@ const API_BASE = "http://localhost:4000";
 
 const MAIN_TOPICS = [
   { id: "safe-drinking-water",                      name: "Safe Drinking Water" },
-  { id: "hand-washing-and-personal-hygiene",        name: "Hand Washing and Personal Hygiene" },
+  { id: "hand-washing-and-personal-hygiene",        name: "Handwashing and Personal Hygiene" },
   { id: "toilet-and-sanpracticesitation-practices", name: "Toilet and Sanitation Practices" },
-  { id: "water-borne-diseases-and-prevention",      name: "Water Borne Diseases and Prevention" },
-  { id: "water-conservation-and-environment-care",  name: "Water Conservation and Environment Care" },
+  { id: "water-borne-diseases-and-prevention",      name: "Water-Borne Diseases and Prevention" },
+  { id: "water-conservation-and-environment-care",  name: "Water Conservation and Environmental Care" },
 ];
 
 const TRIVIA_CATEGORIES = [
@@ -25,10 +25,16 @@ const DIFF_CONFIG = {
 };
 
 // ── ADDED "cleanordirty" to this list ──
-const NON_QUIZ_TYPES = ["germcatcher", "waterdrop", "memory", "cleanordirty"];
+const NON_QUIZ_TYPES = ["germcatcher", "waterdrop", "memory", "cleanordirty", "cleandirtygame"];
 
 // ── ADDED "cleanordirty" entry ──
 const GAME_TYPE_INFO = {
+
+  cleandirtygame: {
+    emoji: "🚰", label: "Germ Catcher",
+    howItWorks: "Kids tap floating germ bubbles to catch the correct answer. Content is auto-generated from a word bank based on the topic you selected.",
+    contentSource: "Word-bank (auto)", color: "#8ce3f3",
+  },
   germcatcher: {
     emoji: "🦠", label: "Germ Catcher",
     howItWorks: "Kids tap floating germ bubbles to catch the correct answer. Content is auto-generated from a word bank based on the topic you selected.",
@@ -49,6 +55,8 @@ const GAME_TYPE_INFO = {
     howItWorks: "Kids drag item cards (muddy water, washed hands, open drain, etc.) into a CLEAN ✅ or DIRTY ❌ bin. Fully touch-friendly with instant feedback.",
     contentSource: "Card library (auto)", color: "#0EA5E9",
   },
+
+  
 };
 
 const sidebarItems = [
@@ -712,7 +720,7 @@ function CreateGameForm({ token, onSuccess }) {
             }} onClick={() => s < step && setStep(s)}>{s}</div>
           ))}
         </div>
-        <span style={{ fontSize: 12, color: "#4A6A88" }}>
+        <span style={{ fontSize: 12, color: "#00070c" }}>
           {step === 1 ? "Basic Info" : isNonQuiz ? "Review & Save" : "Questions"}
         </span>
       </div>
@@ -794,6 +802,8 @@ function CreateGameForm({ token, onSuccess }) {
                 { id: "waterdrop",    label: "💧 Water Drop Adventure", desc: "Ages 5–10",   note: "Auto-content · No questions needed", noteColor: "#1D9E75" },
                 { id: "memory",       label: "🃏 Memory Match",         desc: "Ages 5–10",   note: "Auto-content · No questions needed", noteColor: "#1D9E75" },
                 { id: "cleanordirty", label: "🫧 Clean or Dirty?",      desc: "Ages 5–10",   note: "Auto-content · No questions needed", noteColor: "#1D9E75" },
+                { id: "cleandirtygame", label: "🚰 Clean water or Dirty water?",      desc: "Ages 11-15",   note: "Auto-content · No questions needed", noteColor: "#1D9E75" },
+                
               ].map(exp => (
                 <button key={exp.id} onClick={() => handleField("subType", exp.id)} style={{
                   padding: "12px 14px", borderRadius: 8, cursor: "pointer", textAlign: "left",
@@ -1067,7 +1077,7 @@ function Dashboard({ username, games }) {
     <div>
       <div style={{ marginBottom: 24 }}>
         <h2 style={{ fontSize: 20, fontWeight: 700, color: "#F0F6FF" }}>Welcome back, {username} 👋</h2>
-        <p style={{ fontSize: 13, color: "#4A6A88", marginTop: 4 }}>Here's a quick overview of your games.</p>
+        <p style={{ fontSize: 13, color: "#000000", marginTop: 4 }}>Here's a quick overview of your games.</p>
       </div>
       <div style={{ display: "flex", gap: 16, marginBottom: 28, flexWrap: "wrap" }}>
         <StatCard label="Total Games" value={total}  color="#2B7FD4" />
@@ -1086,18 +1096,90 @@ function Dashboard({ username, games }) {
   );
 }
 
-function Activity() {
-  return (
-    <div>
-      <h2 style={{ fontSize: 18, fontWeight: 700, color: "#F0F6FF", marginBottom: 16 }}>Recent Activity</h2>
-      <div style={{ background: "#0F2840", border: "1px solid #1E3A56", borderRadius: 10, padding: 20 }}>
-        <p style={{ color: "#4A6A88", fontSize: 13 }}>Activity log — connect your backend endpoint here.</p>
-      </div>
+function Activity({ token }) {
+  const [data,           setData]          = useState(null);
+  const [loading,        setLoading]       = useState(true);
+  const [activitySearch, setActivitySearch] = useState("");
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const [stats, feed] = await Promise.all([
+          fetch(`${API_BASE}/api/analytics/summary`,
+            { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+          fetch(`${API_BASE}/api/analytics/recent-activity?limit=10`,
+            { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+        ]);
+        setData({ ...stats, recentActivity: feed.activity });
+      } catch (e) { console.error(e); }
+      finally { setLoading(false); }
+    }
+    load();
+  }, []);
+
+
+  if (loading) return <div style={{color:'#4A6A88',fontSize:14}}>Loading analytics...</div>;
+if (!data)   return <div style={{color:'#E07070',fontSize:14}}>Could not load analytics.</div>;
+
+return (
+  <div>
+    <h2 style={{fontSize:18,fontWeight:700,color:"#F0F6FF",marginBottom:20}}>📋 Recent Activity</h2>
+    <div style={{display:"flex",gap:16,marginBottom:24,flexWrap:"wrap"}}>
+      <StatCard label="Total Plays"    value={data.totalPlays}    color="#2B7FD4" />
+      <StatCard label="Unique Players" value={data.uniquePlayers} color="#A855F7" />
+      <StatCard label="Avg Score"      value={`${data.avgScore}%`} color="#1D9E75" />
+      <StatCard label="Pass Rate"      value={`${data.passRate}%`} color="#EF9F27" />
     </div>
-  );
+
+    <h3 style={{fontSize:13,fontWeight:700,color:"#7BAED4",marginBottom:12,textTransform:"uppercase",letterSpacing:"0.8px"}}>Top Games</h3>
+    <div style={{background:"#0F2840",border:"1px solid #1E3A56",borderRadius:10,padding:16,marginBottom:20}}>
+      {data.topGames?.length === 0
+        ? <div style={{color:"#4A6A88",fontSize:13}}>No data yet.</div>
+        : data.topGames?.map((g,i) => (
+          <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #1E3A56"}}>
+            <span style={{fontSize:13,color:"#F0F6FF"}}>{g.title}</span>
+            <span style={{fontSize:12,color:"#7BAED4"}}>{g.plays} plays</span>
+          </div>
+        ))
+      }
+    </div>
+
+<h3 style={{fontSize:13,fontWeight:700,color:"#7BAED4",marginBottom:12,textTransform:"uppercase",letterSpacing:"0.8px"}}>Recent Activity</h3>
+    <input
+      placeholder="🔍 Search by player, game, topic or difficulty..."
+      onChange={e => setActivitySearch(e.target.value)}
+      style={{...inputStyle, marginBottom:12}}
+    />
+    <div style={{background:"#0F2840",border:"1px solid #1E3A56",borderRadius:10,padding:16, maxHeight:400, overflowY:"auto"}}>
+      {data.recentActivity?.filter(a =>
+        [a.userId, a.gameTitle, a.topicId, a.difficulty]
+          .join(" ").toLowerCase()
+          .includes(activitySearch.toLowerCase())
+      ).length === 0
+        ? <div style={{color:"#4A6A88",fontSize:13}}>No results found.</div>
+        : data.recentActivity?.filter(a =>
+            [a.userId, a.gameTitle, a.topicId, a.difficulty]
+              .join(" ").toLowerCase()
+              .includes(activitySearch.toLowerCase())
+          ).map((a,i) => (
+          <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid #1E3A56"}}>
+            <div>
+              <div style={{fontSize:13,color:"#F0F6FF"}}>{a.gameTitle}</div>
+              <div style={{fontSize:11,color:"#4A6A88"}}>{a.userId} · {a.difficulty} · {a.topicId}</div>
+            </div>
+            <span style={{
+              fontSize:11,padding:"2px 8px",borderRadius:20,
+              background: a.passed ? "#0D2A1E" : "#2A1010",
+              color: a.passed ? "#4AE0A0" : "#E07070",
+              border: `1px solid ${a.passed ? "#1D9E75" : "#5C2020"}`,
+            }}>{a.percentage}% · {a.passed ? "Pass" : "Fail"}</span>
+          </div>))
+      }
+    </div>
+  </div>
+);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  ROOT
 // ─────────────────────────────────────────────────────────────────────────────
 export default function GameAdminDashboard() {
@@ -1148,18 +1230,20 @@ export default function GameAdminDashboard() {
       case "dashboard": return <Dashboard username={username} games={games} />;
       case "games":     return <AllGames token={token} onEdit={handleEditGame} />;
       case "create":    return <CreateGameForm token={token} onSuccess={() => { fetchGames(); setActive("games"); }} />;
-      case "activity":  return <Activity />;
+      case "activity":  return <Activity token={token} />;
       default:          return null;
     }
   };
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "#0B1E33", fontFamily: "'DM Sans', 'Segoe UI', sans-serif" }}>
+    <div style={{ display: "flex", minHeight: "100vh", background: "#b8b8b9", fontFamily: "'DM Sans', 'Segoe UI', sans-serif" }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');`}</style>
       <Sidebar active={active} setActive={(key) => { setEditingGame(null); setActive(key); }} username={username} onLogout={handleLogout} />
-      <main style={{ flex: 1, padding: "32px 36px", overflowY: "auto" }}>
-        {renderContent()}
-      </main>
+      <main style={{ flex: 1, padding: "32px 36px", overflowY: "auto", display: "flex", justifyContent: "center" }}>
+  <div style={{ width: "100%", maxWidth: 720 }}>
+    {renderContent()}
+  </div>
+</main>
     </div>
   );
 }

@@ -12,7 +12,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import GermCatcher        from "./dilshara-GermCatcher";
 import WaterDropAdventure from "./dilshara-WaterDropAdventure";
 import MemoryMatch        from "./dilshara-MemoryMatch";
-import CleanOrDirty       from "./dilshara-CleanOrDirty"; // ← NEW
+import CleanOrDirty       from "./dilshara-CleanOrDirty"; 
+import CleanDirtyGame from "./dilshara-cleanDirtyGame"; // my idea of game 
 
 const API_BASE = "http://localhost:4000";
 const FONTS    = "https://fonts.googleapis.com/css2?family=Bubblegum+Sans&family=Nunito:wght@400;700;800;900;1000&display=swap";
@@ -274,6 +275,10 @@ export default function GamePlayScreen() {
   // ── NEW: route to CleanOrDirty ──
   if (subType === "cleanordirty")
     return <CleanOrDirty       game={game} username={username} onFinish={handleFinish} />;
+
+  // ── NEW: route to CleanDirtyGame (subType: "cleandirtygame") ──
+  if (subType === "cleandirtygame")
+    return <CleanDirtyGame     game={game} username={username} onFinish={handleFinish} />;
 
   return <StandardQuiz game={game} username={username} onFinish={handleFinish} />;
 }
