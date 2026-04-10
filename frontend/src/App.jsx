@@ -11,6 +11,9 @@ import DilsharaAdminLogin from "./pages/dilshara-AdminLogin";
 import VerifyEmail from "./pages/kaveesha-verifyEmail";
 import EmailVerified from "./pages/kaveesha-emailVerified";
 import ResetPassword from "./pages/kaveesha-resetPassword";
+import DilsharaGameAdminDashboard from "./components/dilshara-gameAdmin-dashboard";
+import GamePlayScreen from "./components/dilshara-GamePlayScreen";
+import GameSelectionPage from "./components/dilshara-GameSelectionPage";
 import ActivityAdminDashboard from "./components/amasha-ActivityAdminDashboard";
 import UserActivityView from "./components/amasha-UserActivityView";
 
@@ -82,6 +85,14 @@ function App() {
 
         {/* Reset Password */}
         <Route path="/reset-password/:token" element={<ResetPassword />} />
+
+        {/* game admin dashboard */}
+        <Route path="/game-dashboard" element={<DilsharaGameAdminDashboard />} />
+         {/* game with 3rd party api */}
+        
+
+<Route path="/games/topic/:topicId" element={<GameSelectionPage />} />  
+        <Route path="/games/play/:gameId"   element={<GamePlayScreen />} />
 
         <Route
           path="/lesson-dashboard"
