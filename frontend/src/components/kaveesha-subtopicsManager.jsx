@@ -4,14 +4,13 @@ import axios from "axios";
 const API = "http://localhost:4000";
 const AGE_GROUPS = ["6-10", "11-15"];
 
-/** Same order as topic cards in kaveesha-topicsManager — subtopic cards follow active topic’s color. */
 const TOPIC_COLORS = [
-  { bg: "#fff0f6", border: "#f9a8d4", icon: "#ec4899", badge: "#fce7f3", badgeText: "#9d174d", accent: "#db2777" },
-  { bg: "#eff6ff", border: "#93c5fd", icon: "#3b82f6", badge: "#dbeafe", badgeText: "#1e40af", accent: "#2563eb" },
-  { bg: "#f0fdf4", border: "#86efac", icon: "#22c55e", badge: "#dcfce7", badgeText: "#166534", accent: "#16a34a" },
-  { bg: "#fffbeb", border: "#fcd34d", icon: "#f59e0b", badge: "#fef3c7", badgeText: "#92400e", accent: "#d97706" },
-  { bg: "#faf5ff", border: "#c4b5fd", icon: "#8b5cf6", badge: "#ede9fe", badgeText: "#6b21a8", accent: "#7c3aed" },
-  { bg: "#ecfeff", border: "#67e8f9", icon: "#06b6d4", badge: "#cffafe", badgeText: "#164e63", accent: "#0891b2" },
+  { bg: "#fff0f6", border: "#f9a8d4", icon: "#ec4899", badge: "#fce7f3", badgeText: "#9d174d", accent: "#db2777", light50: "#fff0f6", light100: "#fce7f3", light200: "#fbcfe8", dark600: "#db2777", dark700: "#be185d", dark800: "#9d174d", dark900: "#831843", heroFrom: "#500724", heroTo: "#9d174d" },
+  { bg: "#eff6ff", border: "#93c5fd", icon: "#3b82f6", badge: "#dbeafe", badgeText: "#1e40af", accent: "#2563eb", light50: "#eff6ff", light100: "#dbeafe", light200: "#bfdbfe", dark600: "#2563eb", dark700: "#1d4ed8", dark800: "#1e40af", dark900: "#1e3a8a", heroFrom: "#172554", heroTo: "#1e40af" },
+  { bg: "#f0fdf4", border: "#86efac", icon: "#22c55e", badge: "#dcfce7", badgeText: "#166534", accent: "#16a34a", light50: "#f0fdf4", light100: "#dcfce7", light200: "#bbf7d0", dark600: "#16a34a", dark700: "#15803d", dark800: "#166534", dark900: "#14532d", heroFrom: "#052e16", heroTo: "#166534" },
+  { bg: "#fffbeb", border: "#fcd34d", icon: "#f59e0b", badge: "#fef3c7", badgeText: "#92400e", accent: "#d97706", light50: "#fffbeb", light100: "#fef3c7", light200: "#fde68a", dark600: "#d97706", dark700: "#b45309", dark800: "#92400e", dark900: "#78350f", heroFrom: "#3b1a00", heroTo: "#92400e" },
+  { bg: "#faf5ff", border: "#c4b5fd", icon: "#8b5cf6", badge: "#ede9fe", badgeText: "#6b21a8", accent: "#7c3aed", light50: "#faf5ff", light100: "#ede9fe", light200: "#ddd6fe", dark600: "#7c3aed", dark700: "#6d28d9", dark800: "#6b21a8", dark900: "#581c87", heroFrom: "#2e1065", heroTo: "#6b21a8" },
+  { bg: "#ecfeff", border: "#67e8f9", icon: "#06b6d4", badge: "#cffafe", badgeText: "#164e63", accent: "#0891b2", light50: "#ecfeff", light100: "#cffafe", light200: "#a5f3fc", dark600: "#0891b2", dark700: "#0e7490", dark800: "#155e75", dark900: "#164e63", heroFrom: "#042f2e", heroTo: "#164e63" },
 ];
 
 function hexAlpha(hex, alpha) {
@@ -54,6 +53,12 @@ export default function KaveeshaSubtopicsManager({
     if (!activeTopic) return;
     fetchSubtopics();
   }, [activeTopic, ageFilter]);
+
+  const getTopicPalette = (topic) => {
+    if (!topic) return TOPIC_COLORS[0];
+    const idx = topics.findIndex((t) => t._id === topic._id);
+    return TOPIC_COLORS[(idx >= 0 ? idx : 0) % TOPIC_COLORS.length];
+  };
 
   const topicCoverSrc = (t) => {
     if (!t?.imageUrl) return null;
@@ -105,12 +110,9 @@ export default function KaveeshaSubtopicsManager({
     try {
       const token = localStorage.getItem("aquachamp_token") || sessionStorage.getItem("aquachamp_token");
       const headers = { Authorization: `Bearer ${token}` };
-      
-      // If creating new subtopic and order is specified, shift existing subtopics
+
       if (!editingSub && form.order) {
-        // Get all subtopics for this topic and age group
         const existingSubs = subtopics.filter(s => s.order >= form.order);
-        // Update each existing subtopic to increment their order
         for (const sub of existingSubs) {
           await axios.put(
             `${API}/api/subtopics/${sub._id}`,
@@ -119,7 +121,7 @@ export default function KaveeshaSubtopicsManager({
           );
         }
       }
-      
+
       const payload = { ...form, topicId: activeTopic._id };
       if (editingSub) {
         await axios.put(`${API}/api/subtopics/${editingSub._id}`, payload, { headers, withCredentials: true });
@@ -145,8 +147,7 @@ export default function KaveeshaSubtopicsManager({
         headers: { Authorization: `Bearer ${token}` },
         withCredentials: true,
       });
-      
-      // Decrement order for remaining subtopics
+
       const remainingSubs = subtopics.filter(s => s.order > sub.order);
       const headers = { Authorization: `Bearer ${token}` };
       for (const remainingSub of remainingSubs) {
@@ -156,7 +157,7 @@ export default function KaveeshaSubtopicsManager({
           { headers, withCredentials: true }
         );
       }
-      
+
       setSuccess("Subtopic deleted! 🗑️");
       fetchSubtopics();
       setTimeout(() => setSuccess(""), 3000);
@@ -194,10 +195,10 @@ export default function KaveeshaSubtopicsManager({
 
   const contentStatus = (sub) => {
     const parts = [];
-    if (sub.videoUrl) parts.push("🎬");
-    if (sub.content) parts.push("📝");
-    if (sub.images?.length > 0) parts.push("🖼️");
-    if (sub.hasMiniQuiz) parts.push("❓");
+    if (sub.videoUrl) parts.push({ icon: "🎬", label: "Video" });
+    if (sub.content) parts.push({ icon: "📝", label: "Content" });
+    if (sub.images?.length > 0) parts.push({ icon: "🖼️", label: "Images" });
+    if (sub.hasMiniQuiz) parts.push({ icon: "❓", label: "Quiz" });
     return parts;
   };
 
@@ -213,6 +214,8 @@ export default function KaveeshaSubtopicsManager({
     transition: "border-color 0.2s",
   };
 
+  const activePal = getTopicPalette(activeTopic);
+
   return (
     <div className="space-y-6">
       {/* Top bar */}
@@ -224,10 +227,10 @@ export default function KaveeshaSubtopicsManager({
               onClick={() => onChangeTopic()}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all hover:-translate-y-0.5"
               style={{
-                background: "#fff",
-                border: "2px solid #e0e7ff",
-                color: "#4338ca",
-                boxShadow: "0 2px 10px rgba(99,102,241,0.08)",
+                background: activeTopic ? activePal.light100 : "#eff6ff",
+                border: `2px solid ${activeTopic ? activePal.border : "#93c5fd"}`,
+                color: activeTopic ? activePal.dark800 : "#1e40af",
+                boxShadow: `0 2px 10px ${hexAlpha(activeTopic ? activePal.dark600 : "#3b82f6", 0.12)}`,
               }}
             >
               ← All topics
@@ -242,158 +245,314 @@ export default function KaveeshaSubtopicsManager({
         </div>
       </div>
 
-      {/* Topic hero */}
+      {/* ── TOPIC SELECTOR — LIGHT VERSION ── */}
+      <div
+        className="rounded-3xl overflow-hidden"
+        style={{
+          background: "linear-gradient(145deg, #f8faff 0%, #ffffff 50%, #f0f4ff 100%)",
+          border: "2px solid #e0e7ff",
+          boxShadow: "0 8px 32px rgba(99,102,241,0.10)",
+        }}
+      >
+        {/* Header strip */}
+        <div
+          className="px-7 pt-6 pb-4"
+          style={{ borderBottom: "1px solid #e0e7ff" }}
+        >
+          <div className="flex items-center gap-3 mb-1">
+            <div
+              className="w-8 h-8 rounded-xl flex items-center justify-center text-base shrink-0"
+              style={{ background: "#eef2ff", border: "1.5px solid #c7d2fe" }}
+            >
+              📚
+            </div>
+            <p
+              className="text-[11px] font-bold uppercase tracking-[0.22em]"
+              style={{ color: "#6366f1" }}
+            >
+              Step 1 — Select a Topic
+            </p>
+          </div>
+          <h3
+            className="text-xl font-extrabold tracking-tight"
+            style={{ color: "#1e293b" }}
+          >
+            Which swimming topic are you working on?
+          </h3>
+        </div>
+
+        {/* Topic cards row */}
+        <div className="px-7 py-5 flex flex-wrap gap-3">
+          {topics.length === 0 ? (
+            <p className="text-sm font-medium text-slate-400">Loading topics…</p>
+          ) : (
+            topics.map((t, idx) => {
+              const pal = TOPIC_COLORS[idx % TOPIC_COLORS.length];
+              const isActive = activeTopic?._id === t._id;
+              const imgSrc = topicCoverSrc(t);
+              return (
+                <button
+                  key={t._id}
+                  type="button"
+                  onClick={() => setActiveTopic(t)}
+                  className="flex items-center gap-3 px-4 py-3 rounded-2xl font-bold text-sm transition-all duration-200 relative overflow-hidden"
+                  style={
+                    isActive
+                      ? {
+                          background: `linear-gradient(135deg, ${pal.dark700}, ${pal.dark600})`,
+                          color: "#fff",
+                          boxShadow: `0 8px 24px ${hexAlpha(pal.dark600, 0.40)}, 0 0 0 2px rgba(255,255,255,0.25)`,
+                          transform: "translateY(-2px)",
+                          border: `2px solid ${pal.dark700}`,
+                        }
+                      : {
+                          background: pal.light50,
+                          border: `1.5px solid ${pal.border}`,
+                          color: pal.dark800,
+                        }
+                  }
+                  onMouseEnter={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.background = pal.light100;
+                      e.currentTarget.style.transform = "translateY(-2px)";
+                      e.currentTarget.style.boxShadow = `0 6px 18px ${hexAlpha(pal.dark600, 0.18)}`;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.background = pal.light50;
+                      e.currentTarget.style.transform = "translateY(0)";
+                      e.currentTarget.style.boxShadow = "none";
+                    }
+                  }}
+                >
+                  {imgSrc ? (
+                    <img
+                      src={imgSrc}
+                      alt=""
+                      className="w-8 h-8 rounded-xl object-cover shrink-0"
+                      style={{ border: `1.5px solid ${isActive ? "rgba(255,255,255,0.4)" : pal.border}` }}
+                    />
+                  ) : (
+                    <div
+                      className="w-8 h-8 rounded-xl flex items-center justify-center text-base shrink-0"
+                      style={{
+                        background: isActive ? "rgba(255,255,255,0.22)" : pal.badge,
+                        border: `1.5px solid ${isActive ? "rgba(255,255,255,0.35)" : pal.border}`,
+                      }}
+                    >
+                      📚
+                    </div>
+                  )}
+                  <span className="text-base font-extrabold tracking-tight">{t.title}</span>
+                  {isActive && (
+                    <span
+                      className="ml-1 w-2 h-2 rounded-full shrink-0"
+                      style={{ background: "#fff", boxShadow: "0 0 6px rgba(255,255,255,0.9)" }}
+                    />
+                  )}
+                </button>
+              );
+            })
+          )}
+        </div>
+
+        {/* Selected topic confirmation strip */}
+        {activeTopic && (
+          <div
+            className="px-7 py-3 flex items-center gap-3"
+            style={{
+              background: activePal.light50,
+              borderTop: `1px solid ${activePal.border}`,
+            }}
+          >
+            <span style={{ color: activePal.dark600, fontSize: 16 }}>✓</span>
+            <p className="text-sm font-semibold" style={{ color: activePal.dark700 }}>
+              Selected:{" "}
+              <span className="font-extrabold" style={{ color: activePal.dark900 }}>
+                {activeTopic.title}
+              </span>
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* ── AGE GROUP SELECTOR ── */}
       {activeTopic && (
         <div
-          className="relative rounded-3xl overflow-hidden min-h-50 md:min-h-60"
-          style={{ boxShadow: "0 20px 50px rgba(15,23,42,0.12)" }}
+          className="rounded-3xl overflow-hidden"
+          style={{
+            background: "linear-gradient(145deg, #fffbeb 0%, #fff 50%, #fef3c7 100%)",
+            border: "2px solid #fde68a",
+            boxShadow: "0 12px 40px rgba(245,158,11,0.12)",
+          }}
         >
-          {topicCoverSrc(activeTopic) ? (
-            <>
-              <img
-                src={topicCoverSrc(activeTopic)}
-                alt=""
-                className="absolute inset-0 w-full h-full object-cover"
-              />
+          {/* Header */}
+          <div
+            className="px-7 pt-6 pb-4"
+            style={{ borderBottom: "1px solid #fde68a" }}
+          >
+            <div className="flex items-center gap-3 mb-1">
               <div
-                className="absolute inset-0"
-                style={{
-                  background: "linear-gradient(105deg, rgba(15,23,42,0.88) 0%, rgba(15,23,42,0.45) 45%, rgba(99,102,241,0.35) 100%)",
-                }}
-              />
-            </>
-          ) : (
-            <div
-              className="absolute inset-0"
-              style={{
-                background: "linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #6366f1 85%, #06b6d4 100%)",
-              }}
-            />
-          )}
-          <div className="relative z-10 p-6 md:p-10 flex flex-col justify-end min-h-50 md:min-h-60">
-            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/70 mb-2">Current topic</p>
-            <h1 className="text-2xl md:text-4xl font-extrabold text-white leading-tight drop-shadow-sm">
-              {activeTopic.title}
-            </h1>
-            {activeTopic.description ? (
-              <p className="text-sm md:text-base text-white/85 mt-3 max-w-2xl leading-relaxed">
-                {activeTopic.description}
-              </p>
-            ) : (
-              <p className="text-sm text-white/60 mt-2 italic">No description yet — edit this topic from Topics to add one.</p>
-            )}
-            <div className="flex flex-wrap gap-2 mt-5">
-              <span
-                className="px-3 py-1.5 rounded-full text-xs font-bold backdrop-blur-md"
-                style={{ background: "rgba(255,255,255,0.2)", border: "1px solid rgba(255,255,255,0.35)", color: "#fff" }}
+                className="w-8 h-8 rounded-xl flex items-center justify-center text-base shrink-0"
+                style={{ background: "#fef3c7", border: "1.5px solid #fcd34d" }}
               >
-                📚 Switch topic in the list below anytime
-              </span>
+                🎯
+              </div>
+              <p
+                className="text-[11px] font-bold uppercase tracking-[0.22em]"
+                style={{ color: "#d97706" }}
+              >
+                Step 2 — Select Age Group
+              </p>
+            </div>
+            <h3
+              className="text-xl font-extrabold tracking-tight"
+              style={{ color: "#92400e" }}
+            >
+              Which age band are you viewing?
+            </h3>
+          </div>
+
+          {/* Age group buttons */}
+          <div className="px-7 py-5 flex flex-wrap items-center gap-4">
+            {AGE_GROUPS.map((ag) => {
+              const isActive = ageFilter === ag;
+              return (
+                <button
+                  key={ag}
+                  type="button"
+                  onClick={() => setAgeFilter(ag)}
+                  className="flex items-center gap-4 px-6 py-4 rounded-2xl font-bold transition-all duration-200"
+                  style={
+                    isActive
+                      ? {
+                          background: "linear-gradient(135deg, #f59e0b, #ef4444)",
+                          color: "#fff",
+                          boxShadow: "0 8px 24px rgba(245,158,11,0.4), 0 0 0 2px rgba(255,255,255,0.4)",
+                          transform: "translateY(-2px)",
+                          border: "2px solid transparent",
+                        }
+                      : {
+                          background: "#fff",
+                          border: "2px solid #fcd34d",
+                          color: "#92400e",
+                        }
+                  }
+                  onMouseEnter={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.background = "#fef3c7";
+                      e.currentTarget.style.transform = "translateY(-2px)";
+                      e.currentTarget.style.boxShadow = "0 6px 16px rgba(245,158,11,0.2)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.background = "#fff";
+                      e.currentTarget.style.transform = "translateY(0)";
+                      e.currentTarget.style.boxShadow = "none";
+                    }
+                  }}
+                >
+                  <span style={{ fontSize: 32, lineHeight: 1 }}>
+                    {ag === "6-10" ? "🧒" : "👦"}
+                  </span>
+                  <div className="text-left">
+                    <div style={{ fontSize: 20, fontWeight: 900, letterSpacing: "-0.02em", lineHeight: 1.1 }}>
+                      Age {ag}
+                    </div>
+                    <div style={{ fontSize: 12, fontWeight: 600, opacity: isActive ? 0.85 : 0.6, marginTop: 2 }}>
+                      {ag === "6-10" ? "Junior swimmers" : "Youth swimmers"}
+                    </div>
+                  </div>
+                  {isActive && (
+                    <div
+                      className="ml-2 w-6 h-6 rounded-full flex items-center justify-center shrink-0"
+                      style={{ background: "rgba(255,255,255,0.3)", fontSize: 13 }}
+                    >
+                      ✓
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+
+            {/* Lesson count badge */}
+            <div
+              className="ml-auto flex items-center gap-3 px-5 py-3.5 rounded-2xl shrink-0"
+              style={{
+                background: "linear-gradient(135deg, #ecfdf5, #d1fae5)",
+                border: "2px solid #6ee7b7",
+              }}
+            >
+              <span style={{ fontSize: 22 }}>🎓</span>
+              <div>
+                <div style={{ fontSize: 22, fontWeight: 900, color: "#065f46", lineHeight: 1 }}>
+                  {subtopics.length}
+                </div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#059669", letterSpacing: "0.05em", textTransform: "uppercase" }}>
+                  lesson{subtopics.length !== 1 ? "s" : ""}
+                </div>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Topic selector */}
-      <div
-        className="rounded-2xl p-5 md:p-6"
-        style={{
-          background: "linear-gradient(145deg, #f8faff 0%, #fff 50%, #f0f4ff 100%)",
-          border: "2px solid #e0e7ff",
-          boxShadow: "0 8px 30px rgba(99,102,241,0.08)",
-        }}
-      >
-        <label className="text-xs font-bold uppercase tracking-widest block mb-3" style={{ color: "#6366f1" }}>
-          Topics
-        </label>
-        <div className="flex flex-wrap gap-2">
-          {topics.map((t) => (
-            <button
-              key={t._id}
-              type="button"
-              onClick={() => setActiveTopic(t)}
-              className="px-4 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center gap-2"
-              style={
-                activeTopic?._id === t._id
-                  ? {
-                      background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
-                      color: "#fff",
-                      boxShadow: "0 6px 20px rgba(99,102,241,0.45)",
-                      border: "2px solid transparent",
-                    }
-                  : {
-                      background: "#fff",
-                      border: "2px solid #e0e7ff",
-                      color: "#475569",
-                    }
-              }
-              onMouseEnter={(e) => {
-                if (activeTopic?._id !== t._id) {
-                  e.currentTarget.style.borderColor = "#a5b4fc";
-                  e.currentTarget.style.color = "#6366f1";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (activeTopic?._id !== t._id) {
-                  e.currentTarget.style.borderColor = "#e0e7ff";
-                  e.currentTarget.style.color = "#475569";
-                }
-              }}
-            >
-              {topicCoverSrc(t) ? (
-                <img src={topicCoverSrc(t)} alt="" className="w-7 h-7 rounded-lg object-cover border border-white/30" />
-              ) : (
-                <span>📚</span>
-              )}
-              {t.title}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Age group + count */}
-      {activeTopic && (
-        <div
-          className="flex flex-wrap items-center gap-3 p-2 rounded-2xl"
-          style={{ background: "#fff", border: "2px solid #e0e7ff", boxShadow: "0 4px 16px rgba(99,102,241,0.06)" }}
-        >
-          <span className="text-xs font-bold uppercase tracking-widest pl-2" style={{ color: "#94a3b8" }}>
-            Age band
-          </span>
-          <div className="flex flex-wrap gap-2 flex-1">
-            {AGE_GROUPS.map((ag) => (
-              <button
-                key={ag}
-                type="button"
-                onClick={() => setAgeFilter(ag)}
-                className="px-5 py-2.5 rounded-xl text-sm font-bold transition-all"
-                style={
-                  ageFilter === ag
-                    ? {
-                        background: "linear-gradient(135deg, #f59e0b, #ef4444)",
-                        color: "#fff",
-                        boxShadow: "0 4px 14px rgba(245,158,11,0.4)",
-                        border: "2px solid transparent",
-                      }
-                    : {
-                        background: "#fffbeb",
-                        border: "2px solid #fde68a",
-                        color: "#92400e",
-                      }
-                }
-              >
-                {ag === "6-10" ? "🧒" : "👦"} Age {ag}
-              </button>
-            ))}
-          </div>
+      {/* Topic hero — uses active topic's dark color shades */}
+      {activeTopic && (() => {
+        const pal = activePal;
+        return (
           <div
-            className="flex items-center px-4 py-2 rounded-xl text-sm font-bold shrink-0"
-            style={{ background: "linear-gradient(135deg, #ecfdf5, #d1fae5)", border: "2px solid #6ee7b7", color: "#065f46" }}
+            className="relative rounded-3xl overflow-hidden min-h-50 md:min-h-60"
+            style={{ boxShadow: `0 20px 50px ${hexAlpha(pal.dark800, 0.22)}` }}
           >
-            {subtopics.length} lesson{subtopics.length !== 1 ? "s" : ""}
+            {topicCoverSrc(activeTopic) ? (
+              <>
+                <img
+                  src={topicCoverSrc(activeTopic)}
+                  alt=""
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    background: `linear-gradient(105deg, ${hexAlpha(pal.heroFrom || pal.dark900, 0.92)} 0%, ${hexAlpha(pal.dark800, 0.55)} 45%, ${hexAlpha(pal.dark600, 0.40)} 100%)`,
+                  }}
+                />
+              </>
+            ) : (
+              <div
+                className="absolute inset-0"
+                style={{
+                  background: `linear-gradient(135deg, ${pal.heroFrom || pal.dark900} 0%, ${pal.dark800} 40%, ${pal.dark600} 85%, ${pal.icon} 100%)`,
+                }}
+              />
+            )}
+            <div className="relative z-10 p-6 md:p-10 flex flex-col justify-end min-h-50 md:min-h-60">
+              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/70 mb-2">Current topic</p>
+              <h1 className="text-2xl md:text-4xl font-extrabold text-white leading-tight drop-shadow-sm">
+                {activeTopic.title}
+              </h1>
+              {activeTopic.description ? (
+                <p className="text-sm md:text-base text-white/85 mt-3 max-w-2xl leading-relaxed">
+                  {activeTopic.description}
+                </p>
+              ) : (
+                <p className="text-sm text-white/60 mt-2 italic">No description yet — edit this topic from Topics to add one.</p>
+              )}
+              <div className="flex flex-wrap gap-2 mt-5">
+                <span
+                  className="px-3 py-1.5 rounded-full text-xs font-bold backdrop-blur-md"
+                  style={{ background: "rgba(255,255,255,0.18)", border: "1px solid rgba(255,255,255,0.35)", color: "#fff" }}
+                >
+                  📚 Switch topic in the list above anytime
+                </span>
+              </div>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Alerts */}
       {error && (
@@ -411,30 +570,34 @@ export default function KaveeshaSubtopicsManager({
       {showForm && activeTopic && (
         <div
           className="rounded-2xl p-6 space-y-4"
-          style={{ background: "linear-gradient(135deg, #eff6ff, #faf5ff)", border: "2px solid #c4b5fd", boxShadow: "0 8px 32px rgba(139,92,246,0.1)" }}
+          style={{
+            background: `linear-gradient(135deg, ${activePal.light50}, ${activePal.light100})`,
+            border: `2px solid ${activePal.border}`,
+            boxShadow: `0 8px 32px ${hexAlpha(activePal.dark600, 0.10)}`,
+          }}
         >
           <div className="flex items-center gap-2">
             <span className="text-2xl">{editingSub ? "✏️" : "➕"}</span>
             <h3 className="text-lg font-bold text-slate-800">
               {editingSub ? "Edit Subtopic" : "New Subtopic"} under{" "}
-              <span style={{ color: "#7c3aed" }}>{activeTopic.title}</span>
+              <span style={{ color: activePal.dark700 }}>{activeTopic.title}</span>
             </h3>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
-              <label className="text-xs font-bold uppercase tracking-widest block mb-2" style={{ color: "#7c3aed" }}>Title *</label>
+              <label className="text-xs font-bold uppercase tracking-widest block mb-2" style={{ color: activePal.dark700 }}>Title *</label>
               <input
                 type="text"
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
                 placeholder="e.g. Arm Movements"
                 style={inputStyle}
-                onFocus={(e) => { e.target.style.borderColor = "#7c3aed"; e.target.style.boxShadow = "0 0 0 3px rgba(139,92,246,0.12)"; }}
+                onFocus={(e) => { e.target.style.borderColor = activePal.dark600; e.target.style.boxShadow = `0 0 0 3px ${hexAlpha(activePal.dark600, 0.12)}`; }}
                 onBlur={(e) => { e.target.style.borderColor = "#e0e7ff"; e.target.style.boxShadow = "none"; }}
               />
             </div>
             <div>
-              <label className="text-xs font-bold uppercase tracking-widest block mb-2" style={{ color: "#7c3aed" }}>Age Group *</label>
+              <label className="text-xs font-bold uppercase tracking-widest block mb-2" style={{ color: activePal.dark700 }}>Age Group *</label>
               <select
                 value={form.ageGroup}
                 onChange={(e) => setForm({ ...form, ageGroup: e.target.value })}
@@ -446,7 +609,7 @@ export default function KaveeshaSubtopicsManager({
               </select>
             </div>
             <div>
-              <label className="text-xs font-bold uppercase tracking-widest block mb-2" style={{ color: "#7c3aed" }}>Order</label>
+              <label className="text-xs font-bold uppercase tracking-widest block mb-2" style={{ color: activePal.dark700 }}>Order</label>
               <input
                 type="number"
                 value={form.order}
@@ -460,7 +623,7 @@ export default function KaveeshaSubtopicsManager({
             <button
               onClick={handleSubmit}
               className="px-6 py-2.5 text-white rounded-xl font-bold text-sm transition-all hover:-translate-y-0.5 shadow-md"
-              style={{ background: "linear-gradient(135deg, #7c3aed, #6366f1)" }}
+              style={{ background: `linear-gradient(135deg, ${activePal.dark700}, ${activePal.dark600})` }}
             >
               {editingSub ? "Update" : "Create"} Subtopic
             </button>
@@ -475,196 +638,227 @@ export default function KaveeshaSubtopicsManager({
         </div>
       )}
 
-      {/* Subtopics — card grid */}
+      {/* Subtopics — card grid using active topic's dark shades */}
       {activeTopic && (() => {
-        const topicIdx = topics.findIndex((t) => t._id === activeTopic._id);
-        const pal = TOPIC_COLORS[(topicIdx >= 0 ? topicIdx : 0) % TOPIC_COLORS.length];
+        const pal = activePal;
         const ac = {
           border: pal.border,
-          glow: hexAlpha(pal.icon, 0.14),
-          glowHover: hexAlpha(pal.icon, 0.26),
+          light50: pal.light50,
+          light100: pal.light100,
+          light200: pal.light200,
+          glow: hexAlpha(pal.dark600, 0.11),
+          glowHover: hexAlpha(pal.dark600, 0.22),
           chip: pal.badge,
           chipText: pal.badgeText,
-          btnFrom: pal.accent,
-          btnTo: pal.icon,
+          btnFrom: pal.dark800,
+          btnTo: pal.dark600,
+          iconColor: pal.icon,
+          accentDark: pal.dark700,
         };
         return (
-        <div className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3 px-1">
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="text-lg shrink-0">🎓</span>
-              <h3 className="text-sm font-bold uppercase tracking-widest truncate" style={{ color: "#64748b" }}>
-                Lessons · Age {ageFilter}
-              </h3>
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 px-1">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-lg shrink-0">🎓</span>
+                <h3 className="text-sm font-bold uppercase tracking-widest truncate" style={{ color: "#64748b" }}>
+                  Lessons · Age {ageFilter}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => { resetForm(); setShowForm(true); }}
+                className="flex items-center gap-2 px-5 py-2.5 text-white rounded-xl font-bold text-sm transition-all hover:-translate-y-0.5 shadow-lg shrink-0"
+                style={{
+                  background: `linear-gradient(135deg, ${ac.btnFrom}, ${ac.btnTo})`,
+                  boxShadow: `0 4px 20px ${ac.glow}`,
+                }}
+              >
+                <span className="text-lg leading-none">+</span> New Subtopic
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() => { resetForm(); setShowForm(true); }}
-              className="flex items-center gap-2 px-5 py-2.5 text-white rounded-xl font-bold text-sm transition-all hover:-translate-y-0.5 shadow-lg shrink-0"
-              style={{
-                background: `linear-gradient(135deg, ${ac.btnFrom}, ${ac.btnTo})`,
-                boxShadow: `0 4px 20px ${ac.glow}`,
-              }}
-            >
-              <span className="text-lg leading-none">+</span> New Subtopic
-            </button>
-          </div>
 
-          {loading ? (
-            <div
-              className="rounded-3xl p-16 text-center"
-              style={{ background: "#fff", border: "2px solid #e0e7ff", boxShadow: "0 8px 30px rgba(99,102,241,0.06)" }}
-            >
-              <div className="text-4xl mb-3 animate-spin">⏳</div>
-              <p className="text-slate-500 font-semibold">Loading lessons…</p>
-            </div>
-          ) : subtopics.length === 0 ? (
-            <div
-              className="rounded-3xl p-14 md:p-20 text-center"
-              style={{
-                background: "linear-gradient(160deg, #f8faff 0%, #fff 40%, #eff6ff 100%)",
-                border: "2px dashed #c7d2fe",
-                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)",
-              }}
-            >
-              <div className="text-6xl mb-4 opacity-90">🏊</div>
-              <p className="font-extrabold text-slate-700 text-xl">No lessons for this age band yet</p>
-              <p className="text-slate-500 text-sm mt-2 max-w-md mx-auto">
-                Add a subtopic with <span className="font-bold text-indigo-600">+ New Subtopic</span>, or switch age band above.
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-              {subtopics.map((sub, i) => {
-                const contentItems = contentStatus(sub);
-                return (
-                  <div
-                    key={sub._id}
-                    className="rounded-2xl overflow-hidden flex flex-col h-full transition-all duration-300 group/card"
-                    style={{
-                      background: "#fff",
-                      border: `2px solid ${ac.border}`,
-                      boxShadow: `0 10px 32px ${ac.glow}`,
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = "translateY(-6px)";
-                      e.currentTarget.style.boxShadow = `0 20px 44px ${ac.glowHover}`;
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = "translateY(0)";
-                      e.currentTarget.style.boxShadow = `0 10px 32px ${ac.glow}`;
-                    }}
-                  >
+            {loading ? (
+              <div
+                className="rounded-3xl p-16 text-center"
+                style={{ background: "#fff", border: `2px solid ${pal.border}`, boxShadow: `0 8px 30px ${ac.glow}` }}
+              >
+                <div className="text-4xl mb-3 animate-spin">⏳</div>
+                <p className="text-slate-500 font-semibold">Loading lessons…</p>
+              </div>
+            ) : subtopics.length === 0 ? (
+              <div
+                className="rounded-3xl p-14 md:p-20 text-center"
+                style={{
+                  background: `linear-gradient(160deg, ${pal.light50} 0%, #fff 40%, ${pal.light100} 100%)`,
+                  border: `2px dashed ${pal.border}`,
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)",
+                }}
+              >
+                <div className="text-6xl mb-4 opacity-90">🏊</div>
+                <p className="font-extrabold text-slate-700 text-xl">No lessons for this age band yet</p>
+                <p className="text-slate-500 text-sm mt-2 max-w-md mx-auto">
+                  Add a subtopic with <span className="font-bold" style={{ color: pal.dark600 }}>+ New Subtopic</span>, or switch age band above.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                {subtopics.map((sub, i) => {
+                  const contentItems = contentStatus(sub);
+                  return (
                     <div
-                      className="h-2 w-full shrink-0"
-                      style={{ background: `linear-gradient(90deg, ${ac.btnFrom}, ${ac.btnTo})` }}
-                    />
-                    <div className="p-5 flex flex-col flex-1">
-                      <div className="flex items-start justify-between gap-3 mb-4">
-                        <div
-                          className="w-12 h-12 rounded-2xl flex items-center justify-center text-lg font-extrabold shrink-0 shadow-sm"
-                          style={{
-                            background: `linear-gradient(135deg, ${ac.chip}, #fff)`,
-                            border: `2px solid ${ac.border}`,
-                            color: ac.chipText,
-                          }}
-                        >
-                          {sub.order || i + 1}
+                      key={sub._id}
+                      className="rounded-2xl overflow-hidden flex flex-col h-full transition-all duration-300 group/card"
+                      style={{
+                        background: "#fff",
+                        border: `2px solid ${ac.border}`,
+                        boxShadow: `0 10px 32px ${ac.glow}`,
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = "translateY(-6px)";
+                        e.currentTarget.style.boxShadow = `0 20px 44px ${ac.glowHover}`;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = "translateY(0)";
+                        e.currentTarget.style.boxShadow = `0 10px 32px ${ac.glow}`;
+                      }}
+                    >
+                      {/* Top accent bar — dark shade of topic color */}
+                      <div
+                        className="h-2 w-full shrink-0"
+                        style={{ background: `linear-gradient(90deg, ${ac.btnFrom}, ${ac.btnTo})` }}
+                      />
+
+                      <div className="p-5 flex flex-col flex-1">
+                        {/* Order badge + Lock badge */}
+                        <div className="flex items-start justify-between gap-3 mb-4">
+                          <div
+                            className="w-12 h-12 rounded-2xl flex items-center justify-center text-lg font-extrabold shrink-0 shadow-sm"
+                            style={{
+                              background: `linear-gradient(135deg, ${ac.light100}, #fff)`,
+                              border: `2px solid ${ac.border}`,
+                              color: ac.btnFrom,
+                            }}
+                          >
+                            {sub.order || i + 1}
+                          </div>
+
+                          {/* Lock badge — bigger, more prominent */}
+                          <span
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full font-bold shrink-0"
+                            style={
+                              sub.isLocked
+                                ? {
+                                    background: "#fef3c7",
+                                    color: "#78350f",
+                                    border: "1.5px solid #fbbf24",
+                                    fontSize: 13,
+                                  }
+                                : {
+                                    background: "#dcfce7",
+                                    color: "#14532d",
+                                    border: "1.5px solid #4ade80",
+                                    fontSize: 13,
+                                  }
+                            }
+                          >
+                            <span style={{ fontSize: 15 }}>{sub.isLocked ? "🔒" : "🔓"}</span>
+                            <span style={{ fontWeight: 800 }}>{sub.isLocked ? "Locked" : "Unlocked"}</span>
+                          </span>
                         </div>
-                        <span
-                          className="px-2.5 py-1 rounded-full text-[11px] font-bold shrink-0"
-                          style={
-                            sub.isLocked
-                              ? { background: "#fef3c7", color: "#92400e", border: "1px solid #fcd34d" }
-                              : { background: "#dcfce7", color: "#166534", border: "1px solid #86efac" }
-                          }
-                        >
-                          {sub.isLocked ? "🔒 Locked" : "🔓 Unlocked"}
-                        </span>
-                      </div>
 
-                      <h4 className="font-bold text-slate-900 text-lg leading-snug">{sub.title}</h4>
-                      <p className="text-xs font-semibold mt-1" style={{ color: "#94a3b8" }}>
-                        Age {sub.ageGroup} · Order #{sub.order || i + 1}
-                      </p>
+                        {/* Title */}
+                        <h4 className="font-bold text-slate-900 text-lg leading-snug">{sub.title}</h4>
+                        <p className="text-xs font-semibold mt-1" style={{ color: "#94a3b8" }}>
+                          Age {sub.ageGroup} · Order #{sub.order || i + 1}
+                        </p>
 
-                      <div className="mt-4 flex flex-wrap gap-1.5 min-h-8 items-center">
-                        {contentItems.length > 0 ? (
-                          contentItems.map((icon, ci) => (
-                            <span
-                              key={ci}
-                              className="text-sm w-9 h-9 flex items-center justify-center rounded-xl"
-                              style={{ background: "#f0fdf4", border: "1px solid #bbf7d0" }}
-                              title="Has content"
-                            >
-                              {icon}
-                            </span>
-                          ))
-                        ) : (
-                          <span className="text-xs text-slate-400 font-medium italic">No content yet</span>
-                        )}
-                      </div>
+                        {/* Content icons — large circular chips */}
+                        <div className="mt-4 flex flex-wrap gap-2 min-h-12 items-center">
+                          {contentItems.length > 0 ? (
+                            contentItems.map((item, ci) => (
+                              <span
+                                key={ci}
+                                className="flex flex-col items-center justify-center rounded-full shrink-0"
+                                style={{
+                                  width: 48,
+                                  height: 48,
+                                  background: ac.light100,
+                                  border: `2px solid ${ac.border}`,
+                                  fontSize: 22,
+                                  lineHeight: 1,
+                                  boxShadow: `0 2px 8px ${ac.glow}`,
+                                }}
+                                title={item.label}
+                              >
+                                {item.icon}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-xs text-slate-400 font-medium italic">No content yet</span>
+                          )}
+                        </div>
 
-                      <div className="mt-auto pt-5 flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          onClick={() => onSelectSubtopic && onSelectSubtopic(sub)}
-                          className="flex-1 min-w-30 py-2.5 rounded-xl text-xs font-bold text-white transition-all hover:scale-[1.02] shadow-md"
-                          style={{
-                            background: `linear-gradient(135deg, ${ac.btnFrom}, ${ac.btnTo})`,
-                            boxShadow: `0 4px 14px ${ac.glow}`,
-                          }}
-                        >
-                          Open content →
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleToggleLock(sub)}
-                          className="px-3 py-2.5 rounded-xl text-xs font-bold transition-all hover:scale-105"
-                          style={
-                            sub.isLocked
-                              ? {
-                                  background: "#dcfce7",
-                                  border: "1.5px solid #4ade80",
-                                  color: "#166534",
-                                }
-                              : {
-                                  background: "#ffedd5",
-                                  border: "1.5px solid #fb923c",
-                                  color: "#9a3412",
-                                }
-                          }
-                          title={sub.isLocked ? "Unlock" : "Lock"}
-                        >
-                          {sub.isLocked ? "🔓" : "🔒"}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => startEdit(sub)}
-                          className="w-10 h-10 rounded-xl text-sm flex items-center justify-center transition-all hover:scale-110"
-                          style={{ background: "#dbeafe", border: "1.5px solid #93c5fd", color: "#1e40af" }}
-                          title="Edit"
-                        >
-                          ✏️
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(sub)}
-                          disabled={deleting === sub._id}
-                          className="w-10 h-10 rounded-xl text-sm flex items-center justify-center transition-all hover:scale-110 disabled:opacity-50"
-                          style={{ background: "#fee2e2", border: "1.5px solid #fca5a5", color: "#991b1b" }}
-                          title="Delete"
-                        >
-                          {deleting === sub._id ? "⏳" : "🗑️"}
-                        </button>
+                        {/* Action buttons */}
+                        <div className="mt-auto pt-5 flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => onSelectSubtopic && onSelectSubtopic(sub)}
+                            className="flex-1 min-w-30 py-2.5 rounded-xl text-sm font-bold text-white transition-all hover:scale-[1.02] shadow-md"
+                            style={{
+                              background: `linear-gradient(135deg, ${ac.btnFrom}, ${ac.btnTo})`,
+                              boxShadow: `0 4px 14px ${ac.glow}`,
+                            }}
+                          >
+                            Open content →
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleToggleLock(sub)}
+                            className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-bold transition-all hover:scale-105"
+                            style={
+                              sub.isLocked
+                                ? {
+                                    background: "#dcfce7",
+                                    border: "1.5px solid #4ade80",
+                                    color: "#14532d",
+                                  }
+                                : {
+                                    background: "#ffedd5",
+                                    border: "1.5px solid #fb923c",
+                                    color: "#7c2d12",
+                                  }
+                            }
+                            title={sub.isLocked ? "Unlock" : "Lock"}
+                          >
+                            <span style={{ fontSize: 16 }}>{sub.isLocked ? "🔓" : "🔒"}</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => startEdit(sub)}
+                            className="w-11 h-11 rounded-xl text-base flex items-center justify-center transition-all hover:scale-110"
+                            style={{ background: ac.light100, border: `1.5px solid ${ac.border}`, color: ac.btnFrom }}
+                            title="Edit"
+                          >
+                            ✏️
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(sub)}
+                            disabled={deleting === sub._id}
+                            className="w-11 h-11 rounded-xl text-base flex items-center justify-center transition-all hover:scale-110 disabled:opacity-50"
+                            style={{ background: "#fee2e2", border: "1.5px solid #fca5a5", color: "#991b1b" }}
+                            title="Delete"
+                          >
+                            {deleting === sub._id ? "⏳" : "🗑️"}
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         );
       })()}
     </div>

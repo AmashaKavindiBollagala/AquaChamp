@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import KaveeshaTopicsManager from "./kaveesha-topicsManager";
 import KaveeshaSubtopicsManager from "./kaveesha-subtopicsManager";
 import KaveeshaContentManager from "./kaveesha-contentManager";
@@ -14,15 +15,27 @@ const NAV = [
 ];
 
 export default function KaveeshaLessonsDashboard() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
   const [selectedTopic, setSelectedTopic] = useState(null);
   const [selectedSubtopic, setSelectedSubtopic] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
-  const handleLogout = () => {
-    if (window.confirm("Are you sure you want to logout?")) {
-      window.location.href = "/logout";
-    }
+  const handleLogoutClick = () => {
+    setShowLogoutDialog(true);
+  };
+
+  const handleLogoutConfirm = () => {
+    // Clear tokens
+    localStorage.removeItem("aquachamp_token");
+    sessionStorage.removeItem("aquachamp_token");
+    // Redirect to admin login
+    navigate("/admin-login");
+  };
+
+  const handleLogoutCancel = () => {
+    setShowLogoutDialog(false);
   };
 
   return (
@@ -122,32 +135,6 @@ export default function KaveeshaLessonsDashboard() {
           ))}
         </nav>
 
-        {/* Logout Button */}
-        <div className="px-3 pb-3">
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200"
-            style={{
-              background: "rgba(239,68,68,0.1)",
-              border: "1px solid rgba(239,68,68,0.25)",
-              color: "#fca5a5",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "rgba(239,68,68,0.22)";
-              e.currentTarget.style.color = "#fecaca";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "rgba(239,68,68,0.1)";
-              e.currentTarget.style.color = "#fca5a5";
-            }}
-          >
-            <span className="text-lg shrink-0">🚪</span>
-            {sidebarOpen && (
-              <span className="text-sm font-semibold tracking-wide">Logout</span>
-            )}
-          </button>
-        </div>
-
         {/* Collapse btn */}
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -200,7 +187,6 @@ export default function KaveeshaLessonsDashboard() {
             >
               🔔
             </button>
-            {/* Admin Avatar */}
             <div className="flex items-center gap-2.5">
               <div
                 className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold text-white"
@@ -225,56 +211,90 @@ export default function KaveeshaLessonsDashboard() {
                 </span>
               </div>
             </div>
+
+            {/* Logout Button */}
+            <button
+              onClick={handleLogoutClick}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all hover:-translate-y-0.5"
+              style={{
+                background: "linear-gradient(135deg, #ef4444, #dc2626)",
+                color: "#ffffff",
+                boxShadow: "0 4px 12px rgba(239,68,68,0.3)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.boxShadow = "0 6px 16px rgba(239,68,68,0.4)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.boxShadow = "0 4px 12px rgba(239,68,68,0.3)";
+              }}
+            >
+              <span>🚪</span>
+              <span>Logout</span>
+            </button>
           </div>
         </header>
-
-        {/* Stats Bar */}
-        <KaveeshaStatsBar />
 
         {/* Content Area */}
         <main className="flex-1 overflow-y-auto p-6 space-y-6" style={{ background: "#f1f5f9" }}>
           {activeTab === "overview" && (
-            <div className="grid grid-cols-2 gap-6">
-              <div className="col-span-2">
+            <div className="space-y-6">
+              {/* Stats Bar */}
+              <KaveeshaStatsBar />
+
+              {/* Charts */}
+              <div>
                 <KaveeshaChartsPanel compact />
               </div>
+
+              {/* Quick Topic View — full card grid */}
               <div
-                className="rounded-2xl p-5 hover:shadow-xl transition-all"
+                className="rounded-2xl p-6 hover:shadow-xl transition-all"
                 style={{
                   background: "#ffffff",
                   border: "1px solid #e0e7ff",
                   boxShadow: "0 4px 16px rgba(99,102,241,0.08)",
                 }}
               >
-                <h3
-                  className="text-xs font-bold uppercase tracking-widest mb-4"
-                  style={{ color: "#6366f1" }}
-                >
-                  Quick Topic View
-                </h3>
+                {/* Section header */}
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h3
+                      className="text-xs font-bold uppercase tracking-widest"
+                      style={{ color: "#6366f1" }}
+                    >
+                      Quick Topic View
+                    </h3>
+                    <p className="text-slate-400 text-xs mt-0.5 font-medium">
+                      All available topics — click any card to manage subtopics
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setActiveTab("topics")}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all hover:-translate-y-0.5"
+                    style={{
+                      background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+                      color: "#ffffff",
+                      boxShadow: "0 4px 12px rgba(99,102,241,0.35)",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.boxShadow = "0 6px 18px rgba(99,102,241,0.5)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.boxShadow = "0 4px 12px rgba(99,102,241,0.35)";
+                    }}
+                  >
+                    <span>⚙️</span>
+                    <span>Manage Topics</span>
+                  </button>
+                </div>
+
+                {/* Full KaveeshaTopicsManager — not compact, shows all topics as cards */}
                 <KaveeshaTopicsManager
-                  compact
                   onSelectTopic={(t) => {
                     setSelectedTopic(t);
                     setActiveTab("subtopics");
                   }}
                 />
-              </div>
-              <div
-                className="rounded-2xl p-5 hover:shadow-xl transition-all"
-                style={{
-                  background: "#ffffff",
-                  border: "1px solid #e0e7ff",
-                  boxShadow: "0 4px 16px rgba(99,102,241,0.08)",
-                }}
-              >
-                <h3
-                  className="text-xs font-bold uppercase tracking-widest mb-4"
-                  style={{ color: "#6366f1" }}
-                >
-                  Recent Activity
-                </h3>
-                <RecentActivity />
               </div>
             </div>
           )}
@@ -309,47 +329,91 @@ export default function KaveeshaLessonsDashboard() {
           {activeTab === "charts" && <KaveeshaChartsPanel />}
         </main>
       </div>
-    </div>
-  );
-}
 
-function RecentActivity() {
-  const items = [
-    { icon: "📚", text: "Topic 'Freestyle' created", time: "2m ago", bg: "#f0fdf4", border: "#86efac", color: "#166534" },
-    { icon: "📂", text: "Subtopic added to 'Breaststroke'", time: "15m ago", bg: "#eff6ff", border: "#93c5fd", color: "#1e40af" },
-    { icon: "🎬", text: "Video updated in 'Backstroke Intro'", time: "1h ago", bg: "#faf5ff", border: "#c4b5fd", color: "#6b21a8" },
-    { icon: "❓", text: "Quiz added to 'Water Safety'", time: "3h ago", bg: "#fffbeb", border: "#fcd34d", color: "#92400e" },
-    { icon: "🖼️", text: "Images uploaded to 'Breathing'", time: "5h ago", bg: "#ecfdf5", border: "#6ee7b7", color: "#065f46" },
-  ];
-  return (
-    <div className="space-y-2.5">
-      {items.map((item, i) => (
+      {/* Custom Logout Confirmation Dialog */}
+      {showLogoutDialog && (
         <div
-          key={i}
-          className="flex items-center gap-3 text-sm p-3 rounded-xl transition-all cursor-pointer"
-          style={{
-            background: item.bg,
-            border: `1px solid ${item.border}`,
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = "translateX(4px)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = "translateX(0)";
-          }}
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ background: "rgba(0, 0, 0, 0.6)", backdropFilter: "blur(4px)" }}
+          onClick={handleLogoutCancel}
         >
-          <span className="text-base shrink-0">{item.icon}</span>
-          <span className="flex-1 font-semibold" style={{ color: item.color }}>
-            {item.text}
-          </span>
-          <span
-            className="text-xs font-bold px-2 py-0.5 rounded-full shrink-0"
-            style={{ background: "rgba(0,0,0,0.06)", color: item.color }}
+          <div
+            className="rounded-3xl p-8 max-w-md mx-4 shadow-2xl"
+            style={{
+              background: "#ffffff",
+              border: "2px solid #e0e7ff",
+              animation: "pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+            }}
+            onClick={(e) => e.stopPropagation()}
           >
-            {item.time}
-          </span>
+            {/* Icon */}
+            <div className="flex justify-center mb-4">
+              <div
+                className="w-20 h-20 rounded-full flex items-center justify-center text-5xl"
+                style={{
+                  background: "linear-gradient(135deg, #fef3c7, #fde68a)",
+                  border: "3px solid #f59e0b",
+                  boxShadow: "0 8px 24px rgba(245, 158, 11, 0.3)",
+                }}
+              >
+                👋
+              </div>
+            </div>
+
+            {/* Message */}
+            <h3 className="text-2xl font-bold text-center text-slate-800 mb-2">
+              Logout Confirmation
+            </h3>
+            <p className="text-slate-600 text-center font-medium mb-6">
+              Are you sure you want to logout? You will need to login again to access the admin dashboard.
+            </p>
+
+            {/* Buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={handleLogoutCancel}
+                className="flex-1 px-6 py-3 rounded-xl font-bold text-sm transition-all hover:-translate-y-0.5"
+                style={{
+                  background: "#f1f5f9",
+                  border: "2px solid #e2e8f0",
+                  color: "#475569",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "#e2e8f0";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "#f1f5f9";
+                }}
+              >
+                ❌ No, Cancel
+              </button>
+              <button
+                onClick={handleLogoutConfirm}
+                className="flex-1 px-6 py-3 rounded-xl font-bold text-sm text-white transition-all hover:-translate-y-0.5"
+                style={{
+                  background: "linear-gradient(135deg, #ef4444, #dc2626)",
+                  boxShadow: "0 4px 12px rgba(239, 68, 68, 0.3)",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.boxShadow = "0 6px 16px rgba(239, 68, 68, 0.4)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.boxShadow = "0 4px 12px rgba(239, 68, 68, 0.3)";
+                }}
+              >
+                ✅ Yes, Logout
+              </button>
+            </div>
+          </div>
         </div>
-      ))}
+      )}
+
+      <style>{`
+        @keyframes pop {
+          0% { transform: scale(0.8); opacity: 0; }
+          100% { transform: scale(1); opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 }
