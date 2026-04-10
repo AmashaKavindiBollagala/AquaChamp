@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import KaveeshaStatsBar from "./kaveesha-statsBar";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -28,19 +31,19 @@ function ChartCard({ title, subtitle, children, action, accent = "#6366f1", acce
       className="rounded-2xl overflow-hidden transition-all hover:-translate-y-1"
       style={{
         background: "#fff",
-        border: "2px solid #e0e7ff",
-        boxShadow: "0 4px 20px rgba(99,102,241,0.07)",
+        border: `4px solid ${accent}`,
+        boxShadow: `0 4px 20px ${accent}15`,
       }}
-      onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 12px 32px rgba(99,102,241,0.14)"; }}
-      onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 4px 20px rgba(99,102,241,0.07)"; }}
+      onMouseEnter={(e) => { e.currentTarget.style.boxShadow = `0 12px 32px ${accent}30`; e.currentTarget.style.transform = "translateY(-4px)"; }}
+      onMouseLeave={(e) => { e.currentTarget.style.boxShadow = `0 4px 20px ${accent}15`; e.currentTarget.style.transform = "translateY(0)"; }}
     >
       {/* Card Top Bar */}
       <div
         className="px-5 py-4 flex items-start justify-between"
-        style={{ background: "linear-gradient(135deg, #f8faff, #f0f4ff)", borderBottom: "1.5px solid #e0e7ff" }}
+        style={{ background: `linear-gradient(135deg, ${accentLight}, ${accentLight}88)`, borderBottom: `3px solid ${accent}` }}
       >
         <div className="flex items-center gap-3">
-          <div className="w-1 h-8 rounded-full" style={{ background: `linear-gradient(to bottom, ${accent}, ${accent}88)` }} />
+          <div className="w-1.5 h-8 rounded-full" style={{ background: `linear-gradient(to bottom, ${accent}, ${accent}66)` }} />
           <div>
             <h3 className="text-sm font-bold text-slate-700">{title}</h3>
             {subtitle && <p className="text-xs text-slate-400 mt-0.5">{subtitle}</p>}
@@ -56,23 +59,46 @@ function ChartCard({ title, subtitle, children, action, accent = "#6366f1", acce
 export default function KaveeshaChartsPanel({ compact }) {
   const [topics, setTopics] = useState([]);
   const [subtopics, setSubtopics] = useState([]);
+  const [students, setStudents] = useState([]);
   const [selectedTopic, setSelectedTopic] = useState(null);
+  const [selectedTopics, setSelectedTopics] = useState([]);
+  const [selectedSubtopics, setSelectedSubtopics] = useState([]);
+  const [selectedAgeGroup, setSelectedAgeGroup] = useState("all");
   const [topicSubtopics, setTopicSubtopics] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [topicsRes, subtopicsRes] = await Promise.all([
+        // Get token for authenticated requests
+        const token = localStorage.getItem("aquachamp_token") || localStorage.getItem("superAdminToken");
+        const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
+
+        const [topicsRes, subtopicsRes, usersRes] = await Promise.all([
           axios.get(`${API}/api/topics`),
           axios.get(`${API}/api/subtopics`),
+          axios.get(`${API}/api/users/all`, { headers: authHeaders }),
         ]);
         const topicList = topicsRes.data || [];
         const subtopicList = Array.isArray(subtopicsRes.data)
           ? subtopicsRes.data
           : subtopicsRes.data?.subtopics || [];
+        
+        // Get all users (students) from the response
+        const usersData = usersRes.data;
+        const users = usersData?.users || (Array.isArray(usersData) ? usersData : []);
+        
+        // Filter only students (users with role "User" and active)
+        const studentList = users.filter(user => 
+          user.roles && 
+          Array.isArray(user.roles) && 
+          user.roles.includes("User") && 
+          user.active !== false
+        );
+
         setTopics(topicList);
         setSubtopics(subtopicList);
+        setStudents(studentList);
         if (topicList.length > 0) setSelectedTopic(topicList[0]);
       } catch (err) {
         console.error(err);
@@ -81,6 +107,12 @@ export default function KaveeshaChartsPanel({ compact }) {
       }
     };
     fetchData();
+    
+    // Auto-refresh every 30 seconds to keep charts updated with database
+    const interval = setInterval(fetchData, 30000);
+    
+    // Cleanup interval on unmount
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -136,14 +168,150 @@ export default function KaveeshaChartsPanel({ compact }) {
     ],
   };
 
+  // Calculate student age groups from database
+  const students610 = students.filter(s => s.age >= 5 && s.age <= 10).length;
+  const students1115 = students.filter(s => s.age >= 11 && s.age <= 15).length;
+  const totalStudents = students.length;
+
+  // Get subtopics for selected topics
+  const getFilteredSubtopics = () => {
+    let filtered = subtopics;
+    
+    // Filter by age group
+    if (selectedAgeGroup !== "all") {
+      filtered = filtered.filter(s => s.ageGroup === selectedAgeGroup);
+    }
+    
+    // Filter by selected topics
+    if (selectedTopics.length > 0) {
+      filtered = filtered.filter(s => 
+        selectedTopics.includes(s.topicId) || selectedTopics.includes(s.topicId?._id)
+      );
+    }
+    
+    // Filter by selected subtopics
+    if (selectedSubtopics.length > 0) {
+      filtered = filtered.filter(s => selectedSubtopics.includes(s._id));
+    }
+    
+    return filtered;
+  };
+
+  // Generate PDF Report
+  const generateReport = () => {
+    const filteredSubtopics = getFilteredSubtopics();
+    
+    // Group subtopics by topic
+    const topicMap = {};
+    filteredSubtopics.forEach(sub => {
+      const topicId = sub.topicId?._id || sub.topicId;
+      const topic = topics.find(t => t._id === topicId);
+      if (topic) {
+        if (!topicMap[topic.title]) {
+          topicMap[topic.title] = { topic, subtopics: [] };
+        }
+        topicMap[topic.title].subtopics.push(sub);
+      }
+    });
+
+    const doc = new jsPDF();
+    
+    // Title
+    doc.setFontSize(24);
+    doc.setTextColor(15, 23, 42);
+    doc.text("AquaChamp - Learning Report", 14, 22);
+    
+    // Date
+    doc.setFontSize(10);
+    doc.setTextColor(100, 116, 139);
+    doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 30);
+    
+    // Summary Section
+    doc.setFontSize(16);
+    doc.setTextColor(15, 23, 42);
+    doc.text("Summary", 14, 42);
+    
+    doc.setFontSize(11);
+    doc.setTextColor(51, 65, 85);
+    doc.text(`Total Students: ${totalStudents}`, 14, 52);
+    doc.text(`Age 5-10: ${students610} students`, 14, 60);
+    doc.text(`Age 11-15: ${students1115} students`, 14, 68);
+    doc.text(`Total Topics: ${Object.keys(topicMap).length}`, 14, 76);
+    doc.text(`Total Subtopics: ${filteredSubtopics.length}`, 14, 84);
+    
+    // Filters Applied
+    doc.setFontSize(14);
+    doc.setTextColor(15, 23, 42);
+    doc.text("Filters Applied", 14, 98);
+    
+    doc.setFontSize(10);
+    doc.setTextColor(51, 65, 85);
+    doc.text(`Age Group: ${selectedAgeGroup === "all" ? "All Ages" : selectedAgeGroup}`, 14, 106);
+    doc.text(`Topics: ${selectedTopics.length > 0 ? selectedTopics.length : "All Topics"}`, 14, 114);
+    
+    // Detailed Content
+    doc.setFontSize(16);
+    doc.setTextColor(15, 23, 42);
+    doc.text("Detailed Content", 14, 128);
+    
+    // Table
+    const tableData = [];
+    Object.values(topicMap).forEach(({ topic, subtopics: subs }) => {
+      subs.forEach((sub, idx) => {
+        tableData.push([
+          idx === 0 ? topic.title : "",
+          sub.title,
+          sub.ageGroup,
+          sub.videoUrl ? "✓" : "—",
+          sub.content ? "✓" : "—",
+          sub.images?.length > 0 ? "✓" : "—",
+        ]);
+      });
+    });
+    
+    autoTable(doc, {
+      startY: 135,
+      head: [["Topic", "Subtopic", "Age Group", "Video", "Text", "Images"]],
+      body: tableData,
+      theme: "grid",
+      headStyles: {
+        fillColor: [99, 102, 241],
+        textColor: 255,
+        fontStyle: "bold",
+        fontSize: 9,
+      },
+      bodyStyles: {
+        fontSize: 8,
+        textColor: [51, 65, 85],
+      },
+      alternateRowStyles: {
+        fillColor: [248, 250, 252],
+      },
+      columnStyles: {
+        0: { fontStyle: "bold", cellWidth: 35 },
+        1: { cellWidth: 50 },
+        2: { cellWidth: 25, halign: "center" },
+        3: { cellWidth: 15, halign: "center" },
+        4: { cellWidth: 15, halign: "center" },
+        5: { cellWidth: 15, halign: "center" },
+      },
+      didDrawPage: (data) => {
+        // Footer
+        doc.setFontSize(8);
+        doc.setTextColor(148, 163, 184);
+        doc.text("AquaChamp Learning Management System", 14, doc.internal.pageSize.height - 10);
+        doc.text(`Page ${doc.internal.getNumberOfPages()}`, doc.internal.pageSize.width - 20, doc.internal.pageSize.height - 10);
+      },
+    });
+    
+    doc.save("aquachamp-report.pdf");
+  };
+
   const ageDistData = {
-    labels: ["Age 6–10", "Age 11–15"],
+    labels: ["Age 5–10", "Age 11–15"],
     datasets: [
       {
-        data: [
-          subtopics.filter((s) => s.ageGroup === "6-10").length,
-          subtopics.filter((s) => s.ageGroup === "11-15").length,
-        ],
+        data: [students610, students1115],
         backgroundColor: [CYAN, VIOLET],
         borderColor: [CYAN_BORDER, VIOLET_BORDER],
         borderWidth: 3,
@@ -326,14 +494,21 @@ export default function KaveeshaChartsPanel({ compact }) {
   if (compact) {
     return (
       <div className="grid grid-cols-2 gap-5">
-        <ChartCard title="Subtopics per Topic" subtitle="By age group" accent="#06b6d4">
+        <ChartCard title="Subtopics per Topic" subtitle="By age group" accent="#06b6d4" accentLight="#cffafe">
           <div className="h-48">
             <Bar data={subtopicsPerTopicData} options={chartOptions} />
           </div>
         </ChartCard>
-        <ChartCard title="Age Group Split" subtitle="Content distribution" accent="#8b5cf6">
-          <div className="h-48">
-            <Doughnut data={ageDistData} options={doughnutOptions} />
+        <ChartCard title="Age Group Split" subtitle="Student distribution" accent="#8b5cf6" accentLight="#ede9fe">
+          <div className="h-48 flex items-center justify-center">
+            <div className="w-full h-full relative">
+              <Doughnut data={ageDistData} options={doughnutOptions} />
+              {/* Center label showing total students */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none" style={{ paddingBottom: "40px" }}>
+                <div className="text-2xl font-bold text-slate-700">{totalStudents}</div>
+                <div className="text-xs text-slate-400 font-semibold">Total Students</div>
+              </div>
+            </div>
           </div>
         </ChartCard>
       </div>
@@ -348,37 +523,8 @@ export default function KaveeshaChartsPanel({ compact }) {
         <p className="text-slate-500 text-sm mt-1">Lesson content overview and progress insights</p>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-4 gap-4">
-        {summaryCards.map((card, i) => (
-          <div
-            key={i}
-            className="rounded-2xl p-4 flex items-center gap-4 transition-all hover:-translate-y-1 cursor-default"
-            style={{
-              background: card.bg,
-              border: `2px solid ${card.border}`,
-              boxShadow: "0 2px 12px rgba(0,0,0,0.05)",
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.1)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 2px 12px rgba(0,0,0,0.05)"; }}
-          >
-            <div
-              className="w-12 h-12 rounded-xl flex items-center justify-center text-xl shrink-0"
-              style={{ background: card.iconBg, boxShadow: `0 4px 12px ${card.border}` }}
-            >
-              {card.icon}
-            </div>
-            <div>
-              <div className="text-3xl font-bold leading-none" style={{ color: card.color }}>
-                {card.value}
-              </div>
-              <div className="text-xs font-bold mt-1 uppercase tracking-wide" style={{ color: card.color, opacity: 0.7 }}>
-                {card.label}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+      {/* Stats Bar - Auto-updates every 30 seconds */}
+      <KaveeshaStatsBar />
 
       {/* Main Charts */}
       <div className="grid grid-cols-2 gap-6">
@@ -388,117 +534,110 @@ export default function KaveeshaChartsPanel({ compact }) {
           </div>
         </ChartCard>
 
-        <ChartCard title="Age Group Distribution" subtitle="Subtopic split by age" accent="#8b5cf6">
+        <ChartCard title="Age Group Distribution" subtitle="Student split by age" accent="#8b5cf6">
           <div className="h-64 flex items-center justify-center">
             <div className="w-full h-full relative">
               <Doughnut data={ageDistData} options={doughnutOptions} />
-              {/* Center label */}
+              {/* Center label showing total students */}
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none" style={{ paddingBottom: "40px" }}>
-                <div className="text-2xl font-bold text-slate-700">{subtopics.length}</div>
-                <div className="text-xs text-slate-400 font-semibold">Total</div>
+                <div className="text-3xl font-bold text-slate-700">{totalStudents}</div>
+                <div className="text-sm text-slate-400 font-semibold">Total Students</div>
               </div>
             </div>
           </div>
-        </ChartCard>
-
-        <ChartCard title="Topic Popularity" subtitle="By total subtopic count" accent="#f59e0b">
-          <div className="h-64">
-            <Bar data={topicPopularityData} options={{ ...chartOptions, indexAxis: "y" }} />
-          </div>
-        </ChartCard>
-
-        <ChartCard
-          title="Content Completeness"
-          subtitle="Per subtopic in selected topic"
-          accent="#22c55e"
-          action={
-            <select
-              value={selectedTopic?._id || ""}
-              onChange={(e) => setSelectedTopic(topics.find((t) => t._id === e.target.value))}
-              className="text-xs rounded-xl px-3 py-2 font-semibold focus:outline-none transition-all"
-              style={{ background: "#f0f4ff", border: "2px solid #e0e7ff", color: "#4338ca" }}
-            >
-              {topics.map((t) => (
-                <option key={t._id} value={t._id}>{t.title}</option>
-              ))}
-            </select>
-          }
-        >
-          {topicSubtopics.length === 0 ? (
-            <div className="h-64 flex flex-col items-center justify-center gap-3">
-              <span className="text-4xl">📂</span>
-              <p className="text-slate-400 text-sm font-medium">No subtopics for this topic</p>
-            </div>
-          ) : (
-            <>
-              <div className="h-52">
-                <Bar data={contentCompletenessData} options={chartOptions} />
-              </div>
-              <div className="flex flex-wrap gap-3 mt-4">
-                {[
-                  { color: "rgba(34,197,94,0.75)", label: "Complete (3 items)" },
-                  { color: "rgba(234,179,8,0.75)", label: "2 items" },
-                  { color: "rgba(249,115,22,0.75)", label: "1 item" },
-                  { color: "rgba(239,68,68,0.5)", label: "Empty" },
-                ].map((leg, i) => (
-                  <span key={i} className="flex items-center gap-1.5 text-xs text-slate-500 font-semibold">
-                    <span className="w-3 h-3 rounded-sm inline-block" style={{ background: leg.color }} />
-                    {leg.label}
-                  </span>
-                ))}
-              </div>
-            </>
-          )}
         </ChartCard>
       </div>
 
-      {/* Lock Status Overview */}
-      <ChartCard title="🔐 Lock Status Overview" subtitle="Across all topics and subtopics" accent="#ec4899">
-        <div className="grid grid-cols-3 gap-4 mt-1">
-          {topics.map((topic, ti) => {
-            const subs = subtopics.filter(
-              (s) => s.topicId === topic._id || s.topicId?._id === topic._id
-            );
-            const locked = subs.filter((s) => s.isLocked).length;
-            const unlocked = subs.length - locked;
-            const pct = subs.length > 0 ? Math.round((unlocked / subs.length) * 100) : 0;
-            const palette = [
-              { bar: "linear-gradient(90deg, #06b6d4, #6366f1)", bg: "#eff6ff", border: "#bfdbfe" },
-              { bar: "linear-gradient(90deg, #8b5cf6, #ec4899)", bg: "#faf5ff", border: "#ddd6fe" },
-              { bar: "linear-gradient(90deg, #22c55e, #06b6d4)", bg: "#f0fdf4", border: "#bbf7d0" },
-              { bar: "linear-gradient(90deg, #f59e0b, #ef4444)", bg: "#fffbeb", border: "#fde68a" },
-              { bar: "linear-gradient(90deg, #ec4899, #8b5cf6)", bg: "#fdf2f8", border: "#fbcfe8" },
-              { bar: "linear-gradient(90deg, #10b981, #3b82f6)", bg: "#ecfdf5", border: "#a7f3d0" },
-            ][ti % 6];
-            return (
-              <div
-                key={topic._id}
-                className="rounded-xl p-4"
-                style={{ background: palette.bg, border: `1.5px solid ${palette.border}` }}
+      {/* Report Generation Section */}
+      <ChartCard title="📄 Report Generation" subtitle="Generate and download comprehensive reports" accent="#10b981" accentLight="#d1fae5">
+        <div className="space-y-5">
+          {/* Filters */}
+          <div className="grid grid-cols-3 gap-4">
+            {/* Age Group Filter */}
+            <div>
+              <label className="text-xs font-bold uppercase tracking-widest block mb-2" style={{ color: "#065f46" }}>
+                Age Group
+              </label>
+              <select
+                value={selectedAgeGroup}
+                onChange={(e) => setSelectedAgeGroup(e.target.value)}
+                className="w-full text-sm rounded-xl px-4 py-3 font-semibold focus:outline-none transition-all"
+                style={{ background: "#f0fdf4", border: "2px solid #86efac", color: "#166534" }}
               >
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-xs font-bold text-slate-700 truncate flex-1">{topic.title}</span>
-                  <span
-                    className="ml-2 text-xs font-bold px-2 py-0.5 rounded-full shrink-0"
-                    style={{ background: "#e0e7ff", color: "#4338ca" }}
-                  >
-                    {subs.length}
-                  </span>
-                </div>
-                <div className="h-2.5 rounded-full overflow-hidden" style={{ background: "#e2e8f0" }}>
-                  <div
-                    className="h-full rounded-full transition-all duration-700"
-                    style={{ width: `${pct}%`, background: palette.bar }}
-                  />
-                </div>
-                <div className="flex justify-between mt-2">
-                  <span className="text-xs font-bold" style={{ color: "#166534" }}>🔓 {unlocked} open</span>
-                  <span className="text-xs font-bold" style={{ color: "#92400e" }}>🔒 {locked} locked</span>
-                </div>
-                <div className="text-xs font-bold mt-1" style={{ color: "#6366f1" }}>{pct}% unlocked</div>
-              </div>
-            );
-          })}
+                <option value="all">All Ages</option>
+                <option value="6-10">Age 6-10</option>
+                <option value="11-15">Age 11-15</option>
+              </select>
+            </div>
+
+            {/* Topic Filter */}
+            <div>
+              <label className="text-xs font-bold uppercase tracking-widest block mb-2" style={{ color: "#065f46" }}>
+                Topics (Multiple)
+              </label>
+              <select
+                multiple
+                value={selectedTopics}
+                onChange={(e) => {
+                  const values = Array.from(e.target.selectedOptions, option => option.value);
+                  setSelectedTopics(values);
+                }}
+                className="w-full text-sm rounded-xl px-4 py-3 font-semibold focus:outline-none transition-all"
+                style={{ background: "#f0fdf4", border: "2px solid #86efac", color: "#166534", minHeight: "80px" }}
+              >
+                {topics.map((t) => (
+                  <option key={t._id} value={t._id}>{t.title}</option>
+                ))}
+              </select>
+              <p className="text-xs text-slate-500 mt-1">Hold Ctrl/Cmd to select multiple</p>
+            </div>
+
+            {/* Subtopic Filter */}
+            <div>
+              <label className="text-xs font-bold uppercase tracking-widest block mb-2" style={{ color: "#065f46" }}>
+                Subtopics (Optional)
+              </label>
+              <select
+                multiple
+                value={selectedSubtopics}
+                onChange={(e) => {
+                  const values = Array.from(e.target.selectedOptions, option => option.value);
+                  setSelectedSubtopics(values);
+                }}
+                className="w-full text-sm rounded-xl px-4 py-3 font-semibold focus:outline-none transition-all"
+                style={{ background: "#f0fdf4", border: "2px solid #86efac", color: "#166534", minHeight: "80px" }}
+              >
+                {subtopics.map((s) => (
+                  <option key={s._id} value={s._id}>{s.title}</option>
+                ))}
+              </select>
+              <p className="text-xs text-slate-500 mt-1">Leave empty for all subtopics</p>
+            </div>
+          </div>
+
+          {/* Generate Button */}
+          <div className="flex items-center justify-between pt-4" style={{ borderTop: "2px solid #d1fae5" }}>
+            <div className="text-sm text-slate-600">
+              <span className="font-bold">Preview:</span> {getFilteredSubtopics().length} subtopics will be included
+            </div>
+            <button
+              onClick={generateReport}
+              className="flex items-center gap-3 px-6 py-3 rounded-xl text-sm font-bold text-white transition-all hover:-translate-y-0.5"
+              style={{
+                background: "linear-gradient(135deg, #10b981, #059669)",
+                boxShadow: "0 4px 14px rgba(16,185,129,0.4)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.boxShadow = "0 6px 20px rgba(16,185,129,0.5)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.boxShadow = "0 4px 14px rgba(16,185,129,0.4)";
+              }}
+            >
+              <span>📥</span>
+              <span>Download PDF Report</span>
+            </button>
+          </div>
         </div>
       </ChartCard>
     </div>

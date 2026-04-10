@@ -2,7 +2,38 @@ import { useState, useEffect } from 'react';
 
 const EMPTY_LEVEL = { name: '', min: '', max: '', desc: '' };
 
-export default function LevelsPage() {
+const levelColorSchemes = [
+  { bar: '#185FA5', bg: '#E6F1FB', color: '#185FA5', border: '#93c5fd', icon: '🥇' },
+  { bar: '#0ea5e9', bg: '#e0f2fe', color: '#0369a1', border: '#7dd3fc', icon: '🥈' },
+  { bar: '#0F6E56', bg: '#ecfdf5', color: '#065f46', border: '#6ee7b7', icon: '🥉' },
+  { bar: '#EF9F27', bg: '#faeeda', color: '#854d0e', border: '#fcd34d', icon: '🏊' },
+  { bar: '#0284c7', bg: '#f0f9ff', color: '#075985', border: '#bae6fd', icon: '🌊' },
+  { bar: '#64748b', bg: '#f1f5f9', color: '#334155', border: '#cbd5e1', icon: '⭐' },
+];
+
+const inputStyle = {
+  background: '#f8faff',
+  border: '1px solid #bfdbfe',
+  color: '#0b2540',
+  borderRadius: '12px',
+  padding: '10px 14px',
+  fontSize: '13px',
+  width: '100%',
+  outline: 'none',
+  fontFamily: "'Segoe UI', sans-serif",
+};
+
+const labelStyle = {
+  display: 'block',
+  fontSize: '10px',
+  fontWeight: '700',
+  textTransform: 'uppercase',
+  letterSpacing: '0.08em',
+  color: '#185FA5',
+  marginBottom: '6px',
+};
+
+export default function DushaniLevelsPage() {
   const [levels, setLevels] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -10,25 +41,18 @@ export default function LevelsPage() {
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchLevels();
-  }, []);
+  useEffect(() => { fetchLevels(); }, []);
 
   const fetchLevels = async () => {
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('superAdminToken');
       const res = await fetch('http://localhost:4000/api/levels/', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       });
       const data = await res.json();
-      if (data.success) {
-        setLevels(data.levels || []);
-      }
-    } catch (error) {
-      console.error('Error fetching levels:', error);
+      if (data.success) setLevels(data.levels || []);
+    } catch (e) {
+      console.error('Error fetching levels:', e);
     } finally {
       setLoading(false);
     }
@@ -36,13 +60,8 @@ export default function LevelsPage() {
 
   function openForm(id) {
     if (id) {
-      const l = levels.find(x => x._id === id);
-      setForm({ 
-        name: l.levelName, 
-        min: l.minPoints, 
-        max: l.maxPoints === null ? '' : l.maxPoints, 
-        desc: l.description || '' 
-      });
+      const l = levels.find((x) => x._id === id);
+      setForm({ name: l.levelName, min: l.minPoints, max: l.maxPoints === null ? '' : l.maxPoints, desc: l.description || '' });
       setEditingId(id);
     } else {
       setForm(EMPTY_LEVEL);
@@ -58,172 +77,264 @@ export default function LevelsPage() {
         levelName: form.name,
         minPoints: Number(form.min),
         maxPoints: form.max === '' ? null : Number(form.max),
-        description: form.desc
+        description: form.desc,
       };
-
-      const url = editingId 
-        ? `http://localhost:4000/api/levels/${editingId}`
-        : 'http://localhost:4000/api/levels/';
-      
-      const method = editingId ? 'PUT' : 'POST';
-
-      const res = await fetch(url, {
-        method,
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(levelData)
-      });
-
+      const res = await fetch(
+        editingId ? `http://localhost:4000/api/levels/${editingId}` : 'http://localhost:4000/api/levels/',
+        { method: editingId ? 'PUT' : 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(levelData) }
+      );
       const data = await res.json();
       if (data.success) {
-        setShowForm(false);
-        setSaved(true);
+        setShowForm(false); setSaved(true);
         await fetchLevels();
         setTimeout(() => setSaved(false), 2500);
-      } else {
-        alert(data.message || 'Failed to save level');
-      }
-    } catch (error) {
-      console.error('Error saving level:', error);
-      alert('Failed to save level');
-    }
+      } else { alert(data.message || 'Failed to save level'); }
+    } catch (e) { console.error('Error saving level:', e); alert('Failed to save level'); }
   }
 
   async function deleteLevel(id, levelName) {
-    if (!confirm(`Are you sure you want to delete "${levelName}"? This will recalculate all student levels.`)) {
-      return;
-    }
-
+    if (!confirm(`Are you sure you want to delete "${levelName}"? This will recalculate all student levels.`)) return;
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('superAdminToken');
       const res = await fetch(`http://localhost:4000/api/levels/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+        method: 'DELETE', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       });
-
       const data = await res.json();
-      if (data.success) {
-        setSaved(true);
-        await fetchLevels();
-        setTimeout(() => setSaved(false), 2500);
-      } else {
-        alert(data.message || 'Failed to delete level');
-      }
-    } catch (error) {
-      console.error('Error deleting level:', error);
-      alert('Failed to delete level');
-    }
+      if (data.success) { setSaved(true); await fetchLevels(); setTimeout(() => setSaved(false), 2500); }
+      else alert(data.message || 'Failed to delete level');
+    } catch (e) { console.error('Error deleting level:', e); alert('Failed to delete level'); }
   }
 
   const totalStudents = levels.reduce((sum, l) => sum + (l.studentCount || 0), 0);
 
   if (loading) {
     return (
-      <div>
-        <div className="bg-white border-b border-gray-200 px-6 py-3.5 flex items-center justify-between">
-          <h1 className="text-base font-medium text-gray-900">Level management</h1>
-        </div>
-        <div className="p-6">
-          <div className="text-center text-gray-500">Loading levels...</div>
+      <div className="flex items-center justify-center h-64" style={{ background: '#f0f4f8' }}>
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl animate-pulse"
+            style={{ background: 'linear-gradient(135deg, #0ea5e9, #185FA5)', boxShadow: '0 0 20px rgba(14,165,233,0.4)' }}>
+            🌊
+          </div>
+          <p className="text-sm font-semibold tracking-wide" style={{ color: '#185FA5' }}>Loading levels…</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div>
-      <div className="bg-white border-b border-gray-200 px-6 py-3.5 flex items-center justify-between">
-        <h1 className="text-base font-medium text-gray-900">Level management</h1>
-        <button onClick={() => openForm(null)} className="px-3.5 py-1.5 bg-[#185FA5] text-white text-[13px] rounded-md hover:bg-[#0C447C] transition-colors cursor-pointer border-0">
-          + Create level
-        </button>
+    <div style={{ background: '#f0f4f8', minHeight: '100%', fontFamily: "'Segoe UI', sans-serif" }}>
+
+      {/* Page Header */}
+      <div className="flex items-center justify-between px-8 py-4"
+        style={{ background: 'linear-gradient(90deg, #ffffff 0%, #e6f1fb 100%)', borderBottom: '1px solid #bfdbfe', boxShadow: '0 2px 12px rgba(24,95,165,0.08)' }}>
+        <div>
+          <h1 className="text-xl font-bold tracking-tight" style={{ color: '#0b2540' }}>🏊 Level Management</h1>
+          <p className="text-xs mt-0.5 font-medium tracking-wide" style={{ color: '#185FA5' }}>AquaChamp · Gamification</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-bold px-3 py-1.5 rounded-xl"
+            style={{ background: '#E6F1FB', color: '#185FA5', border: '1px solid #93c5fd' }}>
+            {levels.length} level{levels.length !== 1 ? 's' : ''}
+          </span>
+          <button onClick={() => openForm(null)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all"
+            style={{ background: 'linear-gradient(135deg, #185FA5, #0ea5e9)', color: '#ffffff', border: 'none', boxShadow: '0 4px 14px rgba(14,165,233,0.4)', cursor: 'pointer' }}
+            onMouseEnter={(e) => { e.currentTarget.style.boxShadow = '0 6px 20px rgba(14,165,233,0.55)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.boxShadow = '0 4px 14px rgba(14,165,233,0.4)'; e.currentTarget.style.transform = 'translateY(0)'; }}>
+            + Create Level
+          </button>
+        </div>
       </div>
 
-      <div className="p-6">
-        {/* Form */}
-        {showForm && (
-          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden mb-5">
-            <div className="px-4 py-3.5 border-b border-gray-200 flex items-center justify-between">
-              <h2 className="text-sm font-medium text-gray-900">{editingId ? 'Edit level' : 'Create new level'}</h2>
-              <button onClick={() => setShowForm(false)} className="px-3 py-1.5 border border-gray-200 rounded-md text-[13px] text-gray-600 hover:bg-gray-50 cursor-pointer bg-white">Cancel</button>
-            </div>
-            <div className="p-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-3.5">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1.5">Level name</label>
-                    <input className="w-full px-2.5 py-2 border border-gray-200 rounded-md text-[13px] text-gray-900 focus:outline-none focus:border-[#185FA5]"
-                      placeholder="e.g. Level 3" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1.5">Min points</label>
-                    <input type="number" className="w-full px-2.5 py-2 border border-gray-200 rounded-md text-[13px] text-gray-900 focus:outline-none focus:border-[#185FA5]"
-                      placeholder="0" value={form.min} onChange={e => setForm(f => ({ ...f, min: e.target.value }))} />
-                  </div>
-                </div>
-                <div className="space-y-3.5">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1.5">Max points (blank = unlimited)</label>
-                    <input type="number" className="w-full px-2.5 py-2 border border-gray-200 rounded-md text-[13px] text-gray-900 focus:outline-none focus:border-[#185FA5]"
-                      placeholder="leave blank for unlimited" value={form.max} onChange={e => setForm(f => ({ ...f, max: e.target.value }))} />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1.5">Description</label>
-                    <input className="w-full px-2.5 py-2 border border-gray-200 rounded-md text-[13px] text-gray-900 focus:outline-none focus:border-[#185FA5]"
-                      placeholder="Optional description" value={form.desc} onChange={e => setForm(f => ({ ...f, desc: e.target.value }))} />
-                  </div>
-                </div>
-              </div>
-              <div className="flex gap-2 justify-end mt-4">
-                <button onClick={() => setShowForm(false)} className="px-3.5 py-1.5 border border-gray-200 rounded-md text-[13px] text-gray-600 hover:bg-gray-50 cursor-pointer bg-white">Cancel</button>
-                <button onClick={saveLevel} className="px-3.5 py-1.5 bg-[#185FA5] text-white text-[13px] rounded-md hover:bg-[#0C447C] transition-colors cursor-pointer border-0">Save level</button>
-              </div>
-            </div>
-          </div>
-        )}
+      <div className="p-6 space-y-5">
 
+        {/* Success Toast */}
         {saved && (
-          <div className="flex items-center gap-2 px-3.5 py-2.5 bg-[#E1F5EE] text-[#0F6E56] rounded-md text-[13px] mb-4">
-            ✓ Level saved successfully. All student levels have been recalculated.
+          <div className="flex items-center gap-3 px-5 py-3.5 rounded-2xl text-sm font-semibold"
+            style={{ background: '#ecfdf5', border: '1px solid #6ee7b7', color: '#065f46' }}>
+            <span className="text-lg">✅</span> Level saved. All student levels have been recalculated.
           </div>
         )}
 
-        {/* Table */}
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-          <table className="w-full text-[13px]">
-            <thead>
-              <tr>
-                {['Level', 'Points range', 'Students', 'Distribution', ''].map(h => (
-                  <th key={h} className="text-left text-[11px] font-medium text-gray-400 uppercase tracking-wide px-3 py-2 border-b border-gray-100">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {levels.map(l => (
-                <tr key={l._id} className="hover:bg-gray-50 border-b border-gray-100 last:border-0">
-                  <td className="px-3 py-2.5 font-medium text-gray-800">{l.levelName}</td>
-                  <td className="px-3 py-2.5 text-gray-400">{l.minPoints} – {l.maxPoints === null ? '∞' : l.maxPoints} pts</td>
-                  <td className="px-3 py-2.5 font-medium text-[#185FA5]">{l.studentCount || 0}</td>
-                  <td className="px-3 py-2.5 w-40">
-                    <div className="h-1.5 bg-gray-100 rounded-full">
-                      <div className="h-1.5 rounded-full bg-[#185FA5]" style={{ width: `${totalStudents > 0 ? Math.round(((l.studentCount || 0) / totalStudents) * 100) : 0}%` }} />
+        {/* Create / Edit Form */}
+        {showForm && (
+          <div className="rounded-2xl overflow-hidden"
+            style={{ background: '#ffffff', border: '1px solid #bfdbfe', boxShadow: '0 4px 20px rgba(24,95,165,0.1)' }}>
+
+            {/* Form Header */}
+            <div className="flex items-center justify-between px-6 py-4"
+              style={{ background: 'linear-gradient(90deg, #e6f1fb, #f0f8ff)', borderBottom: '1px solid #bfdbfe' }}>
+              <h2 className="text-xs font-bold uppercase tracking-widest" style={{ color: '#185FA5' }}>
+                {editingId ? '✏️ Edit Level' : '➕ Create New Level'}
+              </h2>
+              <button onClick={() => setShowForm(false)}
+                className="px-3 py-1.5 rounded-xl text-xs font-bold transition-all"
+                style={{ background: '#f0f4f8', border: '1px solid #bfdbfe', color: '#64748b', cursor: 'pointer' }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = '#e2e8f0'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = '#f0f4f8'; }}>
+                Cancel
+              </button>
+            </div>
+
+            <div className="p-6">
+              <div className="grid grid-cols-2 gap-6">
+                {/* Left */}
+                <div className="space-y-4">
+                  <div>
+                    <label style={labelStyle}>Level Name</label>
+                    <input style={inputStyle} placeholder="e.g. Level 3"
+                      value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                      onFocus={(e) => { e.target.style.border = '1px solid #0ea5e9'; e.target.style.boxShadow = '0 0 0 3px rgba(14,165,233,0.15)'; }}
+                      onBlur={(e) => { e.target.style.border = '1px solid #bfdbfe'; e.target.style.boxShadow = 'none'; }} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Min Points</label>
+                    <input type="number" style={inputStyle} placeholder="0"
+                      value={form.min} onChange={(e) => setForm((f) => ({ ...f, min: e.target.value }))}
+                      onFocus={(e) => { e.target.style.border = '1px solid #0ea5e9'; e.target.style.boxShadow = '0 0 0 3px rgba(14,165,233,0.15)'; }}
+                      onBlur={(e) => { e.target.style.border = '1px solid #bfdbfe'; e.target.style.boxShadow = 'none'; }} />
+                  </div>
+                </div>
+                {/* Right */}
+                <div className="space-y-4">
+                  <div>
+                    <label style={labelStyle}>Max Points <span style={{ color: '#94a3b8', textTransform: 'none', fontSize: '10px' }}>(blank = unlimited)</span></label>
+                    <input type="number" style={inputStyle} placeholder="leave blank for unlimited"
+                      value={form.max} onChange={(e) => setForm((f) => ({ ...f, max: e.target.value }))}
+                      onFocus={(e) => { e.target.style.border = '1px solid #0ea5e9'; e.target.style.boxShadow = '0 0 0 3px rgba(14,165,233,0.15)'; }}
+                      onBlur={(e) => { e.target.style.border = '1px solid #bfdbfe'; e.target.style.boxShadow = 'none'; }} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Description <span style={{ color: '#94a3b8', textTransform: 'none', fontSize: '10px' }}>(optional)</span></label>
+                    <input style={inputStyle} placeholder="e.g. Intermediate swimmer"
+                      value={form.desc} onChange={(e) => setForm((f) => ({ ...f, desc: e.target.value }))}
+                      onFocus={(e) => { e.target.style.border = '1px solid #0ea5e9'; e.target.style.boxShadow = '0 0 0 3px rgba(14,165,233,0.15)'; }}
+                      onBlur={(e) => { e.target.style.border = '1px solid #bfdbfe'; e.target.style.boxShadow = 'none'; }} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Form Actions */}
+              <div className="flex justify-end gap-3 mt-6">
+                <button onClick={() => setShowForm(false)}
+                  className="px-4 py-2.5 rounded-xl text-sm font-bold transition-all"
+                  style={{ background: '#f0f4f8', border: '1px solid #bfdbfe', color: '#64748b', cursor: 'pointer' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = '#e2e8f0'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = '#f0f4f8'; }}>
+                  Cancel
+                </button>
+                <button onClick={saveLevel}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all"
+                  style={{ background: 'linear-gradient(135deg, #185FA5, #0ea5e9)', color: '#ffffff', border: 'none', boxShadow: '0 4px 14px rgba(14,165,233,0.4)', cursor: 'pointer' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.boxShadow = '0 6px 20px rgba(14,165,233,0.55)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.boxShadow = '0 4px 14px rgba(14,165,233,0.4)'; e.currentTarget.style.transform = 'translateY(0)'; }}>
+                  💾 Save Level
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Levels Table */}
+        <div className="rounded-2xl overflow-hidden"
+          style={{ background: '#ffffff', border: '1px solid #bfdbfe', boxShadow: '0 4px 16px rgba(24,95,165,0.08)' }}>
+
+          {/* Table Header */}
+          <div className="grid text-[10px] font-bold uppercase tracking-widest px-5 py-3"
+            style={{ background: 'linear-gradient(90deg, #e6f1fb, #f0f8ff)', color: '#185FA5', borderBottom: '1px solid #bfdbfe', gridTemplateColumns: '1.5fr 1.5fr 1fr 2fr 120px' }}>
+            <span>Level</span>
+            <span>Points Range</span>
+            <span>Students</span>
+            <span>Distribution</span>
+            <span></span>
+          </div>
+
+          {/* Rows */}
+          {levels.length === 0 ? (
+            <div className="text-center py-14" style={{ color: '#94a3b8' }}>
+              <div className="text-4xl mb-2">🏊</div>
+              <p className="text-sm font-semibold">No levels configured yet</p>
+              <p className="text-xs mt-1">Create your first level to get started</p>
+            </div>
+          ) : (
+            levels.map((l, idx) => {
+              const scheme = levelColorSchemes[idx % levelColorSchemes.length];
+              const pct = totalStudents > 0 ? Math.round(((l.studentCount || 0) / totalStudents) * 100) : 0;
+              return (
+                <div key={l._id}
+                  className="grid items-center px-5 py-4 transition-all"
+                  style={{ gridTemplateColumns: '1.5fr 1.5fr 1fr 2fr 120px', borderBottom: idx < levels.length - 1 ? '1px solid #e0eeff' : 'none' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = '#f7f9ff'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}>
+
+                  {/* Level Name */}
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center text-lg shrink-0"
+                      style={{ background: scheme.bg, border: `1px solid ${scheme.border}` }}>
+                      {scheme.icon}
                     </div>
-                  </td>
-                  <td className="px-3 py-2.5">
-                    <div className="flex gap-2">
-                      <button onClick={() => openForm(l._id)} className="px-2.5 py-1 border border-gray-200 rounded text-[12px] text-gray-600 hover:bg-gray-50 cursor-pointer bg-white">Edit</button>
-                      <button onClick={() => deleteLevel(l._id, l.levelName)} className="px-2.5 py-1 border border-red-200 rounded text-[12px] text-red-600 hover:bg-red-50 cursor-pointer bg-white">Delete</button>
+                    <div>
+                      <div className="text-sm font-bold" style={{ color: '#0b2540' }}>{l.levelName}</div>
+                      {l.description && (
+                        <div className="text-[11px] mt-0.5" style={{ color: '#94a3b8' }}>{l.description}</div>
+                      )}
                     </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </div>
+
+                  {/* Points Range */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold px-2.5 py-1 rounded-lg"
+                      style={{ background: scheme.bg, color: scheme.color, border: `1px solid ${scheme.border}` }}>
+                      {l.minPoints.toLocaleString()}
+                    </span>
+                    <span className="text-xs" style={{ color: '#94a3b8' }}>→</span>
+                    <span className="text-xs font-bold px-2.5 py-1 rounded-lg"
+                      style={{ background: scheme.bg, color: scheme.color, border: `1px solid ${scheme.border}` }}>
+                      {l.maxPoints === null ? '∞' : l.maxPoints.toLocaleString()}
+                    </span>
+                    <span className="text-[10px] font-medium" style={{ color: '#94a3b8' }}>pts</span>
+                  </div>
+
+                  {/* Student Count */}
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-sm font-bold" style={{ color: scheme.color }}>
+                      {l.studentCount || 0}
+                    </span>
+                    <span className="text-xs" style={{ color: '#94a3b8' }}>students</span>
+                  </div>
+
+                  {/* Distribution Bar */}
+                  <div className="pr-4">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[10px] font-bold" style={{ color: '#94a3b8' }}>{pct}%</span>
+                    </div>
+                    <div className="h-2.5 rounded-full overflow-hidden" style={{ background: '#f0f4f8' }}>
+                      <div className="h-2.5 rounded-full transition-all duration-700"
+                        style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${scheme.bar}, ${scheme.bar}cc)`, boxShadow: `0 0 8px ${scheme.bar}55` }} />
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex gap-2">
+                    <button onClick={() => openForm(l._id)}
+                      className="flex-1 py-1.5 rounded-xl text-xs font-bold transition-all"
+                      style={{ background: '#E6F1FB', color: '#185FA5', border: '1px solid #93c5fd', cursor: 'pointer' }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = '#bfdbfe'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = '#E6F1FB'; }}>
+                      Edit
+                    </button>
+                    <button onClick={() => deleteLevel(l._id, l.levelName)}
+                      className="flex-1 py-1.5 rounded-xl text-xs font-bold transition-all"
+                      style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', cursor: 'pointer' }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = '#fee2e2'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = '#fef2f2'; }}>
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
     </div>

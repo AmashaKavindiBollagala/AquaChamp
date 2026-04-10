@@ -30,6 +30,7 @@ import KaveeshaStudentDashboard from "./components/kaveesha-studentDashboard";
 import KaveeshaTopicDetail from "./components/kaveesha-topicDetail";
 import KaveeshaSubtopicLearn from "./components/kaveesha-subtopicLearn";
 import KaveeshaStudentProgress from "./components/kaveesha-studentProgress";
+import KaveeshaProtectedRoute from "./components/kaveesha-protectedRoute";
 
 function DashboardLayout() {
   const [activePage, setActivePage] = useState("overview");
@@ -42,7 +43,7 @@ function DashboardLayout() {
   };
 
   return (
-    <div className="flex h-screen min-h-[580px] overflow-hidden border border-gray-200 rounded-xl font-sans">
+    <div className="flex h-screen min-h-145 overflow-hidden border border-gray-200 rounded-xl font-sans">
       <Sidebar activePage={activePage} onNavigate={setActivePage} />
       <div className="flex-1 overflow-y-auto bg-gray-50">
         {pages[activePage]}
@@ -100,7 +101,11 @@ function App() {
 
         <Route
           path="/lesson-dashboard"
-          element={<KaveeshaLessonsDashboard />}
+          element={
+            <KaveeshaProtectedRoute>
+              <KaveeshaLessonsDashboard />
+            </KaveeshaProtectedRoute>
+          }
         />
         <Route
           path="/student/dashboard"

@@ -11,8 +11,11 @@ function diskPathForSubtopicImage(imagePath) {
   return path.join(process.cwd(), rel);
 }
 
-async function miniQuizExistsForSubtopic(subtopicId) {
-  const q = await MiniQuiz.findOne({ subtopicId });
+async function miniQuizExistsForSubtopic(subtopicId, ageGroup) {
+  const filter = ageGroup
+    ? { subtopicId, ageGroup }
+    : { subtopicId };
+  const q = await MiniQuiz.findOne(filter);
   return !!q;
 }
 
@@ -648,7 +651,10 @@ export const completeSubtopicContent = async (req, res) => {
     else if (contentType === "images") progress.imagesCompleted = true;
     // MiniQuiz
     else if (contentType === "miniQuiz") {
-      const quiz = await MiniQuiz.findOne({ subtopicId });
+      const quiz = await MiniQuiz.findOne({
+        subtopicId,
+        ageGroup: currentSubtopic.ageGroup,
+      });
       if (!quiz) {
         progress.miniQuizCompleted = true;
       } else if (miniQuizAnswers && miniQuizAnswers.length > 0) {
@@ -675,7 +681,10 @@ export const completeSubtopicContent = async (req, res) => {
     }
 
     const subForReq = await Subtopic.findById(subtopicId);
-    const hasMq = await miniQuizExistsForSubtopic(subtopicId);
+    const hasMq = await miniQuizExistsForSubtopic(
+      subtopicId,
+      subForReq.ageGroup,
+    );
     const reqSlots = getSubtopicContentRequirements(subForReq, hasMq);
 
     if (isSubtopicFullyDone(progress, reqSlots)) {
@@ -711,7 +720,10 @@ export const getSubtopicProgress = async (req, res) => {
       return res.status(404).json({ message: "Subtopic not found" });
     }
 
-    const hasMq = await miniQuizExistsForSubtopic(subtopicId);
+    const hasMq = await miniQuizExistsForSubtopic(
+      subtopicId,
+      subtopic.ageGroup,
+    );
     const reqSlots = getSubtopicContentRequirements(subtopic, hasMq);
 
     const progress = await KaveeshaLessonsProgress.findOne({
@@ -746,31 +758,30 @@ export const getTopicProgress = async (req, res) => {
 
     if (subtopics.length === 0) return res.json({ percentage: 0 });
 
-    let totalProgress = 0;
-    let weightedTopics = 0;
+    let completableCount = 0;
+    let fullyCompleteCount = 0;
 
     for (const sub of subtopics) {
-      const hasMq = await miniQuizExistsForSubtopic(sub._id);
+      const hasMq = await miniQuizExistsForSubtopic(sub._id, sub.ageGroup);
       const reqSlots = getSubtopicContentRequirements(sub, hasMq);
       const denom = countRequirements(reqSlots);
       if (denom === 0) continue;
 
-      weightedTopics += 1;
+      completableCount += 1;
       const prog = await KaveeshaLessonsProgress.findOne({
         userId,
         subtopicId: sub._id,
       });
 
-      if (prog) {
-        totalProgress +=
-          completedCountForRequirements(prog, reqSlots) / denom;
+      if (prog && isSubtopicFullyDone(prog, reqSlots)) {
+        fullyCompleteCount += 1;
       }
     }
 
     const percentage =
-      weightedTopics === 0
+      completableCount === 0
         ? 0
-        : Math.round((totalProgress / weightedTopics) * 100);
+        : Math.round((fullyCompleteCount / completableCount) * 100);
 
     res.json({ percentage });
   } catch (error) {

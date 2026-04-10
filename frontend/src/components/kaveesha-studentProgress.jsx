@@ -36,6 +36,12 @@ export default function KaveeshaStudentProgress() {
   }, [user]);
 
   const fetchProgress = async () => {
+    const studentId = user.id ?? user._id;
+    if (studentId == null) {
+      setLoading(false);
+      return;
+    }
+    const uid = String(studentId);
     const token =
       localStorage.getItem("aquachamp_token") ||
       sessionStorage.getItem("aquachamp_token");
@@ -57,7 +63,7 @@ export default function KaveeshaStudentProgress() {
         try {
           const r = await axios.post(
             `${API}/api/subtopics/progress/topic`,
-            { userId: user._id, topicId: t._id, ageGroup },
+            { userId: uid, topicId: t._id, ageGroup },
             { headers: { Authorization: `Bearer ${token}` } }
           );
           tProg[t._id] = r.data.percentage || 0;
@@ -72,7 +78,7 @@ export default function KaveeshaStudentProgress() {
       for (const s of subList) {
         try {
           const r = await axios.get(`${API}/api/subtopics/progress/subtopic`, {
-            params: { userId: user._id, subtopicId: s._id },
+            params: { userId: uid, subtopicId: s._id },
             headers: { Authorization: `Bearer ${token}` },
           });
           sProg[s._id] = r.data.percentage || 0;
@@ -303,7 +309,7 @@ export default function KaveeshaStudentProgress() {
                   <div className="px-5 pb-5">
                     <button
                       onClick={() => navigate(`/student/topic/${topic._id}`, {
-                        state: { topic, ageGroup, userId: user?._id }
+                        state: { topic, ageGroup, userId: user?.id || user?._id }
                       })}
                       className="w-full py-3 rounded-2xl font-extrabold text-white text-sm shadow-md transition-all hover:shadow-lg active:scale-95"
                       style={{ background: `linear-gradient(135deg, ${c.from}, ${c.to})` }}

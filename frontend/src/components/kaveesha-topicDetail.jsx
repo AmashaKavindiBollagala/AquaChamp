@@ -17,9 +17,12 @@ export default function KaveeshaTopicDetail() {
   const [progressMap, setProgressMap] = useState({});
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [subtopicQuizMap, setSubtopicQuizMap] = useState({});
   const resolvedAgeGroup =
     ageGroup || (user?.age >= 5 && user?.age <= 10 ? "6-10" : "11-15");
-  const effectiveUserId = userId || user?._id;
+  const effectiveUserIdRaw = userId || user?.id || user?._id;
+  const effectiveUserId =
+    effectiveUserIdRaw != null ? String(effectiveUserIdRaw) : undefined;
   const isYoung = resolvedAgeGroup === "6-10";
 
   useEffect(() => {
@@ -67,6 +70,22 @@ export default function KaveeshaTopicDetail() {
       const sorted = [...subs].sort((a, b) => (a.order || 0) - (b.order || 0));
       setSubtopics(sorted);
 
+      // Check quiz status for each subtopic
+      const quizMap = {};
+      await Promise.all(
+        sorted.map(async (sub) => {
+          try {
+            const quizRes = await axios.get(`${API}/api/kaveesha-miniquiz`, {
+              params: { subtopicId: sub._id, ageGroup: sub.ageGroup || resolvedAgeGroup },
+            });
+            quizMap[sub._id] = Array.isArray(quizRes.data?.questions) && quizRes.data.questions.length > 0;
+          } catch {
+            quizMap[sub._id] = false;
+          }
+        })
+      );
+      setSubtopicQuizMap(quizMap);
+
       // Fetch progress per subtopic
       const token =
         localStorage.getItem("aquachamp_token") ||
@@ -79,7 +98,7 @@ export default function KaveeshaTopicDetail() {
         }
         try {
           const r = await axios.get(`${API}/api/subtopics/progress/subtopic`, {
-            params: { userId: effectiveUserId, subtopicId: sub._id },
+            params: { userId: String(effectiveUserId), subtopicId: sub._id },
             headers: { Authorization: `Bearer ${token}` },
           });
           pMap[sub._id] = {
@@ -124,7 +143,7 @@ export default function KaveeshaTopicDetail() {
   const accentTo = topicColor.to;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
+    <div className="min-h-screen bg-linear-to-br from-slate-50 via-white to-slate-50">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Nunito:wght@400;600;700;800;900&display=swap');
         body { font-family: 'Inter', sans-serif; }
@@ -273,6 +292,18 @@ export default function KaveeshaTopicDetail() {
                 },
               ].filter((x) => x.required);
 
+              // Get content availability directly from subtopic database
+              const getContentIcons = () => {
+                const icons = [];
+                if (sub.videoUrl) icons.push({ icon: "🎬", label: "Video" });
+                if (sub.content || (sub.contentFiles && sub.contentFiles.length > 0)) icons.push({ icon: "📝", label: "Content" });
+                if (sub.images && sub.images.length > 0) icons.push({ icon: "🖼️", label: "Images" });
+                // Check quiz from the quiz map (fetched from API)
+                if (subtopicQuizMap[sub._id]) icons.push({ icon: "❓", label: "Quiz" });
+                return icons;
+              };
+              const contentIcons = getContentIcons();
+
               return (
                 <div
                   key={sub._id}
@@ -348,11 +379,35 @@ export default function KaveeshaTopicDetail() {
                           </div>
                         </div>
 
-                        {contentRows.length === 0 ? (
+                        {/* Content Availability Icons */}
+                        {contentIcons.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mb-3">
+                            {contentIcons.map((item, idx) => (
+                              <span
+                                key={idx}
+                                className="flex items-center justify-center rounded-full"
+                                style={{
+                                  width: 40,
+                                  height: 40,
+                                  background: isDone ? "#dcfce7" : "#f1f5f9",
+                                  border: `2px solid ${isDone ? "#86efac" : "#e2e8f0"}`,
+                                  fontSize: 20,
+                                  lineHeight: 1,
+                                  boxShadow: `0 2px 8px ${isDone ? "rgba(16,185,129,0.15)" : "rgba(0,0,0,0.08)"}`,
+                                }}
+                                title={item.label}
+                              >
+                                {item.icon}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        {contentIcons.length === 0 && contentRows.length === 0 ? (
                           <div className="text-sm font-bold text-slate-500">
                             No content inside yet.
                           </div>
-                        ) : (
+                        ) : contentRows.length > 0 ? (
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             {contentRows.map((row) => (
                               <div
@@ -383,7 +438,7 @@ export default function KaveeshaTopicDetail() {
                               </div>
                             ))}
                           </div>
-                        )}
+                        ) : null}
                       </div>
 
                       {/* Progress bar */}
@@ -400,21 +455,26 @@ export default function KaveeshaTopicDetail() {
                             }}
                           />
                         </div>
-                        <span className="text-sm font-bold text-slate-600 w-12 text-right">
+                        <span className="text-sm font-bold text-slate-600 text-right whitespace-nowrap">
                           {pct}%
+                          {pct === 100 ? (
+                            <span className="ml-1.5" title="All steps complete">
+                              {"\u2B50".repeat(4)}
+                            </span>
+                          ) : null}
                         </span>
                       </div>
                     </div>
 
                     {/* Action / lock message */}
                     {isLocked ? (
-                      <div className="shrink-0 text-center max-w-[150px]">
+                      <div className="shrink-0 text-center max-w-37.5">
                         <p className="text-xs font-bold text-slate-500 leading-tight">
                           🔒 Complete previous lesson first
                         </p>
                       </div>
                     ) : (
-                      <div className="shrink-0 w-[170px]">
+                      <div className="shrink-0 w-42.5">
                         <button
                           onClick={() =>
                             navigate(`/student/subtopic/${sub._id}`, {

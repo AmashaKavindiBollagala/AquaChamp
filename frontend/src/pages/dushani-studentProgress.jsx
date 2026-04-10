@@ -32,8 +32,8 @@ export default function DushaniStudentProgress() {
     badgesCount: 0,
     badges: [],
     pointsBreakdown: {
-      trueFalsePoints: 0,
-      quizPoints: 0,
+      gamePoints: 0,
+      games: [],
       userPoints: 0,
       dailyLoginPoints: 0
     }
@@ -317,7 +317,7 @@ export default function DushaniStudentProgress() {
             gap: 16,
             marginBottom: 20
           }}>
-            {/* Quiz Points */}
+            {/* Game Points */}
             <div style={{
               background: "#fff",
               borderRadius: 16,
@@ -335,43 +335,14 @@ export default function DushaniStudentProgress() {
                   alignItems: "center",
                   justifyContent: "center",
                   fontSize: 20
-                }}>❓</div>
-                <div style={{ fontSize: 12, fontWeight: 800, color: "#7A8CA5" }}>Quiz Points</div>
+                }}>🎮</div>
+                <div style={{ fontSize: 12, fontWeight: 800, color: "#7A8CA5" }}>Game Points</div>
               </div>
               <div style={{ fontSize: 28, fontWeight: 900, color: "#185FA5", lineHeight: 1 }}>
-                {progressData.pointsBreakdown?.quizPoints || 0}
+                {progressData.pointsBreakdown?.gamePoints || 0}
               </div>
               <div style={{ fontSize: 11, color: "#7A8CA5", fontWeight: 700, marginTop: 6 }}>
-                From quiz activities
-              </div>
-            </div>
-
-            {/* True/False Points */}
-            <div style={{
-              background: "#fff",
-              borderRadius: 16,
-              padding: "18px",
-              border: "2.5px solid #E1F5EE",
-              boxShadow: "0 3px 12px rgba(29,158,117,0.08)"
-            }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                <div style={{
-                  width: 42,
-                  height: 42,
-                  borderRadius: "50%",
-                  background: "linear-gradient(135deg,#E1F5EE,#B2EDD8)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 20
-                }}>✅</div>
-                <div style={{ fontSize: 12, fontWeight: 800, color: "#7A8CA5" }}>True/False Points</div>
-              </div>
-              <div style={{ fontSize: 28, fontWeight: 900, color: "#1D9E75", lineHeight: 1 }}>
-                {progressData.pointsBreakdown?.trueFalsePoints || 0}
-              </div>
-              <div style={{ fontSize: 11, color: "#7A8CA5", fontWeight: 700, marginTop: 6 }}>
-                From true/false questions
+                From {(progressData.pointsBreakdown?.games || []).length} games played
               </div>
             </div>
 
@@ -459,6 +430,99 @@ export default function DushaniStudentProgress() {
             </div>
           </div>
         </div>
+
+        {/* Game History Section */}
+        {(progressData.pointsBreakdown?.games || []).length > 0 && (
+          <div style={{
+            marginTop: 24,
+            background: "rgba(255,255,255,0.88)",
+            borderRadius: 28,
+            border: "3px solid #B8D4EE",
+            boxShadow: "0 8px 36px rgba(24,95,165,0.13)",
+            padding: "24px 28px",
+            position: "relative",
+            overflow: "hidden"
+          }}>
+            {/* Rainbow top bar */}
+            <div style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 8,
+              background: "linear-gradient(90deg,#4FC3F7,#185FA5,#1D9E75,#EF9F27,#4FC3F7)",
+              borderRadius: "26px 26px 0 0"
+            }} />
+
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20, paddingTop: 6 }}>
+              <div style={{
+                width: 42,
+                height: 42,
+                borderRadius: 14,
+                background: "linear-gradient(135deg,#185FA5,#4FC3F7)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 22,
+                boxShadow: "0 4px 12px rgba(24,95,165,0.3)"
+              }}>🎮</div>
+              <div>
+                <span style={{ fontWeight: 900, color: "#042C53", fontSize: 18 }}>Game History</span>
+                <p style={{ margin: "2px 0 0", fontSize: 12, fontWeight: 800, color: "#1D9E75" }}>
+                  Your game performance details 🎯
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {progressData.pointsBreakdown.games.map((game, index) => (
+                <div 
+                  key={game.gameId || index}
+                  style={{
+                    background: "#fff",
+                    borderRadius: 16,
+                    padding: "16px 18px",
+                    border: "2.5px solid #E6F1FB",
+                    boxShadow: "0 3px 12px rgba(24,95,165,0.08)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between"
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 14, flex: 1 }}>
+                    <div style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: "50%",
+                      background: "linear-gradient(135deg,#E6F1FB,#C8E6FA)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 22,
+                      flexShrink: 0
+                    }}>🎮</div>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 900, color: "#042C53" }}>
+                        {game.gameName}
+                      </div>
+                      <div style={{ fontSize: 11, color: "#7A8CA5", fontWeight: 700, marginTop: 3 }}>
+                        {game.playedAt ? new Date(game.playedAt).toLocaleDateString() : 'N/A'}
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontSize: 20, fontWeight: 900, color: "#185FA5" }}>
+                      {game.score}
+                    </div>
+                    <div style={{ fontSize: 11, color: "#7A8CA5", fontWeight: 700 }}>
+                      / {game.maxScore} pts ({game.percentage?.toFixed(1) || 0}%)
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Badges Section */}
         {progressData.badges && progressData.badges.length > 0 && (

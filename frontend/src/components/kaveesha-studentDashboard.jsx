@@ -59,17 +59,24 @@ export default function KaveeshaStudentDashboard() {
       const token =
         localStorage.getItem("aquachamp_token") ||
         sessionStorage.getItem("aquachamp_token");
+      const studentId = user.id ?? user._id;
       const progressMap = {};
-      for (const topic of filteredTopics) {
-        try {
-          const r = await axios.post(
-            `${API}/api/subtopics/progress/topic`,
-            { userId: user._id, topicId: topic._id, ageGroup },
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-          progressMap[topic._id] = r.data.percentage || 0;
-        } catch {
-          progressMap[topic._id] = 0;
+      if (studentId != null) {
+        for (const topic of filteredTopics) {
+          try {
+            const r = await axios.post(
+              `${API}/api/subtopics/progress/topic`,
+              {
+                userId: String(studentId),
+                topicId: topic._id,
+                ageGroup,
+              },
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
+            progressMap[topic._id] = r.data.percentage || 0;
+          } catch {
+            progressMap[topic._id] = 0;
+          }
         }
       }
       setProgress(progressMap);
@@ -93,7 +100,7 @@ export default function KaveeshaStudentDashboard() {
   const accentColor2 = isYoung ? "#06b6d4" : "#0891b2";
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br ${bgGradient} font-sans`}>
+    <div className={`min-h-screen bg-linear-to-br ${bgGradient} font-sans`}>
       {/* Google Fonts */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Nunito:wght@400;600;700;800;900&display=swap');
@@ -199,7 +206,10 @@ export default function KaveeshaStudentDashboard() {
               <span className="ml-2 text-xl">{showBasic ? "▲" : "▼"}</span>
             </button>
             {showBasic && (
-              <KaveeshaBasicLessonsPanel userId={user?._id} navigate={navigate} />
+              <KaveeshaBasicLessonsPanel
+                userId={user?.id || user?._id}
+                navigate={navigate}
+              />
             )}
           </div>
         )}
@@ -250,7 +260,12 @@ export default function KaveeshaStudentDashboard() {
                   index={i}
                   onClick={() =>
                     navigate(`/student/topic/${topic._id}`, {
-                      state: { topic, ageGroup, userId: user?._id, colorIndex: i },
+                      state: {
+                        topic,
+                        ageGroup,
+                        userId: user?.id || user?._id,
+                        colorIndex: i,
+                      },
                     })
                   }
                 />
@@ -419,26 +434,60 @@ function TopicCard({ topic, subtopics, progress, index, onClick }) {
 /* ─── Basic Lessons Panel (for 11-15 students) ─── */
 function KaveeshaBasicLessonsPanel({ userId, navigate }) {
   const [topics, setTopics] = useState([]);
+  const [progress, setProgress] = useState({});
   const [loading, setLoading] = useState(true);
+  const CARD_COLORS = [
+    { from: "#ec4899", to: "#db2777", accent: "#db2777", hover: "#fce7f3", emoji: "💧" },
+    { from: "#3b82f6", to: "#2563eb", accent: "#2563eb", hover: "#dbeafe", emoji: "🚰" },
+    { from: "#22c55e", to: "#16a34a", accent: "#16a34a", hover: "#dcfce7", emoji: "🌿" },
+    { from: "#f59e0b", to: "#d97706", accent: "#d97706", hover: "#fef3c7", emoji: "☀️" },
+    { from: "#8b5cf6", to: "#7c3aed", accent: "#7c3aed", hover: "#ede9fe", emoji: "🧼" },
+    { from: "#06b6d4", to: "#0891b2", accent: "#0891b2", hover: "#cffafe", emoji: "🌍" },
+  ];
 
   useEffect(() => {
+    const token =
+      localStorage.getItem("aquachamp_token") ||
+      sessionStorage.getItem("aquachamp_token");
+    
     Promise.all([
       axios.get(`${API}/api/topics`),
       axios.get(`${API}/api/subtopics`, { params: { ageGroup: "6-10" } }),
     ])
-      .then(([topicsRes, subsRes]) => {
+      .then(async ([topicsRes, subsRes]) => {
         const basicSubs = Array.isArray(subsRes.data)
           ? subsRes.data
           : subsRes.data?.subtopics || [];
         const ids = new Set(
           basicSubs.map((s) => String(s.topicId?._id || s.topicId))
         );
-        setTopics(
-          (topicsRes.data || []).filter((t) => ids.has(String(t._id)))
-        );
+        const filteredTopics = (topicsRes.data || []).filter((t) => ids.has(String(t._id)));
+        setTopics(filteredTopics);
+
+        // Fetch progress for each basic topic
+        const progressMap = {};
+        if (userId != null) {
+          for (const topic of filteredTopics) {
+            try {
+              const r = await axios.post(
+                `${API}/api/subtopics/progress/topic`,
+                {
+                  userId: String(userId),
+                  topicId: topic._id,
+                  ageGroup: "6-10",
+                },
+                { headers: { Authorization: `Bearer ${token}` } }
+              );
+              progressMap[topic._id] = r.data.percentage || 0;
+            } catch {
+              progressMap[topic._id] = 0;
+            }
+          }
+        }
+        setProgress(progressMap);
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [userId]);
 
   if (loading)
     return (
@@ -448,7 +497,7 @@ function KaveeshaBasicLessonsPanel({ userId, navigate }) {
     );
 
   return (
-    <div className="mt-4 rounded-3xl p-6 border-2 border-slate-200 shadow-xl bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900">
+    <div className="mt-4 rounded-3xl p-6 border-2 border-slate-200 shadow-xl bg-linear-to-br from-slate-700 via-slate-800 to-slate-900">
       <h3 className="display-font text-2xl font-bold text-white mb-2">
         📖 Basic lessons — ages 5–10
       </h3>
@@ -456,25 +505,57 @@ function KaveeshaBasicLessonsPanel({ userId, navigate }) {
         Quick, friendly topics on clean water & hygiene — perfect for a refresher! 🚰✨
       </p>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        {topics.map((topic, i) => (
-          <button
-            key={topic._id}
-            onClick={() =>
-              navigate(`/student/topic/${topic._id}`, {
-                state: { topic, ageGroup: "6-10", userId, isBasic: true },
-              })
-            }
-            className="card-hover bg-white rounded-2xl p-4 text-left shadow-md border-2 border-slate-200 hover:border-blue-400"
-          >
-            <div className="text-3xl mb-2">
-              {["💧", "🧼", "🚰", "🌿", "⭐", "🌍"][i % 6]}
-            </div>
-            <p className="font-bold text-slate-800 text-sm">{topic.title}</p>
-            <p className="text-xs text-slate-500 font-medium mt-1">
-              Tap to learn →
-            </p>
-          </button>
-        ))}
+        {topics.map((topic, i) => {
+          const color = CARD_COLORS[i % CARD_COLORS.length];
+          const pct = progress[topic._id] || 0;
+          
+          return (
+            <button
+              key={topic._id}
+              onClick={() =>
+                navigate(`/student/topic/${topic._id}`, {
+                  state: { topic, ageGroup: "6-10", userId, isBasic: true },
+                })
+              }
+              className="card-hover bg-white rounded-2xl p-4 text-left shadow-md border-2 border-slate-200 hover:border-blue-400"
+              style={{ borderColor: `${color.from}30` }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = color.from;
+                e.currentTarget.style.boxShadow = `0 8px 24px ${color.from}30`;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = "#e2e8f0";
+                e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)";
+              }}
+            >
+              <div className="text-3xl mb-2">
+                {color.emoji}
+              </div>
+              <p className="font-bold text-slate-800 text-sm mb-2">{topic.title}</p>
+              
+              {/* Progress Bar */}
+              <div className="mb-2">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-xs font-semibold text-slate-500">Progress</span>
+                  <span className="text-xs font-bold" style={{ color: color.from }}>{pct}%</span>
+                </div>
+                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div
+                    className="progress-bar h-full rounded-full"
+                    style={{
+                      width: `${pct}%`,
+                      background: `linear-gradient(90deg, ${color.from}, ${color.to})`,
+                    }}
+                  />
+                </div>
+              </div>
+              
+              <p className="text-xs font-medium mt-1" style={{ color: color.accent }}>
+                {pct === 100 ? "✅ Completed!" : pct > 0 ? "Keep going! 🔥" : "Tap to learn →"}
+              </p>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

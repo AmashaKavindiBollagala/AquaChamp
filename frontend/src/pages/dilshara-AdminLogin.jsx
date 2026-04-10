@@ -52,29 +52,28 @@ export default function DilsharaAdminLogin() {
       localStorage.setItem("adminRoles", JSON.stringify(data.user.roles));
       localStorage.setItem("adminUsername", data.user.username);
       
-    // Normalize roles to avoid case issues
-const roles = data.user.roles.map(r => r.toUpperCase());
-console.log("🔑 Admin Login - User roles:", roles);
-console.log("🔑 Raw roles from DB:", data.user.roles);
-
-// Redirect based on role PRIORITY
+      const roles = data.user.roles;
+      console.log("🔑 Admin Login - User roles:", roles);
+      
+      // Redirect based on admin roles - each admin goes to their own dashboard
+// Redirect based on admin roles - each admin goes to their own dashboard
 if (roles.includes("SUPER_ADMIN")) {
   navigate("/super-admin");
 
-} else if (roles.includes("GAME_ADMIN")) {
+} else if (roles.includes("Game_ADMIN")) {
+  console.log("🎮 Redirecting to Game Dashboard");
   navigate("/game-dashboard");
 
-} else if (
-  roles.includes("LESSON_ADMIN") ||
-  roles.includes("LESSONS_ADMIN")
-) {
-  navigate("/lesson-dashboard");
+} else if (roles.includes("Activity_ADMIN")) {
+  console.log("💧 Redirecting to Activity Dashboard");
+  navigate("/activity-dashboard");
 
-} else if (roles.includes("PROGRESS_ADMIN")) {
+} else if (roles.includes("Progress_ADMIN")) {
   navigate("/progress-dashboard");
 
-} else if (roles.includes("ACTIVITY_ADMIN")) {
-  navigate("/activity-dashboard");
+} else if (roles.includes("Lesson_ADMIN") || roles.includes("Lessons_ADMIN")) {
+  console.log("✅ Redirecting to Lesson Dashboard");
+  navigate("/lesson-dashboard");
 
 } else {
   navigate("/admin-dashboard");

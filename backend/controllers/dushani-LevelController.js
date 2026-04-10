@@ -85,8 +85,7 @@ export const getAllLevels = async (req, res) => {
 
     // DYNAMICALLY calculate student count for each level
     const StudentProgress = (await import('../models/dushani-StudentProgress.js')).default;
-    const TrueFalseResult = (await import('../models/dilshara-TrueFalseResult.js')).default;
-    const QuizResult = (await import('../models/dilshara-QuizResult.js')).default;
+    const GameScore = (await import('../models/dilshara-GameScore.js')).default;
     const UserPoints = (await import('../models/amasha-userPoints.js')).default;
     const DailyLogin = (await import('../models/dushani-points.js')).default;
     
@@ -105,11 +104,8 @@ export const getAllLevels = async (req, res) => {
       const user = await (await import('../models/dushani-User.js')).default.findById(student.userId);
       if (!user) continue;
       
-      const trueFalseResults = await TrueFalseResult.find({ userId: user.username });
-      const totalTrueFalsePoints = trueFalseResults.reduce((sum, result) => sum + result.pointsEarned, 0);
-      
-      const quizResults = await QuizResult.find({ userId: user.username });
-      const totalQuizPoints = quizResults.reduce((sum, result) => sum + result.score, 0);
+      const gameScores = await GameScore.find({ userId: user.username });
+      const totalGamePoints = gameScores.reduce((sum, result) => sum + result.score, 0);
       
       const userPointsRecord = await UserPoints.findOne({ userId: student.userId });
       const userPoints = userPointsRecord ? userPointsRecord.totalPoints : 0;
@@ -117,7 +113,7 @@ export const getAllLevels = async (req, res) => {
       const dailyLoginRecords = await DailyLogin.find({ userId: student.userId });
       const totalDailyLoginPoints = dailyLoginRecords.reduce((sum, record) => sum + (record.pointsAwarded || 10), 0);
       
-      const dynamicTotalPoints = totalTrueFalsePoints + totalQuizPoints + userPoints + totalDailyLoginPoints;
+      const dynamicTotalPoints = totalGamePoints + userPoints + totalDailyLoginPoints;
       
       // Update student progress if needed
       if (student.totalPoints !== dynamicTotalPoints) {
@@ -245,8 +241,7 @@ export const updateLevel = async (req, res) => {
 
     // 🔄 RECALCULATE ALL STUDENTS' LEVELS after level thresholds changed
     const StudentProgress = (await import('../models/dushani-StudentProgress.js')).default;
-    const TrueFalseResult = (await import('../models/dilshara-TrueFalseResult.js')).default;
-    const QuizResult = (await import('../models/dilshara-QuizResult.js')).default;
+    const GameScore = (await import('../models/dilshara-GameScore.js')).default;
     const UserPoints = (await import('../models/amasha-userPoints.js')).default;
     const DailyLogin = (await import('../models/dushani-points.js')).default;
     const Badge = (await import('../models/dushani-Badge.js')).default;
@@ -260,11 +255,8 @@ export const updateLevel = async (req, res) => {
       const user = await (await import('../models/dushani-User.js')).default.findById(student.userId);
       if (!user) continue;
       
-      const trueFalseResults = await TrueFalseResult.find({ userId: user.username });
-      const totalTrueFalsePoints = trueFalseResults.reduce((sum, result) => sum + result.pointsEarned, 0);
-      
-      const quizResults = await QuizResult.find({ userId: user.username });
-      const totalQuizPoints = quizResults.reduce((sum, result) => sum + result.score, 0);
+      const gameScores = await GameScore.find({ userId: user.username });
+      const totalGamePoints = gameScores.reduce((sum, result) => sum + result.score, 0);
       
       const userPointsRecord = await UserPoints.findOne({ userId: student.userId });
       const userPoints = userPointsRecord ? userPointsRecord.totalPoints : 0;
@@ -272,7 +264,7 @@ export const updateLevel = async (req, res) => {
       const dailyLoginRecords = await DailyLogin.find({ userId: student.userId });
       const totalDailyLoginPoints = dailyLoginRecords.reduce((sum, record) => sum + (record.pointsAwarded || 10), 0);
       
-      const dynamicTotalPoints = totalTrueFalsePoints + totalQuizPoints + userPoints + totalDailyLoginPoints;
+      const dynamicTotalPoints = totalGamePoints + userPoints + totalDailyLoginPoints;
       
       // Update student's total points
       const pointsChanged = student.totalPoints !== dynamicTotalPoints;
@@ -295,9 +287,7 @@ export const updateLevel = async (req, res) => {
           student.addBadge(badge);
           await Badge.findByIdAndUpdate(badge._id, { $inc: { earnedCount: 1 } });
           
-          // Create notification
-          const BadgeNotification = (await import('../models/dushani-BadgeNotification.js')).default;
-          await BadgeNotification.createNotification(student.userId, badge);
+          // DO NOT create notification during level recalculation - only during real-time point earning
           badgesAwarded++;
         }
       }
@@ -455,8 +445,7 @@ export const getStudentProgressMonitoring = async (req, res) => {
 
     const levels = await Level.getActiveLevels();
     const Badge = (await import('../models/dushani-Badge.js')).default;
-    const TrueFalseResult = (await import('../models/dilshara-TrueFalseResult.js')).default;
-    const QuizResult = (await import('../models/dilshara-QuizResult.js')).default;
+    const GameScore = (await import('../models/dilshara-GameScore.js')).default;
     const UserPoints = (await import('../models/amasha-userPoints.js')).default;
     const DailyLogin = (await import('../models/dushani-points.js')).default;
 
@@ -470,11 +459,8 @@ export const getStudentProgressMonitoring = async (req, res) => {
       let currentLevelDoc = null;
 
       // DYNAMICALLY CALCULATE POINTS FOR EACH STUDENT
-      const trueFalseResults = await TrueFalseResult.find({ userId: progress.userId.username });
-      const totalTrueFalsePoints = trueFalseResults.reduce((sum, result) => sum + result.pointsEarned, 0);
-      
-      const quizResults = await QuizResult.find({ userId: progress.userId.username });
-      const totalQuizPoints = quizResults.reduce((sum, result) => sum + result.score, 0);
+      const gameScores = await GameScore.find({ userId: progress.userId.username });
+      const totalGamePoints = gameScores.reduce((sum, result) => sum + result.score, 0);
       
       const userPointsRecord = await UserPoints.findOne({ userId: progress.userId._id });
       const userPoints = userPointsRecord ? userPointsRecord.totalPoints : 0;
@@ -482,7 +468,7 @@ export const getStudentProgressMonitoring = async (req, res) => {
       const dailyLoginRecords = await DailyLogin.find({ userId: progress.userId._id });
       const totalDailyLoginPoints = dailyLoginRecords.reduce((sum, record) => sum + (record.pointsAwarded || 10), 0);
       
-      const dynamicTotalPoints = totalTrueFalsePoints + totalQuizPoints + userPoints + totalDailyLoginPoints;
+      const dynamicTotalPoints = totalGamePoints + userPoints + totalDailyLoginPoints;
       
       // Update student progress with calculated points if different
       if (progress.totalPoints !== dynamicTotalPoints) {
@@ -558,24 +544,17 @@ export const getStudentProgressMonitoring = async (req, res) => {
         if (progress.totalPoints >= badge.pointsRequired && 
             !progress.hasBadge(badge._id)) {
           
-          // ALSO CHECK IF NOTIFICATION ALREADY EXISTS (to prevent duplicates)
-          const existingNotification = await BadgeNotification.findOne({
-            userId: progress.userId,
-            badgeId: badge._id,
-            animationTriggered: false
+          progress.addBadge(badge);
+          awardedCount++;
+          
+          await Badge.findByIdAndUpdate(badge._id, {
+            $inc: { earnedCount: 1 }
           });
           
-          if (!existingNotification) {
-            progress.addBadge(badge);
-            awardedCount++;
-            
-            await Badge.findByIdAndUpdate(badge._id, {
-              $inc: { earnedCount: 1 }
-            });
-            
-            // CREATE BADGE NOTIFICATION FOR LOTTIE ANIMATION
-            await BadgeNotification.createNotification(progress.userId, badge);
-          }
+          // CREATE notification so GIF animation shows
+          const BadgeNotification = (await import('../models/dushani-BadgeNotification.js')).default;
+          await BadgeNotification.createNotification(progress.userId._id, badge);
+          console.log(`🏅 NEW BADGE EARNED: "${badge.badgeName}" - Notification created for animation`);
         }
       }
       
@@ -583,13 +562,34 @@ export const getStudentProgressMonitoring = async (req, res) => {
         await progress.save();
       }
 
-      // RECALCULATE valid badges AFTER awarding new ones
+      // RECALCULATE valid badges AFTER awarding new ones AND remove duplicates
       const finalValidBadges = [];
+      const seenBadgeIds = new Set();
+      
       for (const badgeEntry of progress.badgesEarned) {
+        const badgeIdStr = badgeEntry.badgeId.toString();
+        
+        // Skip duplicates
+        if (seenBadgeIds.has(badgeIdStr)) {
+          console.log(`🗑️  Filtering duplicate badge for ${progress.userId.username}: ${badgeEntry.badgeDetails?.badgeName}`);
+          continue;
+        }
+        seenBadgeIds.add(badgeIdStr);
+        
+        // Only include active badges
         const badgeExists = await Badge.findById(badgeEntry.badgeId);
         if (badgeExists && badgeExists.status === 'Active') {
           finalValidBadges.push(badgeEntry);
         }
+      }
+      
+      // If duplicates were found and removed, update the database
+      const originalCount = progress.badgesEarned.length;
+      const uniqueCount = finalValidBadges.length;
+      if (originalCount !== uniqueCount) {
+        progress.badgesEarned = finalValidBadges;
+        await progress.save();
+        console.log(`🧹 ${progress.userId.username}: Removed ${originalCount - uniqueCount} duplicate badge(s) from database`);
       }
 
       return {
@@ -602,7 +602,8 @@ export const getStudentProgressMonitoring = async (req, res) => {
         levelNumber: currentLevelDoc
           ? levels.findIndex(l => l._id.equals(currentLevelDoc._id)) + 1
           : 0,
-        badgesEarned: finalValidBadges.length,  // ← UPDATED count with newly awarded badges
+        badgesEarned: finalValidBadges,  // ← Return FULL badge array (not just count)
+        badgesCount: finalValidBadges.length,  // ← Accurate count without duplicates
         completedSections: progress.sectionProgress.filter(sec => sec.completed).length,
         lastActivity: progress.lastActivity,
         createdAt: progress.createdAt
@@ -647,16 +648,13 @@ export const getStudentDetails = async (req, res) => {
     // DYNAMICALLY CALCULATE POINTS FROM ALL SOURCES
     const TrueFalseResult = (await import('../models/dilshara-TrueFalseResult.js')).default;
     const QuizResult = (await import('../models/dilshara-QuizResult.js')).default;
+    const GameScore = (await import('../models/dilshara-GameScore.js')).default;
     const UserPoints = (await import('../models/amasha-userPoints.js')).default;
     const DailyLogin = (await import('../models/dushani-points.js')).default;
     
-    // Get points from TrueFalseResult (stored as username string)
-    const trueFalseResults = await TrueFalseResult.find({ userId: user.username });
-    const totalTrueFalsePoints = trueFalseResults.reduce((sum, result) => sum + result.pointsEarned, 0);
-    
-    // Get points from QuizResult (stored as username string)
-    const quizResults = await QuizResult.find({ userId: user.username });
-    const totalQuizPoints = quizResults.reduce((sum, result) => sum + result.score, 0);
+    // Get points from GameScore (stored as username string)
+    const gameScores = await GameScore.find({ userId: user.username });
+    const totalGamePoints = gameScores.reduce((sum, result) => sum + result.score, 0);
     
     // Get points from UserPoints (stored as ObjectId)
     const userPointsRecord = await UserPoints.findOne({ userId: user._id });
@@ -667,11 +665,10 @@ export const getStudentDetails = async (req, res) => {
     const totalDailyLoginPoints = dailyLoginRecords.reduce((sum, record) => sum + (record.pointsAwarded || 10), 0);
     
     // Calculate TOTAL dynamic points from all sources
-    const dynamicTotalPoints = totalTrueFalsePoints + totalQuizPoints + userPoints + totalDailyLoginPoints;
+    const dynamicTotalPoints = totalGamePoints + userPoints + totalDailyLoginPoints;
     
     console.log(`Dynamic points for ${user.username}:`);
-    console.log(`  TrueFalse: ${totalTrueFalsePoints}`);
-    console.log(`  Quiz: ${totalQuizPoints}`);
+    console.log(`  Game: ${totalGamePoints}`);
     console.log(`  UserPoints: ${userPoints}`);
     console.log(`  DailyLogin: ${totalDailyLoginPoints}`);
     console.log(`  TOTAL: ${dynamicTotalPoints}`);
@@ -745,32 +742,16 @@ export const getStudentDetails = async (req, res) => {
       
       // Check if student qualifies but doesn't have it yet
       if (qualifies && !hasBadge) {
+        studentProgress.addBadge(badge);
+        newBadgesAwarded = true;
         
-        // ALSO CHECK IF NOTIFICATION ALREADY EXISTS (to prevent duplicates)
-        const BadgeNotification = (await import('../models/dushani-BadgeNotification.js')).default;
-        const existingNotification = await BadgeNotification.findOne({
-          userId: user._id,
-          badgeId: badge._id,
-          animationTriggered: false
+        // Update badge earned count
+        await Badge.findByIdAndUpdate(badge._id, {
+          $inc: { earnedCount: 1 }
         });
         
-        if (!existingNotification) {
-          studentProgress.addBadge(badge);
-          newBadgesAwarded = true;
-          
-          // Update badge earned count
-          await Badge.findByIdAndUpdate(badge._id, {
-            $inc: { earnedCount: 1 }
-          });
-          
-          // CREATE BADGE NOTIFICATION FOR LOTTIE ANIMATION
-          await BadgeNotification.createNotification(user._id, badge);
-          
-          console.log(`✅ Auto-awarded badge ${badge.badgeName} to ${user.username}`);
-          console.log(`   🎬 Badge notification created for Lottie animation`);
-        } else {
-          console.log(`⚠️  Skipping ${badge.badgeName}: Notification already exists (badge was deleted/recreated)`);
-        }
+        // DO NOT create notification during student details fetch - only during real-time point earning
+        console.log(`✅ Auto-awarded badge ${badge.badgeName} to ${user.username}`);
       }
     }
     
@@ -798,6 +779,17 @@ export const getStudentDetails = async (req, res) => {
       });
     }
 
+    // Get game scores with game details for breakdown
+    const gameScoresWithDetails = await GameScore.find({ userId: user.username }).populate('gameId', 'title');
+    const gameBreakdown = gameScoresWithDetails.map(score => ({
+      gameName: score.gameId?.title || 'Unknown Game',
+      gameId: score.gameId?._id || null,
+      score: score.score,
+      maxScore: score.maxScore,
+      percentage: score.percentage,
+      playedAt: score.playedAt
+    }));
+
     res.status(200).json({
       success: true,
       studentDetails: {
@@ -812,8 +804,8 @@ export const getStudentDetails = async (req, res) => {
         lastActivity: studentProgress.lastActivity,
         createdAt: studentProgress.createdAt,
         pointsBreakdown: {  // ← SHOW WHERE POINTS CAME FROM
-          trueFalsePoints: totalTrueFalsePoints,
-          quizPoints: totalQuizPoints,
+          gamePoints: totalGamePoints,
+          games: gameBreakdown,
           userPoints: userPoints,
           dailyLoginPoints: totalDailyLoginPoints
         }

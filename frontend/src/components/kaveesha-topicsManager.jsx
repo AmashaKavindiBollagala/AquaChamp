@@ -402,6 +402,7 @@ export default function KaveeshaTopicsManager({ onSelectTopic, compact }) {
                   </>
                 ) : (
                   <>
+                    {/* ── Cover image area ── */}
                     <div
                       className="relative h-44 w-full shrink-0 overflow-hidden cursor-pointer"
                       style={{ background: `linear-gradient(145deg, ${pal.bg}, ${pal.badge})` }}
@@ -410,7 +411,8 @@ export default function KaveeshaTopicsManager({ onSelectTopic, compact }) {
                         <img src={imgSrc} alt="" className="absolute inset-0 w-full h-full object-cover" />
                       ) : (
                         <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
-                          <span className="text-5xl opacity-90">🏊</span>
+                          {/* CHANGED: topic icon in cover larger */}
+                          <span className="text-6xl opacity-90">🏊</span>
                           <span className="text-xs font-bold uppercase tracking-widest" style={{ color: pal.badgeText }}>
                             Add a cover
                           </span>
@@ -420,15 +422,27 @@ export default function KaveeshaTopicsManager({ onSelectTopic, compact }) {
                         className="absolute inset-0 bg-linear-to-t from-black/50 via-transparent to-black/20 opacity-0 group-hover/topic:opacity-100 transition-opacity duration-300 pointer-events-none"
                         aria-hidden
                       />
+
+                      {/* ── Image action buttons (Update / Remove) ── */}
                       <div
-                        className="absolute bottom-2 right-2 left-2 flex flex-wrap justify-end gap-1.5 z-10"
+                        className="absolute bottom-3 right-3 left-3 flex flex-wrap justify-end gap-2 z-10"
                         onClick={(e) => e.stopPropagation()}
                       >
+                        {/* CHANGED: Update button — larger, colored */}
                         <label
-                          className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold cursor-pointer shadow-md backdrop-blur-sm border transition-transform hover:scale-105 ${busy ? "opacity-60 pointer-events-none" : ""}`}
-                          style={{ background: "rgba(255,255,255,0.92)", borderColor: pal.border, color: pal.badgeText }}
+                          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold cursor-pointer shadow-lg backdrop-blur-sm border transition-transform hover:scale-105 ${busy ? "opacity-60 pointer-events-none" : ""}`}
+                          style={{
+                            background: busy
+                              ? "rgba(255,255,255,0.85)"
+                              : "linear-gradient(135deg, rgba(99,102,241,0.92), rgba(139,92,246,0.92))",
+                            borderColor: "rgba(255,255,255,0.4)",
+                            color: "#fff",
+                            boxShadow: "0 4px 14px rgba(99,102,241,0.45)",
+                            minWidth: "90px",
+                          }}
                         >
-                          {busy ? "…" : "📷 Update"}
+                          <span className="text-sm">{busy ? "⏳" : "📷"}</span>
+                          <span>{busy ? "Uploading…" : "Update Photo"}</span>
                           <input
                             type="file"
                             accept="image/jpeg,image/png,image/webp,image/jpg"
@@ -441,51 +455,82 @@ export default function KaveeshaTopicsManager({ onSelectTopic, compact }) {
                             }}
                           />
                         </label>
+
+                        {/* CHANGED: Remove button — larger */}
                         {topic.imageUrl && (
                           <button
                             type="button"
                             disabled={busy}
                             onClick={() => handleTopicImageDelete(topic)}
-                            className="px-2.5 py-1.5 rounded-lg text-[11px] font-bold shadow-md backdrop-blur-sm border transition-transform hover:scale-105 disabled:opacity-50"
-                            style={{ background: "rgba(254,226,226,0.95)", borderColor: "#fca5a5", color: "#991b1b" }}
+                            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold shadow-lg backdrop-blur-sm border transition-transform hover:scale-105 disabled:opacity-50"
+                            style={{
+                              background: "rgba(254,226,226,0.95)",
+                              borderColor: "#fca5a5",
+                              color: "#991b1b",
+                              minWidth: "80px",
+                            }}
                           >
-                            🗑️ Remove
+                            <span className="text-sm">🗑️</span>
+                            <span>Remove</span>
                           </button>
                         )}
                       </div>
                     </div>
 
+                    {/* ── Card body ── */}
                     <div className="p-5 flex flex-col flex-1" style={{ borderTop: `3px solid ${pal.accent}` }}>
-                      <div className="flex items-start justify-between gap-2 mb-3">
+
+                      {/* Top row: topic icon + edit/delete buttons */}
+                      <div className="flex items-center justify-between gap-2 mb-4">
+                        {/* CHANGED: topic icon badge — larger */}
                         <div
-                          className="w-11 h-11 rounded-xl flex items-center justify-center text-xl shrink-0 shadow-sm"
-                          style={{ background: pal.badge, border: `2px solid ${pal.border}`, color: pal.icon }}
+                          className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shrink-0 shadow-md"
+                          style={{
+                            background: pal.badge,
+                            border: `2.5px solid ${pal.border}`,
+                            color: pal.icon,
+                          }}
                         >
                           📚
                         </div>
-                        <div className="flex gap-1.5 shrink-0">
+
+                        {/* CHANGED: Edit & Delete buttons — larger, with labels */}
+                        <div className="flex gap-2 shrink-0">
                           <button
                             type="button"
                             onClick={(e) => { e.stopPropagation(); startEdit(topic); }}
-                            className="w-9 h-9 rounded-lg text-sm flex items-center justify-center font-semibold transition-all hover:scale-110"
-                            style={{ background: pal.badge, border: `1.5px solid ${pal.border}`, color: pal.badgeText }}
+                            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all hover:scale-105"
+                            style={{
+                              background: pal.badge,
+                              border: `2px solid ${pal.border}`,
+                              color: pal.badgeText,
+                              boxShadow: `0 2px 8px ${pal.icon}20`,
+                            }}
                             title="Edit topic"
                           >
-                            ✏️
+                            <span className="text-sm">✏️</span>
+                            <span>Edit</span>
                           </button>
                           <button
                             type="button"
                             onClick={(e) => { e.stopPropagation(); handleDelete(topic); }}
                             disabled={deleting === topic._id}
-                            className="w-9 h-9 rounded-lg text-sm flex items-center justify-center font-semibold transition-all hover:scale-110 disabled:opacity-50"
-                            style={{ background: "#fee2e2", border: "1.5px solid #fca5a5", color: "#991b1b" }}
+                            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all hover:scale-105 disabled:opacity-50"
+                            style={{
+                              background: "#fee2e2",
+                              border: "2px solid #fca5a5",
+                              color: "#991b1b",
+                              boxShadow: "0 2px 8px rgba(239,68,68,0.15)",
+                            }}
                             title="Delete topic"
                           >
-                            {deleting === topic._id ? "⏳" : "🗑️"}
+                            <span className="text-sm">{deleting === topic._id ? "⏳" : "🗑️"}</span>
+                            <span>{deleting === topic._id ? "Deleting…" : "Delete"}</span>
                           </button>
                         </div>
                       </div>
 
+                      {/* Delete error */}
                       {deleteError.topicId === topic._id && deleteError.message && (
                         <div
                           className="mb-3 px-3 py-2.5 rounded-xl text-xs font-semibold flex items-start gap-2"
@@ -501,6 +546,7 @@ export default function KaveeshaTopicsManager({ onSelectTopic, compact }) {
                         </div>
                       )}
 
+                      {/* Title & description */}
                       <h3 className="font-bold text-slate-800 text-lg leading-tight" style={{ color: "#0f172a" }}>
                         {topic.title}
                       </h3>
@@ -510,27 +556,46 @@ export default function KaveeshaTopicsManager({ onSelectTopic, compact }) {
                         </p>
                       )}
 
-                      <div className="mt-4 flex items-center justify-between pt-3 gap-2 flex-wrap" style={{ borderTop: `1px solid ${pal.border}` }}>
+                      {/* Footer: date + subtopics badge + open button */}
+                      <div
+                        className="mt-4 flex items-center justify-between pt-3 gap-2 flex-wrap"
+                        style={{ borderTop: `1px solid ${pal.border}` }}
+                      >
                         <div className="flex items-center gap-2 flex-wrap min-w-0">
                           <span className="text-xs text-slate-400 font-medium whitespace-nowrap">
                             📅 {new Date(topic.createdAt).toLocaleDateString()}
                           </span>
+
+                          {/* CHANGED: subtopics badge — bigger, bolder */}
                           {topic.subtopicsCount > 0 && (
                             <span
-                              className="px-2.5 py-1 text-[11px] font-bold rounded-full whitespace-nowrap"
-                              style={{ background: pal.badge, color: pal.badgeText, border: `1px solid ${pal.border}` }}
+                              className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-xl whitespace-nowrap shadow-sm"
+                              style={{
+                                background: `linear-gradient(135deg, ${pal.badge}, ${pal.bg})`,
+                                color: pal.badgeText,
+                                border: `2px solid ${pal.border}`,
+                                boxShadow: `0 2px 8px ${pal.icon}22`,
+                              }}
                             >
-                              📂 {topic.subtopicsCount} subtopic{topic.subtopicsCount > 1 ? "s" : ""}
+                              <span className="text-sm">📂</span>
+                              <span>{topic.subtopicsCount} Subtopic{topic.subtopicsCount !== 1 ? "s" : ""}</span>
                             </span>
                           )}
                         </div>
+
+                        {/* CHANGED: Open button — larger, more prominent */}
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); onSelectTopic && onSelectTopic(topic); }}
-                          className="text-xs font-bold px-3 py-1.5 rounded-lg transition-all hover:scale-105 shrink-0"
-                          style={{ background: `linear-gradient(135deg, ${pal.accent}, ${pal.icon})`, color: "#fff", boxShadow: `0 4px 12px ${pal.icon}44` }}
+                          className="flex items-center gap-1.5 text-sm font-bold px-4 py-2 rounded-xl transition-all hover:scale-105 shrink-0"
+                          style={{
+                            background: `linear-gradient(135deg, ${pal.accent}, ${pal.icon})`,
+                            color: "#fff",
+                            boxShadow: `0 4px 14px ${pal.icon}50`,
+                            letterSpacing: "0.01em",
+                          }}
                         >
-                          Open →
+                          Open <span className="text-base">→</span>
                         </button>
                       </div>
                     </div>
