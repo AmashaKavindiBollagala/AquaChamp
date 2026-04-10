@@ -5,6 +5,7 @@ import { useState } from "react";
 import UserLogin from "./pages/amasha-login";
 import UserRegistration from "./pages/User-Registration";
 import KaveeshaUserProfile from "./pages/kaveesha-userProfile";
+import DushaniStudentProgress from "./pages/dushani-studentProgress.jsx";
 import DilsharaSuperAdminDashboard from "./pages/dilshara-SuperAdminDashboard";
 import DilsharaAdminLogin from "./pages/dilshara-AdminLogin";
 import VerifyEmail from "./pages/kaveesha-verifyEmail";
@@ -54,6 +55,7 @@ function App() {
 
         {/* Profile page */}
         <Route path="/profile" element={<KaveeshaUserProfile />} />
+        <Route path="/my-progress" element={<DushaniStudentProgress />} />
 
         {/* super admin dashboard */}
       <Route path="/super-admin" element={<DilsharaSuperAdminDashboard />} />
