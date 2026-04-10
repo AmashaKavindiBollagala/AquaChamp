@@ -7,37 +7,88 @@ export default function KaveeshaStatsBar() {
   const [stats, setStats] = useState({
     topics: 0,
     subtopics: 0,
-    subtopics610: 0,
-    subtopics1115: 0,
+    students610: 0,
+    students1115: 0,
   });
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const [topicsRes, subtopicsRes] = await Promise.all([
-          axios.get(`${API}/api/topics`),
-          axios.get(`${API}/api/subtopics`),
-        ]);
+  const fetchStats = async () => {
+    try {
+      // Get token for authenticated requests
+      const token = localStorage.getItem("aquachamp_token") || localStorage.getItem("superAdminToken");
+      
+      const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
 
-        const topics = topicsRes.data || [];
-        const subtopics = Array.isArray(subtopicsRes.data)
-          ? subtopicsRes.data
-          : subtopicsRes.data?.subtopics || [];
+      const [topicsRes, subtopicsRes, usersRes] = await Promise.all([
+        axios.get(`${API}/api/topics`),
+        axios.get(`${API}/api/subtopics`),
+        axios.get(`${API}/api/users/all`, { headers: authHeaders }),
+      ]);
 
-        setStats({
-          topics: topics.length,
-          subtopics: subtopics.length,
-          subtopics610: subtopics.filter((s) => s.ageGroup === "6-10").length,
-          subtopics1115: subtopics.filter((s) => s.ageGroup === "11-15").length,
-        });
-      } catch (err) {
-        console.error("Stats fetch error:", err);
-      } finally {
-        setLoading(false);
+      // Topics API returns array directly
+      const topics = Array.isArray(topicsRes.data) ? topicsRes.data : [];
+      
+      // Subtopics API returns array directly
+      const subtopics = Array.isArray(subtopicsRes.data) ? subtopicsRes.data : [];
+      
+      // Users API returns { success: true, count: X, users: [...] }
+      const usersData = usersRes.data;
+      const users = usersData?.users || (Array.isArray(usersData) ? usersData : []);
+      
+      // Filter only students (users with role "User" and active)
+      const students = users.filter(user => 
+        user.roles && 
+        Array.isArray(user.roles) && 
+        user.roles.includes("User") && 
+        user.active !== false
+      );
+      
+      // Count students by age groups
+      // Age 5-10: includes ages 5, 6, 7, 8, 9, 10
+      const students610 = students.filter(student => 
+        student.age >= 5 && student.age <= 10
+      ).length;
+      
+      // Age 11-15: includes ages 11, 12, 13, 14, 15
+      const students1115 = students.filter(student => 
+        student.age >= 11 && student.age <= 15
+      ).length;
+
+      console.log("📊 Stats Update:", {
+        topics: topics.length,
+        subtopics: subtopics.length,
+        totalUsers: users.length,
+        students: students.length,
+        students610,
+        students1115
+      });
+
+      setStats({
+        topics: topics.length,
+        subtopics: subtopics.length,
+        students610,
+        students1115,
+      });
+    } catch (err) {
+      console.error("❌ Stats fetch error:", err.message);
+      console.error("Full error:", err);
+      // If auth error, try to show zeros gracefully
+      if (err.response?.status === 401) {
+        console.error("Authentication error - token may be missing or invalid");
       }
-    };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchStats();
+    
+    // Auto-refresh every 30 seconds to keep stats updated
+    const interval = setInterval(fetchStats, 30000);
+    
+    // Cleanup interval on unmount
+    return () => clearInterval(interval);
   }, []);
 
   const cards = [
@@ -68,8 +119,8 @@ export default function KaveeshaStatsBar() {
       badgeText: "#3730a3",
     },
     {
-      label: "Age 6–10",
-      value: stats.subtopics610,
+      label: "Students Age 5–10",
+      value: stats.students610,
       icon: "🧒",
       iconBg: "linear-gradient(135deg, #f59e0b, #d97706)",
       iconShadow: "0 4px 14px rgba(245,158,11,0.5)",
@@ -81,8 +132,8 @@ export default function KaveeshaStatsBar() {
       badgeText: "#78350f",
     },
     {
-      label: "Age 11–15",
-      value: stats.subtopics1115,
+      label: "Students Age 11–15",
+      value: stats.students1115,
       icon: "👦",
       iconBg: "linear-gradient(135deg, #ec4899, #db2777)",
       iconShadow: "0 4px 14px rgba(236,72,153,0.5)",

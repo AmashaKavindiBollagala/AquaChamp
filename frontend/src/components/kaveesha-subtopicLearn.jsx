@@ -62,7 +62,9 @@ export default function KaveeshaSubtopicLearn() {
   const [celebrationMsg, setCelebrationMsg] = useState("");
   const [loading, setLoading] = useState(true);
   const [quiz, setQuiz] = useState(null);
-  const effectiveUserId = userId || user?._id;
+  const effectiveUserIdRaw = userId || user?.id || user?._id;
+  const effectiveUserId =
+    effectiveUserIdRaw != null ? String(effectiveUserIdRaw) : undefined;
   const resolvedAgeGroup =
     ageGroup || (user?.age >= 5 && user?.age <= 10 ? "6-10" : "11-15");
   const isYoung = resolvedAgeGroup === "6-10";
@@ -103,16 +105,6 @@ export default function KaveeshaSubtopicLearn() {
   useEffect(() => {
     if (!subtopicId || !subtopic) return;
     const secs = computeLessonSections(subtopic, quiz);
-    const saved = localStorage.getItem(`kaveesha_done_${subtopicId}`);
-    let parsed = { video: false, text: false, images: false, quiz: false };
-    if (saved) {
-      try {
-        parsed = { ...parsed, ...JSON.parse(saved) };
-      } catch {
-        /* ignore */
-      }
-    }
-    setSectionDone(parsed);
     const savedSection = localStorage.getItem(`kaveesha_section_${subtopicId}`);
     const fromNav = startSection;
     const pick =
@@ -151,7 +143,7 @@ export default function KaveeshaSubtopicLearn() {
         localStorage.getItem("aquachamp_token") ||
         sessionStorage.getItem("aquachamp_token");
       const r = await axios.get(`${API}/api/subtopics/progress/subtopic`, {
-        params: { userId: effectiveUserId, subtopicId },
+        params: { userId: String(effectiveUserId), subtopicId },
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         withCredentials: true,
       });
@@ -175,7 +167,21 @@ export default function KaveeshaSubtopicLearn() {
         JSON.stringify(fromBackend)
       );
     } catch {
-      /* ignore */
+      const saved = localStorage.getItem(`kaveesha_done_${subtopicId}`);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          setSectionDone((prev) => ({
+            ...prev,
+            video: !!parsed.video,
+            text: !!parsed.text,
+            images: !!parsed.images,
+            quiz: !!parsed.quiz,
+          }));
+        } catch {
+          /* ignore */
+        }
+      }
     }
   };
 
@@ -199,7 +205,6 @@ export default function KaveeshaSubtopicLearn() {
     setCelebrationMsg(msgList[Math.floor(Math.random() * msgList.length)]);
     setShowCelebration(true);
 
-    // Call backend progress
     try {
       const token =
         localStorage.getItem("aquachamp_token") ||
@@ -209,12 +214,10 @@ export default function KaveeshaSubtopicLearn() {
         { userId: effectiveUserId, contentType: section },
         { headers: { Authorization: `Bearer ${token}` }, withCredentials: true }
       );
+      await fetchBackendProgress();
     } catch (err) {
       console.error("Progress save error:", err);
     }
-
-    // Refresh % / flags from backend (source of truth)
-    fetchBackendProgress();
 
     setTimeout(() => {
       setShowCelebration(false);
@@ -267,7 +270,7 @@ export default function KaveeshaSubtopicLearn() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-slate-50">
+      <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-slate-50 via-white to-slate-50">
         <div className="text-center rounded-3xl bg-white px-10 py-8 shadow-xl border-2 border-slate-200">
           <div className="text-6xl mb-4 animate-bounce">💧</div>
           <p className="text-2xl font-bold text-slate-800">Loading your lesson…</p>
@@ -277,7 +280,7 @@ export default function KaveeshaSubtopicLearn() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
+    <div className="min-h-screen bg-linear-to-br from-slate-50 via-white to-slate-50">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Nunito:wght@400;600;700;800;900&display=swap');
         body { font-family: 'Inter', sans-serif; }
@@ -297,7 +300,7 @@ export default function KaveeshaSubtopicLearn() {
           <div className="bg-white rounded-3xl p-10 text-center shadow-2xl pop max-w-sm mx-4">
             <div className="text-7xl mb-4 float">⭐</div>
             <div className="flex justify-center gap-2 mb-4">
-              {[...Array(5)].map((_, i) => (
+              {[...Array(4)].map((_, i) => (
                 <span key={i} className="text-3xl" style={{ animationDelay: `${i * 0.1}s` }}>⭐</span>
               ))}
             </div>
@@ -358,8 +361,13 @@ export default function KaveeshaSubtopicLearn() {
               <p className="text-xs font-extrabold uppercase tracking-wider text-white/90">
                 Subtopic progress
               </p>
-              <p className="text-sm font-extrabold text-white">
+              <p className="text-sm font-extrabold text-white flex items-center gap-2">
                 {backendPct}%
+                {backendPct === 100 ? (
+                  <span className="text-base leading-none" aria-hidden>
+                    {"\u2B50".repeat(4)}
+                  </span>
+                ) : null}
               </p>
             </div>
             <div className="h-3 bg-white/25 rounded-full overflow-hidden">
@@ -421,17 +429,28 @@ export default function KaveeshaSubtopicLearn() {
                   <button
                     onClick={() => accessible && setCurrentSection(sec)}
                     disabled={!accessible}
-                    className={`flex flex-col items-center gap-1 flex-1 p-2 rounded-2xl transition-all ${
+                    className={`flex flex-col items-center gap-1.5 flex-1 p-2 rounded-2xl transition-all ${
                       active
                         ? "bg-teal-800 text-white shadow-md scale-105"
                         : done
-                        ? "bg-emerald-100 text-emerald-800"
+                        ? "bg-emerald-50 text-emerald-900"
                         : accessible
                         ? "bg-sky-100 text-sky-900 hover:bg-sky-200"
                         : "opacity-40 cursor-not-allowed text-slate-400"
                     }`}
                   >
-                    <span className="text-xl">{done ? "✅" : icons[sec]}</span>
+                    <span
+                      className={`flex items-center justify-center w-11 h-11 rounded-full text-xl transition-all ${
+                        done
+                          ? "bg-emerald-500 text-white border-2 border-emerald-600 shadow-md"
+                          : active ? "bg-white text-teal-900 border-2 border-white/90"
+                          : accessible
+                          ? "bg-white border-2 border-sky-200"
+                          : "bg-slate-100 border-2 border-slate-200"
+                      }`}
+                    >
+                      {icons[sec]}
+                    </span>
                     <span className="text-[10px] font-extrabold">{labels[sec]}</span>
                   </button>
                   {i < sections.length - 1 && (
@@ -536,6 +555,10 @@ function KaveeshaVideoSection({ subtopic, done, onComplete, accentFrom, accentTo
   const [watched, setWatched] = useState(false);
   const [playerReady, setPlayerReady] = useState(false);
   const iframeRef = useRef(null);
+
+  useEffect(() => {
+    if (done) setWatched(true);
+  }, [done]);
 
   const getYouTubeId = (url) => {
     if (!url) return null;
@@ -778,7 +801,7 @@ function KaveeshaTextSection({ subtopic, done, onComplete, accentFrom, accentTo,
 
       {/* Text body */}
       {hasTextBody && (
-        <div className="bg-gradient-to-br from-sky-100 to-teal-100 rounded-2xl p-6 mb-5 border-2 border-sky-300">
+        <div className="bg-linear-to-br from-sky-100 to-teal-100 rounded-2xl p-6 mb-5 border-2 border-sky-300">
           <p
             className="text-slate-800 leading-relaxed font-semibold whitespace-pre-wrap"
             style={{ fontSize: isYoung ? "18px" : "16px", lineHeight: isYoung ? "1.95" : "1.85" }}
@@ -1031,7 +1054,7 @@ function KaveeshaQuizSection({ subtopic, quiz, userId, ageGroup, done, onComplet
       <div className="p-8 text-center">
         <div className="text-7xl mb-4 float">🏆</div>
         <div className="flex justify-center gap-1 mb-4">
-          {[...Array(5)].map((_, i) => (
+          {[...Array(4)].map((_, i) => (
             <span key={i} className="text-3xl pop" style={{ animationDelay: `${i * 0.1}s` }}>⭐</span>
           ))}
         </div>
