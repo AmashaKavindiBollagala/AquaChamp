@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  CARD LIBRARY  — topic-specific word + icon pairs
-//  Expanded to 10 pairs per topic so games have variety
+//  CARD LIBRARY
 // ─────────────────────────────────────────────────────────────────────────────
 const CARD_LIBRARY = {
   "safe-drinking-water": [
@@ -51,7 +50,6 @@ const CARD_LIBRARY = {
 
 function getPairs(topicId, count = 6) {
   const pool = CARD_LIBRARY[topicId] || CARD_LIBRARY.default;
-  // Shuffle and pick `count` pairs
   return [...pool].sort(() => Math.random() - 0.5).slice(0, Math.min(count, pool.length));
 }
 
@@ -73,7 +71,8 @@ function buildCards(pairs) {
   return shuffle(cards);
 }
 
-const PAIR_COLORS = ["#3b82f6","#10b981","#f59e0b","#ec4899","#8b5cf6","#ef4444","#06b6d4","#84cc16"];
+// Bright, child-friendly pair colors
+const PAIR_COLORS = ["#f43f5e","#f59e0b","#10b981","#ec4899","#8b5cf6","#0ea5e9","#22c55e","#ef4444"];
 
 const AVATAR_URL = (seed) =>
   `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(seed)}&backgroundColor=b6e3f4`;
@@ -82,7 +81,6 @@ const FONT_LINK = "https://fonts.googleapis.com/css2?family=Fredoka+One&family=N
 
 // ─────────────────────────────────────────────────────────────────────────────
 export default function MemoryMatch({ game, username, onFinish }) {
-  // Pair count: easy=4, medium=6, hard=8
   const pairCount = game.difficulty === "hard" ? 8 : game.difficulty === "medium" ? 6 : 4;
   const topicId   = game.topicId || "default";
 
@@ -144,7 +142,6 @@ export default function MemoryMatch({ game, username, onFinish }) {
     }
   };
 
-  // Score: starts at 100, deduct 2 per extra move beyond minimum
   const calcScore = () => {
     const extra = Math.max(0, moves - totalPairs);
     return Math.max(20, 100 - extra * 2);
@@ -153,8 +150,7 @@ export default function MemoryMatch({ game, username, onFinish }) {
   const finalScore = phase === "result" ? calcScore() : 0;
   const stars = finalScore >= 85 ? 3 : finalScore >= 60 ? 2 : 1;
 
-  // Determine grid columns based on pair count
-  const gridCols = pairCount <= 4 ? "repeat(4, 1fr)" : pairCount <= 6 ? "repeat(4, 1fr)" : "repeat(4, 1fr)";
+  const gridCols = "repeat(4, 1fr)";
 
   // ── INTRO ─────────────────────────────────────────────────────────────────
   if (phase === "intro") return (
@@ -162,22 +158,22 @@ export default function MemoryMatch({ game, username, onFinish }) {
       <link rel="stylesheet" href={FONT_LINK} />
       <style>{CSS}</style>
       <div style={cardS}>
-        <div style={{ fontSize: 56, animation: "mspin 4s linear infinite" }}>🃏</div>
+        <div style={{ fontSize: 60, animation: "mspin 4s linear infinite" }}>🃏</div>
         <img src={AVATAR_URL(username)} alt="avatar" style={ava(100)} />
         <h1 style={titleS}>Memory Match!</h1>
-        <p style={subS}>Hi <strong style={{ color: "#a78bfa" }}>{username}</strong>! Flip cards to find matching pairs!</p>
-        <p style={{ color: "#64748b", fontSize: 12, margin: "0 0 6px", textAlign: "center", maxWidth: 280 }}>
-          Topic: <strong style={{ color: "#94a3b8" }}>{game.topicName || game.title}</strong>
+        <p style={subS}>Hi <strong style={{ color: "#8b5cf6" }}>{username}</strong>! Flip cards to find matching pairs!</p>
+        <p style={{ color: "#374151", fontSize: 12, margin: "0 0 6px", textAlign: "center", maxWidth: 280, fontWeight: 700 }}>
+          Topic: <strong style={{ color: "#7c3aed" }}>{game.topicName || game.title}</strong>
         </p>
-        <p style={{ color: "#94a3b8", fontSize: 13, textAlign: "center", maxWidth: 280, margin: "0 0 20px" }}>
+        <p style={{ color: "#6b7280", fontSize: 13, textAlign: "center", maxWidth: 280, margin: "0 0 20px" }}>
           Match water & hygiene words to their pictures. Fewer moves = higher score! 🌟
         </p>
         <div style={pills}>
-          <span style={pl("#a78bfa")}>🃏 {totalPairs * 2} Cards</span>
-          <span style={pl("#34d399")}>🎯 {totalPairs} Pairs</span>
+          <span style={pl("#8b5cf6")}>🃏 {totalPairs * 2} Cards</span>
+          <span style={pl("#10b981")}>🎯 {totalPairs} Pairs</span>
           <span style={pl("#f59e0b")}>⭐ Stars to earn</span>
         </div>
-        <button onClick={initGame} style={btn("#7c3aed")}>🎮 Start Matching!</button>
+        <button onClick={initGame} style={btn("#8b5cf6")}>🎮 Start Matching!</button>
       </div>
     </div>
   );
@@ -189,23 +185,23 @@ export default function MemoryMatch({ game, username, onFinish }) {
       <style>{CSS}</style>
       <div style={cardS}>
         <img src={AVATAR_URL(username)} alt="avatar" style={ava(90)} />
-        <div style={{ display: "flex", gap: 4, margin: "8px 0", fontSize: 36 }}>
+        <div style={{ display: "flex", gap: 4, margin: "8px 0", fontSize: 40 }}>
           {[...Array(3)].map((_, i) => (
             <span key={i} style={{ opacity: i < stars ? 1 : 0.2, animation: i < stars ? `starPop 0.4s ease ${i * 0.15}s both` : "none" }}>⭐</span>
           ))}
         </div>
-        <h2 style={{ ...titleS, fontSize: 24, color: stars >= 2 ? "#4ade80" : "#f59e0b" }}>
+        <h2 style={{ ...titleS, fontSize: 26, color: stars >= 2 ? "#16a34a" : "#d97706" }}>
           {stars === 3 ? "Perfect Match! 🎉" : stars === 2 ? "Well done! 👏" : "Good try! 💪"}
         </h2>
-        <div style={{ fontSize: 50, fontWeight: 900, color: "#fff", margin: "4px 0" }}>{finalScore}</div>
-        <p style={{ color: "#94a3b8", margin: "0 0 6px" }}>points</p>
+        <div style={{ fontSize: 52, fontWeight: 900, color: "#8b5cf6", margin: "4px 0" }}>{finalScore}</div>
+        <p style={{ color: "#6b7280", margin: "0 0 6px" }}>points</p>
         <div style={{ display: "flex", gap: 16, marginBottom: 20 }}>
-          <div style={stat}><span style={{ color: "#a78bfa", fontSize: 22 }}>🔄</span><span style={{ color: "#f1f5f9", fontWeight: 700 }}>{moves} moves</span></div>
-          <div style={stat}><span style={{ color: "#34d399", fontSize: 22 }}>⏱</span><span style={{ color: "#f1f5f9", fontWeight: 700 }}>{elapsed}s</span></div>
+          <div style={stat}><span style={{ fontSize: 22 }}>🔄</span><span style={{ color: "#111827", fontWeight: 800 }}>{moves} moves</span></div>
+          <div style={stat}><span style={{ fontSize: 22 }}>⏱</span><span style={{ color: "#111827", fontWeight: 800 }}>{elapsed}s</span></div>
         </div>
         <div style={{ display: "flex", gap: 10 }}>
-          <button onClick={initGame} style={btn("#7c3aed")}>🔄 Play Again</button>
-          <button onClick={() => onFinish(finalScore, 100, finalScore, finalScore >= 60)} style={{ ...btn("#3b82f6"), background: "#1e3a5f" }}>🏠 Back</button>
+          <button onClick={initGame} style={btn("#8b5cf6")}>🔄 Play Again</button>
+          <button onClick={() => onFinish(finalScore, 100, finalScore, finalScore >= 60)} style={{ ...btn("#3b82f6") }}>🏠 Back</button>
         </div>
       </div>
     </div>
@@ -218,33 +214,30 @@ export default function MemoryMatch({ game, username, onFinish }) {
       <style>{CSS}</style>
 
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", padding: "10px 16px", borderBottom: "1px solid #2d1f4a", gap: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", padding: "10px 16px", borderBottom: "3px solid #e5e7eb", gap: 10, background: "rgba(255,255,255,0.85)", backdropFilter: "blur(10px)" }}>
         <img src={AVATAR_URL(username)} alt="avatar" style={ava(36)} />
         <div style={{ flex: 1 }}>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <span style={{ color: "#a78bfa", fontWeight: 700, fontSize: 13 }}>🃏 Memory Match</span>
-            <span style={{ color: "#f59e0b", fontSize: 12 }}>⏱ {elapsed}s</span>
+            <span style={{ color: "#8b5cf6", fontWeight: 800, fontSize: 13, fontFamily: "'Fredoka One', cursive" }}>🃏 Memory Match</span>
+            <span style={{ color: "#d97706", fontSize: 12, fontWeight: 800 }}>⏱ {elapsed}s</span>
           </div>
         </div>
-        <div style={{ background: "#2d1f4a", borderRadius: 10, padding: "4px 10px", color: "#f1f5f9", fontSize: 12, fontWeight: 700 }}>
+        <div style={{ background: "#f3f4f6", border: "2px solid #e5e7eb", borderRadius: 10, padding: "4px 10px", color: "#374151", fontSize: 12, fontWeight: 800 }}>
           {matched.length}/{totalPairs} pairs
         </div>
       </div>
 
       {/* Stats bar */}
-      <div style={{ textAlign: "center", padding: "6px 0", color: "#64748b", fontSize: 12 }}>
-        Moves: <strong style={{ color: "#a78bfa" }}>{moves}</strong>
+      <div style={{ textAlign: "center", padding: "6px 0", color: "#6b7280", fontSize: 12, fontWeight: 700 }}>
+        Moves: <strong style={{ color: "#8b5cf6" }}>{moves}</strong>
         {" · "}
-        Matched: <strong style={{ color: "#34d399" }}>{matched.length}</strong>/{totalPairs}
-        {" · "}
-        <span style={{ color: "#64748b" }}>Topic: </span>
-        <strong style={{ color: "#7baed4", fontSize: 11 }}>{game.topicName || game.title}</strong>
+        Matched: <strong style={{ color: "#10b981" }}>{matched.length}</strong>/{totalPairs}
       </div>
 
       {/* Progress bar */}
       <div style={{ padding: "0 16px 8px" }}>
-        <div style={{ background: "#1a0a35", borderRadius: 20, height: 6 }}>
-          <div style={{ width: `${(matched.length / totalPairs) * 100}%`, height: "100%", background: "linear-gradient(90deg, #7c3aed, #a78bfa)", borderRadius: 20, transition: "width 0.4s" }} />
+        <div style={{ background: "#e5e7eb", borderRadius: 20, height: 8 }}>
+          <div style={{ width: `${(matched.length / totalPairs) * 100}%`, height: "100%", background: "linear-gradient(90deg, #8b5cf6, #ec4899, #f59e0b)", borderRadius: 20, transition: "width 0.4s" }} />
         </div>
       </div>
 
@@ -269,13 +262,14 @@ export default function MemoryMatch({ game, username, onFinish }) {
                 transform: isFaceUp ? "rotateY(180deg)" : "rotateY(0deg)",
                 animation: isWrong ? "mshake 0.5s ease" : isNew ? "matchPop 0.4s ease" : "none",
               }}>
-                {/* Back face (hidden) */}
+                {/* Back face */}
                 <div style={{
                   position: "absolute", inset: 0, backfaceVisibility: "hidden",
                   borderRadius: 14,
-                  background: "linear-gradient(135deg, #2d1f4a, #1a1035)",
-                  border: "2px solid #4c1d95",
-                  display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28,
+                  background: "linear-gradient(135deg,#8b5cf6,#ec4899)",
+                  border: "3px solid #7c3aed",
+                  display: "flex", alignItems: "center", justifyContent: "center", fontSize: 30,
+                  boxShadow: "0 4px 12px rgba(139,92,246,0.4)",
                 }}>❓</div>
 
                 {/* Front face */}
@@ -283,22 +277,22 @@ export default function MemoryMatch({ game, username, onFinish }) {
                   position: "absolute", inset: 0, backfaceVisibility: "hidden",
                   transform: "rotateY(180deg)", borderRadius: 14,
                   background: isMatched
-                    ? `linear-gradient(135deg, ${color}33, ${color}11)`
-                    : "linear-gradient(135deg, #1e1035, #0f0a2a)",
-                  border: `2px solid ${isMatched ? color : "#4c1d95"}`,
+                    ? `linear-gradient(135deg, ${color}44, ${color}22)`
+                    : "#fff",
+                  border: `3px solid ${isMatched ? color : "#e5e7eb"}`,
                   display: "flex", flexDirection: "column", alignItems: "center",
                   justifyContent: "center", padding: 6, gap: 4,
-                  boxShadow: isMatched ? `0 0 16px ${color}44` : "none",
+                  boxShadow: isMatched ? `0 0 20px ${color}66` : "0 2px 8px rgba(0,0,0,0.08)",
                 }}>
                   {card.type === "emoji"
-                    ? <span style={{ fontSize: 28 }}>{card.content}</span>
+                    ? <span style={{ fontSize: 30 }}>{card.content}</span>
                     : <span style={{
-                        fontSize: 10, fontWeight: 800,
-                        color: isMatched ? color : "#e2e8f0",
+                        fontSize: 10, fontWeight: 900,
+                        color: isMatched ? color : "#374151",
                         textAlign: "center", lineHeight: 1.2,
                       }}>{card.content}</span>
                   }
-                  {isMatched && <span style={{ fontSize: 14 }}>✓</span>}
+                  {isMatched && <span style={{ fontSize: 16 }}>✓</span>}
                 </div>
               </div>
             </div>
@@ -309,15 +303,19 @@ export default function MemoryMatch({ game, username, onFinish }) {
   );
 }
 
-const screen = { minHeight: "100vh", background: "#0a0520", display: "flex", flexDirection: "column", fontFamily: "'Nunito', sans-serif" };
+const screen = {
+  minHeight: "100vh",
+  background: "linear-gradient(135deg,#fef9c3 0%,#fce7f3 30%,#e0f2fe 60%,#d1fae5 100%)",
+  display: "flex", flexDirection: "column", fontFamily: "'Nunito', sans-serif"
+};
 const cardS  = { margin: "auto", maxWidth: 400, width: "100%", padding: "28px 24px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" };
-const ava    = (s) => ({ width: s, height: s, borderRadius: "50%", border: "3px solid #7c3aed", background: "#1a0a35", flexShrink: 0 });
-const titleS = { fontSize: 30, color: "#f1f5f9", margin: "10px 0 6px", fontFamily: "'Fredoka One', cursive" };
-const subS   = { color: "#94a3b8", fontSize: 14, margin: "0 0 6px" };
+const ava    = (s) => ({ width: s, height: s, borderRadius: "50%", border: "4px solid #8b5cf6", background: "#ede9fe", flexShrink: 0 });
+const titleS = { fontSize: 32, color: "#111827", margin: "10px 0 6px", fontFamily: "'Fredoka One', cursive" };
+const subS   = { color: "#374151", fontSize: 14, margin: "0 0 6px", fontWeight: 700 };
 const pills  = { display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center", marginBottom: 20 };
-const pl     = (c) => ({ padding: "4px 12px", borderRadius: 20, background: c + "22", border: `1px solid ${c}`, color: c, fontSize: 12, fontWeight: 700 });
-const btn    = (c) => ({ padding: "13px 28px", background: c, color: "#fff", fontSize: 15, fontWeight: 800, border: "none", borderRadius: 14, cursor: "pointer", fontFamily: "'Nunito', sans-serif", boxShadow: `0 4px 16px ${c}55` });
-const stat   = { display: "flex", flexDirection: "column", alignItems: "center", gap: 2, background: "#1a0a35", borderRadius: 10, padding: "8px 16px" };
+const pl     = (c) => ({ padding: "5px 14px", borderRadius: 20, background: "#fff", border: `2px solid ${c}`, color: c, fontSize: 12, fontWeight: 800, boxShadow: `0 2px 8px ${c}44` });
+const btn    = (c) => ({ padding: "13px 28px", background: c, color: "#fff", fontSize: 15, fontWeight: 900, border: "none", borderRadius: 14, cursor: "pointer", fontFamily: "'Nunito', sans-serif", boxShadow: `0 4px 16px ${c}55` });
+const stat   = { display: "flex", flexDirection: "column", alignItems: "center", gap: 4, background: "#fff", border: "2px solid #e5e7eb", borderRadius: 12, padding: "10px 18px" };
 
 const CSS = `
   @keyframes mspin   { 0% { transform:rotateY(0deg); }   100% { transform:rotateY(360deg); } }

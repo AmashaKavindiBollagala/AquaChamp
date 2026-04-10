@@ -8,6 +8,10 @@ const gameScoreSchema = new mongoose.Schema(
     maxScore:   { type: Number, required: true },
     percentage: { type: Number, default: 0 },
     passed:     { type: Boolean, default: false },
+
+     topicId:    { type: String, default: "" },
+    difficulty: { type: String, enum: ["easy", "medium", "hard"], default: "easy" },
+    playedAt:   { type: Date, default: Date.now },
   },
   { timestamps: true }
 );

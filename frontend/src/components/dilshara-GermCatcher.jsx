@@ -2,8 +2,6 @@ import { useState, useEffect, useRef } from "react";
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  TOPIC WORD-BANK
-//  Each topic has a list of { question, answer, wrongAnswers[] }
-//  The game picks from these automatically based on game.topicId
 // ─────────────────────────────────────────────────────────────────────────────
 const TOPIC_QUESTIONS = {
   "safe-drinking-water": [
@@ -58,10 +56,8 @@ const TOPIC_QUESTIONS = {
   ],
 };
 
-// Fallback if topic not found
 const DEFAULT_QUESTIONS = TOPIC_QUESTIONS["safe-drinking-water"];
 
-// ── Build a shuffled round of questions ──────────────────────────────────────
 function buildRound(topicId, count) {
   const pool = TOPIC_QUESTIONS[topicId] || DEFAULT_QUESTIONS;
   const shuffled = [...pool].sort(() => Math.random() - 0.5).slice(0, Math.min(count, pool.length));
@@ -77,7 +73,8 @@ function buildRound(topicId, count) {
 const AVATAR_URL = (seed) =>
   `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(seed)}&backgroundColor=b6e3f4`;
 
-const GERM_COLORS  = ["#FF6B6B", "#FF8E53", "#A855F7", "#EC4899", "#F59E0B"];
+// Bright, saturated germ colors for children
+const GERM_COLORS  = ["#f43f5e", "#f59e0b", "#8b5cf6", "#ec4899", "#10b981"];
 const GERM_EMOJIS  = ["🦠", "🧫", "🦠", "😷", "🦠"];
 const FONT_LINK    = "https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;800;900&display=swap";
 
@@ -104,12 +101,13 @@ function FloatingGerm({ option, index, onClick, state, position }) {
       animation: `${animName} ${state === "idle" ? "3s ease-in-out infinite" : "0.5s ease forwards"}`,
       animationDelay: state === "idle" ? `${index * 0.4}s` : "0s",
       zIndex: 10,
+      filter: "drop-shadow(0 8px 16px rgba(0,0,0,0.2))",
     }}>
       <div style={{
         width: 110, height: 110, borderRadius: "50%",
-        background: `radial-gradient(circle at 35% 35%, ${color}CC, ${color})`,
-        border: `3px solid ${color}`,
-        boxShadow: `0 0 20px ${color}66, inset 0 -4px 8px rgba(0,0,0,0.2)`,
+        background: `radial-gradient(circle at 35% 35%, #fff, ${color})`,
+        border: `4px solid ${color}`,
+        boxShadow: `0 0 24px ${color}99, inset 0 -4px 8px rgba(0,0,0,0.1)`,
         display: "flex", flexDirection: "column",
         alignItems: "center", justifyContent: "center",
         padding: 8, transition: "transform 0.15s",
@@ -117,11 +115,11 @@ function FloatingGerm({ option, index, onClick, state, position }) {
         onMouseEnter={e => state === "idle" && (e.currentTarget.style.transform = "scale(1.12)")}
         onMouseLeave={e => (e.currentTarget.style.transform = "scale(1)")}
       >
-        <span style={{ fontSize: 24 }}>{emoji}</span>
+        <span style={{ fontSize: 26 }}>{emoji}</span>
         <span style={{
-          fontSize: 11, fontWeight: 700, color: "#fff",
+          fontSize: 11, fontWeight: 900, color: "#fff",
           textAlign: "center", lineHeight: 1.2,
-          textShadow: "0 1px 3px rgba(0,0,0,0.4)",
+          textShadow: "0 1px 4px rgba(0,0,0,0.5)",
           padding: "0 4px", wordBreak: "break-word",
         }}>{option}</span>
       </div>
@@ -133,14 +131,11 @@ function FloatingGerm({ option, index, onClick, state, position }) {
 //  MAIN COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
 export default function GermCatcher({ game, username, onFinish }) {
-  // Build questions from topic word-bank (NOT from game.questions)
   const questionCount = game.questions?.length > 0
     ? game.questions.length
     : (game.difficulty === "hard" ? 10 : game.difficulty === "medium" ? 8 : 5);
 
   const [questions]  = useState(() => {
-    // If quiz-style questions were provided by admin, use them.
-    // Otherwise auto-generate from topic word-bank.
     if (game.questions && game.questions.length > 0) return game.questions;
     return buildRound(game.topicId, questionCount);
   });
@@ -159,7 +154,6 @@ export default function GermCatcher({ game, username, onFinish }) {
   const totalQ   = questions.length;
   const maxScore = totalQ * (game.pointsPerQuestion || 10);
 
-  // ── Timer ─────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (phase !== "playing" || answered) return;
     timerRef.current = setInterval(() => {
@@ -174,7 +168,7 @@ export default function GermCatcher({ game, username, onFinish }) {
   const handleTimeout = () => {
     if (answered) return;
     setAnswered(true);
-    setFeedback({ text: "⏰ Time's up! The germs escaped!", color: "#FF6B6B" });
+    setFeedback({ text: "⏰ Time's up! The germs escaped!", color: "#dc2626" });
     setResults(r => [...r, { correct: false }]);
     setTimeout(nextQuestion, 1800);
   };
@@ -187,10 +181,10 @@ export default function GermCatcher({ game, username, onFinish }) {
     setGermStates(prev => ({ ...prev, [option]: isCorrect ? "correct" : "wrong" }));
     if (isCorrect) {
       setScore(s => s + (game.pointsPerQuestion || 10));
-      setFeedback({ text: "🎉 You caught the right germ!", color: "#4ADE80" });
+      setFeedback({ text: "🎉 You caught the right germ!", color: "#16a34a" });
     } else {
       setGermStates(prev => ({ ...prev, [currentQ.correctAnswer]: "correct" }));
-      setFeedback({ text: `❌ Oops! The right answer: ${currentQ.correctAnswer}`, color: "#FF6B6B" });
+      setFeedback({ text: `❌ Oops! The right answer: ${currentQ.correctAnswer}`, color: "#dc2626" });
     }
     setResults(r => [...r, { correct: isCorrect }]);
     setTimeout(nextQuestion, 1800);
@@ -211,22 +205,22 @@ export default function GermCatcher({ game, username, onFinish }) {
 
   // ── INTRO ─────────────────────────────────────────────────────────────────
   if (phase === "intro") return (
-    <div style={styles.screen("#0a1628")}>
+    <div style={styles.screen}>
       <link rel="stylesheet" href={FONT_LINK} />
       <style>{CSS_ANIMATIONS}</style>
       <div style={styles.card}>
         <img src={AVATAR_URL(username)} alt="avatar" style={styles.avatar(110)} />
-        <h1 style={{ fontSize: 32, color: "#fff", margin: "14px 0 6px", fontFamily: "'Fredoka One', cursive" }}>
+        <h1 style={{ fontSize: 34, color: "#111827", margin: "14px 0 6px", fontFamily: "'Fredoka One', cursive" }}>
           🦠 Germ Catcher!
         </h1>
-        <p style={{ color: "#94a3b8", fontSize: 14, margin: "0 0 6px" }}>
-          Hi <strong style={{ color: "#60a5fa" }}>{username}</strong>! Germs are everywhere — catch the right ones!
+        <p style={{ color: "#374151", fontSize: 14, margin: "0 0 6px", fontWeight: 700 }}>
+          Hi <strong style={{ color: "#f43f5e" }}>{username}</strong>! Germs are everywhere — catch the right ones!
         </p>
-        <p style={{ color: "#cbd5e1", fontSize: 13, margin: "0 0 6px", textAlign: "center", maxWidth: 300 }}>
-          Topic: <strong style={{ color: "#F0F6FF" }}>{game.topicName || game.title}</strong>
+        <p style={{ color: "#374151", fontSize: 13, margin: "0 0 6px", textAlign: "center", maxWidth: 300, fontWeight: 700 }}>
+          Topic: <strong style={{ color: "#7c3aed" }}>{game.topicName || game.title}</strong>
         </p>
-        <p style={{ color: "#64748b", fontSize: 12, margin: "0 0 20px", textAlign: "center", maxWidth: 300 }}>
-          Tap the germ bubble with the <strong style={{ color: "#94a3b8" }}>correct answer</strong> before time runs out!
+        <p style={{ color: "#6b7280", fontSize: 12, margin: "0 0 20px", textAlign: "center", maxWidth: 300 }}>
+          Tap the germ bubble with the <strong style={{ color: "#374151" }}>correct answer</strong> before time runs out!
         </p>
         <div style={styles.pills}>
           <span style={styles.pill("#3b82f6")}>📝 {totalQ} Questions</span>
@@ -242,7 +236,7 @@ export default function GermCatcher({ game, username, onFinish }) {
 
   // ── RESULT ────────────────────────────────────────────────────────────────
   if (phase === "result") return (
-    <div style={styles.screen("#0a1628")}>
+    <div style={styles.screen}>
       <link rel="stylesheet" href={FONT_LINK} />
       <style>{CSS_ANIMATIONS}</style>
       <div style={styles.card}>
@@ -250,12 +244,12 @@ export default function GermCatcher({ game, username, onFinish }) {
         <div style={{ fontSize: 60, margin: "8px 0", animation: "pop 0.5s ease both" }}>
           {passed ? "🏆" : "💪"}
         </div>
-        <h2 style={{ fontSize: 26, color: passed ? "#4ADE80" : "#f59e0b", margin: "0 0 6px", fontFamily: "'Fredoka One', cursive" }}>
+        <h2 style={{ fontSize: 26, color: passed ? "#16a34a" : "#d97706", margin: "0 0 6px", fontFamily: "'Fredoka One', cursive" }}>
           {passed ? "Amazing! You did it!" : "Good try! Keep going!"}
         </h2>
-        <div style={{ fontSize: 52, fontWeight: 900, color: "#fff", margin: "6px 0" }}>{percentage}%</div>
-        <p style={{ color: "#94a3b8", margin: "0 0 16px" }}>
-          You scored <strong style={{ color: "#60a5fa" }}>{score}</strong> out of <strong>{maxScore}</strong> points
+        <div style={{ fontSize: 52, fontWeight: 900, color: passed ? "#16a34a" : "#d97706", margin: "6px 0" }}>{percentage}%</div>
+        <p style={{ color: "#374151", margin: "0 0 16px", fontWeight: 700 }}>
+          You scored <strong style={{ color: "#3b82f6" }}>{score}</strong> out of <strong>{maxScore}</strong> points
         </p>
         <div style={{ display: "flex", gap: 6, marginBottom: 20, flexWrap: "wrap", justifyContent: "center" }}>
           {results.map((r, i) => <span key={i} style={{ fontSize: 22 }}>{r.correct ? "✅" : "❌"}</span>)}
@@ -269,45 +263,47 @@ export default function GermCatcher({ game, username, onFinish }) {
 
   // ── PLAYING ───────────────────────────────────────────────────────────────
   return (
-    <div style={{ ...styles.screen("#0a1628"), minHeight: "100vh" }}>
+    <div style={{ ...styles.screen, minHeight: "100vh" }}>
       <link rel="stylesheet" href={FONT_LINK} />
       <style>{CSS_ANIMATIONS}</style>
 
       {/* Header */}
-      <div style={styles.header}>
+      <div style={{ ...styles.header, background: "rgba(255,255,255,0.9)", backdropFilter: "blur(10px)", borderBottom: "3px solid #e5e7eb" }}>
         <img src={AVATAR_URL(username)} alt="avatar" style={styles.avatar(40)} />
         <div style={{ flex: 1, margin: "0 12px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-            <span style={{ color: "#94a3b8", fontSize: 12 }}>Question {qIndex + 1}/{totalQ}</span>
-            <span style={{ color: "#60a5fa", fontWeight: 700 }}>⭐ {score} pts</span>
+            <span style={{ color: "#374151", fontSize: 12, fontWeight: 700 }}>Question {qIndex + 1}/{totalQ}</span>
+            <span style={{ color: "#d97706", fontWeight: 800 }}>⭐ {score} pts</span>
           </div>
-          <div style={{ background: "#1e3a5f", borderRadius: 20, height: 8 }}>
+          <div style={{ background: "#e5e7eb", borderRadius: 20, height: 8 }}>
             <div style={{
               width: `${((qIndex) / totalQ) * 100}%`, height: "100%",
-              background: "linear-gradient(90deg,#3b82f6,#10b981)",
+              background: "linear-gradient(90deg,#f43f5e,#f59e0b,#22c55e)",
               borderRadius: 20, transition: "width 0.4s",
             }} />
           </div>
         </div>
         <div style={{
           width: 48, height: 48, borderRadius: "50%",
-          background: timeLeft <= 8 ? "#ff4444" : "#1e3a5f",
+          background: timeLeft <= 8 ? "#dc2626" : "#16a34a",
           display: "flex", alignItems: "center", justifyContent: "center",
           fontSize: 16, fontWeight: 900, color: "#fff", transition: "background 0.3s",
           animation: timeLeft <= 5 ? "pulse 0.5s infinite" : "none",
+          boxShadow: `0 4px 12px ${timeLeft <= 8 ? "#dc262699" : "#16a34a99"}`,
         }}>{timeLeft}</div>
       </div>
 
       {/* Question text */}
       <div style={{
-        background: "#0f2040", border: "1px solid #1e3a5f",
-        borderRadius: 16, padding: "16px 20px", margin: "0 16px 8px", textAlign: "center",
+        background: "rgba(255,255,255,0.9)", border: "3px solid #fbbf24",
+        borderRadius: 16, padding: "16px 20px", margin: "10px 16px 8px", textAlign: "center",
+        boxShadow: "0 4px 16px rgba(251,191,36,0.3)",
       }}>
-        <p style={{ fontSize: 17, fontWeight: 700, color: "#f1f5f9", margin: 0, lineHeight: 1.4 }}>
+        <p style={{ fontSize: 17, fontWeight: 800, color: "#111827", margin: 0, lineHeight: 1.4 }}>
           {currentQ.questionText}
         </p>
         {currentQ.hint && !answered && (
-          <p style={{ fontSize: 12, color: "#64748b", margin: "6px 0 0" }}>💡 {currentQ.hint}</p>
+          <p style={{ fontSize: 12, color: "#6b7280", margin: "6px 0 0" }}>💡 {currentQ.hint}</p>
         )}
       </div>
 
@@ -315,21 +311,22 @@ export default function GermCatcher({ game, username, onFinish }) {
       {feedback && (
         <div style={{
           margin: "0 16px 4px", padding: "10px 16px", borderRadius: 12,
-          background: feedback.color + "22", border: `1px solid ${feedback.color}`,
-          color: feedback.color, fontWeight: 700, fontSize: 14, textAlign: "center",
+          background: feedback.color === "#16a34a" ? "#dcfce7" : "#fee2e2",
+          border: `2px solid ${feedback.color}`,
+          color: feedback.color, fontWeight: 800, fontSize: 14, textAlign: "center",
           animation: "fadeIn 0.3s ease",
         }}>{feedback.text}</div>
       )}
 
-      {/* Germ arena */}
+      {/* Germ arena — bright sunny background */}
       <div style={{
         flex: 1, position: "relative", margin: "0 16px",
-        background: "radial-gradient(ellipse at center, #0d2040 0%, #060e1a 100%)",
-        borderRadius: 20, border: "1px solid #1e3a5f",
+        background: "linear-gradient(135deg,#fef3c7,#fce7f3,#e0f2fe)",
+        borderRadius: 20, border: "3px solid #e5e7eb",
         overflow: "hidden", minHeight: 280,
       }}>
-        {/* Background blobs */}
-        <div style={{ position: "absolute", inset: 0, overflow: "hidden", opacity: 0.12 }}>
+        {/* Decorative spots */}
+        <div style={{ position: "absolute", inset: 0, overflow: "hidden", opacity: 0.15 }}>
           {[...Array(6)].map((_, i) => (
             <div key={i} style={{
               position: "absolute",
@@ -352,7 +349,7 @@ export default function GermCatcher({ game, username, onFinish }) {
         ))}
       </div>
 
-      <div style={{ textAlign: "center", padding: "8px", color: "#475569", fontSize: 12 }}>
+      <div style={{ textAlign: "center", padding: "8px", color: "#6b7280", fontSize: 12, fontWeight: 700 }}>
         Tap the correct germ bubble! 🦠
       </div>
     </div>
@@ -363,9 +360,11 @@ export default function GermCatcher({ game, username, onFinish }) {
 //  SHARED STYLES
 // ─────────────────────────────────────────────────────────────────────────────
 const styles = {
-  screen: (bg) => ({
-    minHeight: "100vh", background: bg, display: "flex", flexDirection: "column",
-    fontFamily: "'Nunito', 'DM Sans', sans-serif",
+  screen: () => ({
+    minHeight: "100vh",
+    background: "linear-gradient(135deg,#fef9c3 0%,#fce7f3 30%,#e0f2fe 60%,#d1fae5 100%)",
+    display: "flex", flexDirection: "column",
+    fontFamily: "'Nunito', sans-serif",
   }),
   card: {
     margin: "auto", maxWidth: 420, width: "100%", padding: 32,
@@ -373,21 +372,22 @@ const styles = {
   },
   avatar: (size) => ({
     width: size, height: size, borderRadius: "50%",
-    border: "3px solid #3b82f6", background: "#0f2040",
+    border: "4px solid #ec4899", background: "#fce7f3",
   }),
   pills: { display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center", marginBottom: 20 },
   pill:  (c) => ({
-    padding: "4px 12px", borderRadius: 20,
-    background: c + "22", border: `1px solid ${c}`, color: c, fontSize: 12, fontWeight: 700,
+    padding: "5px 14px", borderRadius: 20,
+    background: "#fff", border: `2px solid ${c}`, color: c, fontSize: 12, fontWeight: 800,
+    boxShadow: `0 2px 8px ${c}44`,
   }),
   bigBtn: (c) => ({
-    padding: "14px 32px", background: c, color: "#fff", fontSize: 16, fontWeight: 800,
+    padding: "14px 32px", background: c, color: "#fff", fontSize: 16, fontWeight: 900,
     border: "none", borderRadius: 16, cursor: "pointer",
     fontFamily: "'Nunito', sans-serif", boxShadow: `0 4px 20px ${c}66`,
   }),
   header: {
     display: "flex", alignItems: "center",
-    padding: "12px 16px", borderBottom: "1px solid #1e3a5f", gap: 10,
+    padding: "12px 16px", gap: 10,
   },
 };
 

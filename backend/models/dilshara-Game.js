@@ -25,7 +25,7 @@ const gameSchema = new mongoose.Schema(
     },
     subType: {
       type: String,
-      enum: ['quiz', 'germcatcher', 'waterdrop', 'memory'],
+      enum: ['quiz', 'germcatcher', 'waterdrop', 'memory', 'cleanordirty'],
       default: 'quiz',
     },
     lessonTopic: {

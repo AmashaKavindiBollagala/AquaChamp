@@ -9,6 +9,8 @@ import EmailVerified from "./pages/kaveesha-emailVerified";
 import ResetPassword from "./pages/kaveesha-resetPassword";
 import DilsharaGameAdminDashboard from "./components/dilshara-gameAdmin-dashboard";
 import GamePlayScreen from "./components/dilshara-GamePlayScreen";
+import GameSelectionPage from "./components/dilshara-GameSelectionPage";
+
 
 function App() {
   return (
@@ -40,8 +42,10 @@ function App() {
         {/* game admin dashboard */}
         <Route path="/game-dashboard" element={<DilsharaGameAdminDashboard />} />
          {/* game with 3rd party api */}
-        <Route path="/play/:gameId" element={<GamePlayScreen />} />
+        
 
+<Route path="/games/topic/:topicId" element={<GameSelectionPage />} />  
+        <Route path="/games/play/:gameId"   element={<GamePlayScreen />} />
 
       </Routes>
     </BrowserRouter>
