@@ -17,6 +17,7 @@ import GamePlayScreen from "./components/dilshara-GamePlayScreen";
 import GameSelectionPage from "./components/dilshara-GameSelectionPage";
 import ActivityAdminDashboard from "./components/amasha-ActivityAdminDashboard";
 import UserActivityView from "./components/amasha-UserActivityView";
+import UserWaterView from "./components/amasha-userWaterView.jsx";
 
 // Dashboard pages
 import Sidebar from "./components/dushani-Sidebar.jsx";
@@ -79,6 +80,7 @@ function App() {
           path="/activity-dashboard"
           element={<ActivityAdminDashboard />}
         />
+        <Route path="/water" element={<UserWaterView />} />
         <Route path="/my-activities" element={<UserActivityView />} />
 
         {/* Admin Login */}

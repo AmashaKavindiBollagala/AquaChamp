@@ -3,6 +3,10 @@ import axios from "axios";
 
 const API = "http://localhost:4000";
 
+// ✅ Uses Intl API — matches backend todayString() exactly
+const todayStr = () =>
+  new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Colombo" });
+
 const getToken = () =>
   localStorage.getItem("superAdminToken") ||
   localStorage.getItem("aquachamp_token") ||
@@ -19,18 +23,16 @@ api.interceptors.request.use((cfg) => {
 const NAV = [
   { id: "activities", icon: "🧼", label: "Activity Management" },
   { id: "water",      icon: "💧", label: "Water Intake" },
-  { id: "reports",    icon: "📊", label: "Reports" },
 ];
 
 function Sidebar({ active, setActive, collapsed, setCollapsed }) {
   return (
     <aside
       className={`relative flex flex-col min-h-screen z-10 shadow-2xl
-        bg-gradient-to-b from-[#042C53] via-[#185FA5] to-[#1D9E75]
+        bg-linear-to-b from-[#042C53] via-[#185FA5] to-[#1D9E75]
         transition-all duration-300 ease-in-out
-        ${collapsed ? "w-[72px]" : "w-60"}`}
+        ${collapsed ? "w-18" : "w-60"}`}
     >
-      {/* Logo */}
       <div className="flex items-center gap-3 px-4 pt-6 pb-3">
         <div className="w-10 h-10 rounded-2xl bg-white/20 border-2 border-cyan-400/40 flex items-center justify-center text-2xl shrink-0 backdrop-blur-sm shadow-md">
           🏆
@@ -43,7 +45,6 @@ function Sidebar({ active, setActive, collapsed, setCollapsed }) {
         )}
       </div>
 
-      {/* Nav items */}
       <nav className="flex-1 px-2 py-4 flex flex-col gap-1">
         {NAV.map((item) => {
           const isActive = active === item.id;
@@ -69,7 +70,6 @@ function Sidebar({ active, setActive, collapsed, setCollapsed }) {
         })}
       </nav>
 
-      {/* Collapse toggle */}
       <button
         onClick={() => setCollapsed((p) => !p)}
         className="mx-2 mb-4 py-2.5 rounded-xl border border-white/20 bg-white/10 text-white/70 text-sm font-bold cursor-pointer flex items-center justify-center hover:bg-white/20 transition-all"
@@ -87,7 +87,7 @@ function Toast({ msg, type, onClose }) {
   }, [msg]);
   if (!msg) return null;
   return (
-    <div className={`fixed top-6 right-6 z-[9999] flex items-center gap-2.5 px-5 py-3.5 rounded-2xl font-bold text-sm shadow-2xl border
+    <div className={`fixed top-6 right-6 z-9999 flex items-center gap-2.5 px-5 py-3.5 rounded-2xl font-bold text-sm shadow-2xl border
       ${type === "error" ? "bg-red-50 border-red-200 text-red-600" : "bg-emerald-50 border-emerald-200 text-emerald-700"}`}>
       <span>{type === "error" ? "❌" : "✅"}</span>
       {msg}
@@ -100,7 +100,7 @@ function Toast({ msg, type, onClose }) {
 function Modal({ title, onClose, children }) {
   return (
     <div
-      className="fixed inset-0 z-[500] bg-[#042C53]/50 backdrop-blur-sm flex items-center justify-center p-4"
+      className="fixed inset-0 z-500 bg-[#042C53]/50 backdrop-blur-sm flex items-center justify-center p-4"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl">
@@ -131,11 +131,8 @@ function ActivityForm({ initial, onSave, onCancel, loading }) {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Icon picker */}
       <div>
         <label className="block text-[10px] font-extrabold uppercase tracking-[0.12em] text-sky-700 mb-2">Icon</label>
-
-        {/* Custom emoji input */}
         <div className="flex items-center gap-2 mb-3">
           <div className="w-12 h-12 rounded-xl border-2 border-sky-200 bg-sky-50 flex items-center justify-center text-2xl shrink-0">
             {form.icon}
@@ -154,8 +151,6 @@ function ActivityForm({ initial, onSave, onCancel, loading }) {
             <p className="text-[10px] text-slate-400 mt-1">Type or paste any emoji, or pick below</p>
           </div>
         </div>
-
-        {/* Preset grid */}
         <div className="flex flex-wrap gap-2">
           {ICONS.map((ic) => (
             <button
@@ -205,14 +200,14 @@ function ActivityForm({ initial, onSave, onCancel, loading }) {
         <button
           type="button" onClick={() => onSave(form)}
           disabled={loading || !form.name.trim()}
-          className="flex-1 py-2.5 rounded-2xl border-none bg-gradient-to-r from-sky-700 to-emerald-500 text-white font-extrabold text-sm cursor-pointer shadow-lg hover:-translate-y-0.5 transition disabled:opacity-60 disabled:cursor-not-allowed"
+          className="flex-1 py-2.5 rounded-2xl border-none bg-linear-to-r from-sky-700 to-emerald-500 text-white font-extrabold text-sm cursor-pointer shadow-lg hover:-translate-y-0.5 transition disabled:opacity-60 disabled:cursor-not-allowed"
         >{loading ? "Saving…" : "💾 Save Activity"}</button>
       </div>
     </div>
   );
 }
 
-// ── User Detail Modal ─────────────────────────────────────────────────────────
+// ── User Detail Modal (Activities) ────────────────────────────────────────────
 function UserDetailModal({ activity, onClose }) {
   const user = activity.userId;
   const initials = user?.name
@@ -225,12 +220,10 @@ function UserDetailModal({ activity, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-[600] bg-[#042C53]/50 backdrop-blur-sm flex items-center justify-center p-4"
+      className="fixed inset-0 z-600 bg-[#042C53]/50 backdrop-blur-sm flex items-center justify-center p-4"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="bg-white rounded-3xl p-7 w-full max-w-sm shadow-2xl">
-
-        {/* Header */}
         <div className="flex items-center justify-between mb-5">
           <h3 className="m-0 text-[#042C53] font-black text-lg">Activity Details</h3>
           <button
@@ -239,7 +232,6 @@ function UserDetailModal({ activity, onClose }) {
           >✕</button>
         </div>
 
-        {/* Activity info */}
         <div className="flex items-center gap-3 p-4 bg-sky-50 rounded-2xl border border-sky-100 mb-5">
           <div className="w-14 h-14 rounded-2xl bg-white border border-sky-200 flex items-center justify-center text-2xl shrink-0">
             {activity.icon}
@@ -260,17 +252,14 @@ function UserDetailModal({ activity, onClose }) {
           </div>
         </div>
 
-        {/* Divider label */}
         <div className="text-[10px] font-extrabold uppercase tracking-[0.15em] text-slate-400 mb-3">
           Created By
         </div>
 
-        {/* User info */}
         {user ? (
           <div className="flex flex-col gap-3">
-            {/* Avatar + name row */}
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-sky-600 to-emerald-500 flex items-center justify-center text-white font-extrabold text-base shrink-0">
+              <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-sky-600 to-emerald-500 flex items-center justify-center text-white font-extrabold text-base shrink-0">
                 {initials}
               </div>
               <div>
@@ -282,16 +271,12 @@ function UserDetailModal({ activity, onClose }) {
                 )}
               </div>
             </div>
-
-            {/* Email row */}
             {user.email && (
               <div className="flex items-center gap-2.5 px-3.5 py-2.5 bg-slate-50 rounded-xl border border-slate-100">
                 <span className="text-base shrink-0">📧</span>
                 <span className="text-sm text-slate-600 font-semibold truncate">{user.email}</span>
               </div>
             )}
-
-            {/* Age row */}
             {user.age && (
               <div className="flex items-center gap-2.5 px-3.5 py-2.5 bg-slate-50 rounded-xl border border-slate-100">
                 <span className="text-base shrink-0">🎂</span>
@@ -308,7 +293,7 @@ function UserDetailModal({ activity, onClose }) {
 
         <button
           onClick={onClose}
-          className="mt-6 w-full py-2.5 rounded-2xl border-none bg-gradient-to-r from-sky-700 to-emerald-500 text-white font-extrabold text-sm cursor-pointer shadow-lg hover:-translate-y-0.5 transition"
+          className="mt-6 w-full py-2.5 rounded-2xl border-none bg-linear-to-r from-sky-700 to-emerald-500 text-white font-extrabold text-sm cursor-pointer shadow-lg hover:-translate-y-0.5 transition"
         >Close</button>
       </div>
     </div>
@@ -331,7 +316,7 @@ function ActivityCard({ activity, onEdit, onDelete }) {
           ${activity.isActive ? "border-sky-100" : "border-red-100 opacity-70"}
           ${activity.source === "custom" ? "cursor-pointer hover:border-sky-300 hover:shadow-md" : ""}`}
       >
-        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-sky-50 to-blue-100 border border-sky-200 flex items-center justify-center text-2xl shrink-0">
+        <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-sky-50 to-blue-100 border border-sky-200 flex items-center justify-center text-2xl shrink-0">
           {activity.icon}
         </div>
 
@@ -411,14 +396,6 @@ function ActivitiesPanel({ toast }) {
     finally { setSaving(false); }
   };
 
-  const handleToggle = async (act) => {
-    try {
-      await api.put(`/api/activities/${act._id}`, { isActive: !act.isActive });
-      toast(act.isActive ? "Activity deactivated" : "Activity activated ✅");
-      load();
-    } catch { toast("Error toggling activity", "error"); }
-  };
-
   const handleDelete = async (act) => {
     if (!window.confirm(`Permanently delete "${act.name}"? This cannot be undone.`)) return;
     try {
@@ -449,7 +426,6 @@ function ActivitiesPanel({ toast }) {
 
   return (
     <div>
-      {/* Header */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
           <h2 className="m-0 text-[#042C53] font-black text-2xl">🧼 Activity Management</h2>
@@ -457,11 +433,10 @@ function ActivitiesPanel({ toast }) {
         </div>
         <button
           onClick={() => setModal("create")}
-          className="px-5 py-2.5 rounded-2xl border-none bg-gradient-to-r from-sky-700 to-emerald-500 text-white font-extrabold text-sm cursor-pointer shadow-lg hover:-translate-y-0.5 transition-transform"
+          className="px-5 py-2.5 rounded-2xl border-none bg-linear-to-r from-sky-700 to-emerald-500 text-white font-extrabold text-sm cursor-pointer shadow-lg hover:-translate-y-0.5 transition-transform"
         >+ Create Activity</button>
       </div>
 
-      {/* Stat cards */}
       <div className="grid grid-cols-3 gap-3 mb-6">
         {STAT_CARDS.map((s) => (
           <div key={s.label} className={`${s.bg} border ${s.border} rounded-2xl p-4`}>
@@ -472,13 +447,12 @@ function ActivitiesPanel({ toast }) {
         ))}
       </div>
 
-      {/* Search + filter */}
       <div className="flex gap-3 mb-5 flex-wrap">
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="🔍 Search activities…"
-          className="flex-1 min-w-[180px] rounded-xl border-2 border-sky-100 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100 transition"
+          className="flex-1 min-w-45 rounded-xl border-2 border-sky-100 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100 transition"
         />
         <div className="flex gap-1.5 flex-wrap">
           {["all", "system", "custom"].map((f) => (
@@ -493,7 +467,6 @@ function ActivitiesPanel({ toast }) {
         </div>
       </div>
 
-      {/* Activity list */}
       {loading ? (
         <div className="text-center py-12 text-slate-400">
           <div className="text-4xl mb-2">⏳</div>
@@ -516,7 +489,6 @@ function ActivitiesPanel({ toast }) {
         </div>
       )}
 
-      {/* Modals */}
       {modal === "create" && (
         <Modal title="✨ Create System Activity" onClose={() => setModal(null)}>
           <ActivityForm onSave={handleCreate} onCancel={() => setModal(null)} loading={saving} />
@@ -531,170 +503,361 @@ function ActivitiesPanel({ toast }) {
   );
 }
 
-// ── Water Panel ───────────────────────────────────────────────────────────────
-function WaterPanel() {
-  const INFO = [
-    { label: "Age 5–10 Daily Goal",     value: "5 cups",    icon: "🧒", color: "text-sky-600",     bg: "bg-sky-50",     border: "border-sky-100" },
-    { label: "Age 10–15 Daily Goal",    value: "7 cups",    icon: "🧑", color: "text-violet-600",  bg: "bg-violet-50",  border: "border-violet-100" },
-    { label: "Bonus Points (all done)", value: "20 pts",    icon: "🏆", color: "text-amber-600",   bg: "bg-amber-50",   border: "border-amber-100" },
-    { label: "Tracking Status",         value: "Active ✅", icon: "📡", color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-100" },
-  ];
+// ── Water Panel Helpers ────────────────────────────────────────────────────────
+const waterPct = (cups, goal) => Math.min(100, Math.round((cups / goal) * 100));
 
-  const DETAILS = [
-    ["Age 5–10",        "5 cups/day", "🧒 Young children need 5 daily cups"],
-    ["Age 10–15",       "7 cups/day", "🧑 Older kids need 7 daily cups"],
-    ["Progress Levels", "4 stages",   "💧→🌊→⚡→🏆 motivation tiers"],
-    ["Streak Bonus",    "20 points",  "🎉 Full completion earns bonus"],
-  ];
+const ageColor = (group) =>
+  group === "5-10"
+    ? { bg: "bg-sky-100", text: "text-sky-700", border: "border-sky-200", dot: "bg-sky-500" }
+    : { bg: "bg-violet-100", text: "text-violet-700", border: "border-violet-200", dot: "bg-violet-500" };
+
+const levelStyle = (p) => {
+  if (p >= 100) return { bar: "from-emerald-400 to-teal-400", label: "Complete 🎉", text: "text-emerald-600" };
+  if (p >= 60)  return { bar: "from-sky-400 to-cyan-400",     label: "Almost there 🏆", text: "text-sky-600" };
+  if (p >= 30)  return { bar: "from-blue-400 to-sky-400",     label: "In progress ⚡", text: "text-blue-600" };
+  return         { bar: "from-slate-300 to-slate-400",         label: "Just started 💧", text: "text-slate-500" };
+};
+
+// ── Water User Detail Modal ────────────────────────────────────────────────────
+function WaterUserDetailModal({ user, onClose }) {
+  const [history, setHistory] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        const { data } = await api.get(`/api/water/admin/history/${user.userId}?days=7`);
+        setHistory(data.data);
+      } catch {
+        setHistory(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchHistory();
+  }, [user.userId]);
+
+  const progress = waterPct(user.cupsConsumed, user.dailyGoalCups);
+  const lvl      = levelStyle(progress);
+  const age      = ageColor(user.ageGroup);
+  const initials = (user.userName || "?")[0].toUpperCase();
 
   return (
-    <div>
-      <div className="mb-6">
-        <h2 className="m-0 text-[#042C53] font-black text-2xl">💧 Water Intake Management</h2>
-        <p className="mt-1 text-slate-500 text-sm">Monitor system-wide water tracking configuration</p>
-      </div>
-
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        {INFO.map((item) => (
-          <div key={item.label} className={`${item.bg} border ${item.border} rounded-2xl p-5 shadow-sm`}>
-            <div className="text-3xl mb-2">{item.icon}</div>
-            <div className={`text-2xl font-black ${item.color}`}>{item.value}</div>
-            <div className="text-xs text-slate-500 font-semibold mt-1">{item.label}</div>
-          </div>
-        ))}
-      </div>
-
-      <div className="bg-gradient-to-br from-sky-50 to-blue-100 rounded-2xl p-6 border border-sky-200">
-        <h3 className="m-0 mb-4 text-sky-800 font-extrabold text-base">💡 Water Goal System</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {DETAILS.map(([title, val, desc]) => (
-            <div key={title} className="bg-white/70 rounded-2xl p-4">
-              <div className="font-extrabold text-sky-800 text-sm">
-                {title}: <span className="text-sky-600">{val}</span>
+    <div
+      className="fixed inset-0 z-600 bg-[#042C53]/60 backdrop-blur-sm flex items-center justify-center p-4"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden">
+        <div className="bg-gradient-to-r from-[#042C53] via-[#185FA5] to-[#1D9E75] px-7 py-6 text-white">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-white/20 border-2 border-white/30 flex items-center justify-center font-black text-2xl backdrop-blur-sm">
+                {initials}
               </div>
-              <div className="text-slate-500 text-xs mt-1">{desc}</div>
+              <div>
+                <div className="font-black text-xl">{user.userName}</div>
+                <div className="text-white/70 text-sm">{user.email || "No email"}</div>
+                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold mt-1.5 ${age.bg} ${age.text} border ${age.border}`}>
+                  🧒 Age group {user.ageGroup}
+                </span>
+              </div>
             </div>
-          ))}
+            <button
+              onClick={onClose}
+              className="w-9 h-9 rounded-xl bg-white/20 border border-white/30 flex items-center justify-center text-white cursor-pointer hover:bg-white/30 transition"
+            >✕</button>
+          </div>
+        </div>
+
+        <div className="p-7 flex flex-col gap-5">
+          <div>
+            <div className="text-[10px] font-extrabold uppercase tracking-[0.15em] text-slate-400 mb-3">Today's Progress</div>
+            <div className="bg-sky-50 rounded-2xl border border-sky-100 p-4">
+              <div className="flex justify-between items-center mb-2">
+                <span className="font-extrabold text-[#042C53] text-lg">
+                  {user.cupsConsumed} <span className="text-slate-400 font-semibold text-base">/ {user.dailyGoalCups} cups</span>
+                </span>
+                <span className={`font-black text-xl ${lvl.text}`}>{progress}%</span>
+              </div>
+              <div className="h-4 bg-white rounded-full overflow-hidden border border-sky-200">
+                <div
+                  className={`h-full rounded-full bg-gradient-to-r ${lvl.bar} transition-all duration-700`}
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <div className={`text-xs font-bold mt-2 ${lvl.text}`}>{lvl.label}</div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { icon: "🎂", label: "Age",       value: user.age ? `${user.age} yrs` : "N/A" },
+              { icon: "🎯", label: "Daily Goal", value: `${user.dailyGoalCups} cups` },
+              { icon: "📅", label: "Date",       value: user.date || todayStr() },
+            ].map((item) => (
+              <div key={item.label} className="bg-slate-50 rounded-xl border border-slate-100 p-3 text-center">
+                <div className="text-xl mb-1">{item.icon}</div>
+                <div className="font-black text-[#042C53] text-sm">{item.value}</div>
+                <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wide mt-0.5">{item.label}</div>
+              </div>
+            ))}
+          </div>
+
+          <div>
+            <div className="text-[10px] font-extrabold uppercase tracking-[0.15em] text-slate-400 mb-3">7-Day History</div>
+            {loading ? (
+              <div className="text-slate-400 text-sm text-center py-4 animate-pulse">Loading history…</div>
+            ) : history?.logs?.length > 0 ? (
+              <div className="flex flex-col gap-2">
+                {history.logs.slice(-7).map((day) => {
+                  const dp   = waterPct(day.cupsConsumed, day.dailyGoalCups);
+                  const dlvl = levelStyle(dp);
+                  return (
+                    <div key={day.date} className="flex items-center gap-3">
+                      <div className="w-24 text-xs text-slate-500 font-semibold shrink-0">{day.date}</div>
+                      <div className="flex-1 h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full bg-gradient-to-r ${dlvl.bar}`}
+                          style={{ width: `${dp}%` }}
+                        />
+                      </div>
+                      <div className="w-20 text-right text-[11px] font-bold text-slate-500 shrink-0">
+                        {day.cupsConsumed}/{day.dailyGoalCups}{day.goalMet ? " ✅" : ""}
+                      </div>
+                    </div>
+                  );
+                })}
+                <div className="text-xs text-emerald-600 font-bold mt-1">
+                  🏅 {history.daysGoalMet}/{history.period?.days || 7} days goal met
+                </div>
+              </div>
+            ) : (
+              <div className="text-slate-400 text-sm text-center py-4">No history available</div>
+            )}
+          </div>
+
+          <button
+            onClick={onClose}
+            className="w-full py-3 rounded-2xl border-none bg-gradient-to-r from-sky-700 to-teal-500 text-white font-extrabold text-sm cursor-pointer shadow-lg hover:-translate-y-0.5 transition-transform"
+          >Close</button>
         </div>
       </div>
     </div>
   );
 }
 
-// ── Reports Panel ─────────────────────────────────────────────────────────────
-function ReportsPanel({ toast }) {
-  const [report,  setReport]  = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [range,   setRange]   = useState("7");
-
-  const getStartDate = (days) => {
-    const d = new Date();
-    d.setDate(d.getDate() - parseInt(days) + 1);
-    return d.toISOString().slice(0, 10);
-  };
-
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      try {
-        const { data } = await api.get(`/api/activities/report?startDate=${getStartDate(range)}`);
-        setReport(data.data);
-      } catch { toast("Could not load report", "error"); }
-      finally { setLoading(false); }
-    };
-    load();
-  }, [range]);
+// ── Water User Row ─────────────────────────────────────────────────────────────
+function WaterUserRow({ user, onViewDetail }) {
+  const progress = waterPct(user.cupsConsumed, user.dailyGoalCups);
+  const lvl      = levelStyle(progress);
+  const age      = ageColor(user.ageGroup);
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-        <div>
-          <h2 className="m-0 text-[#042C53] font-black text-2xl">📊 Activity Reports</h2>
-          <p className="mt-1 text-slate-500 text-sm">Weekly performance and activity summaries</p>
+    <div
+      className="bg-white rounded-2xl border border-slate-100 px-5 py-4 flex items-center gap-4 shadow-sm hover:border-sky-200 hover:shadow-md transition-all cursor-pointer"
+      onClick={() => onViewDetail(user)}
+    >
+      <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-sky-600 to-teal-500 flex items-center justify-center text-white font-black text-base shrink-0">
+        {(user.userName || "?")[0].toUpperCase()}
+      </div>
+
+      <div className="w-36 shrink-0">
+        <div className="font-extrabold text-[#042C53] text-sm truncate">{user.userName}</div>
+        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold border mt-1 ${age.bg} ${age.text} ${age.border}`}>
+          <span className={`w-1.5 h-1.5 rounded-full ${age.dot}`} />
+          Age {user.ageGroup}
+        </span>
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <div className="flex justify-between mb-1.5">
+          <span className="text-xs font-bold text-slate-500">{user.cupsConsumed} / {user.dailyGoalCups} cups</span>
+          <span className={`text-xs font-bold ${lvl.text}`}>{progress}%</span>
         </div>
-        <div className="flex gap-2">
-          {[["7","7 Days"],["14","14 Days"],["30","30 Days"]].map(([v, l]) => (
+        <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+          <div
+            className={`h-full rounded-full bg-gradient-to-r ${lvl.bar} transition-all duration-700`}
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+        <div className={`text-[11px] font-semibold mt-1 ${lvl.text}`}>{lvl.label}</div>
+      </div>
+
+      <div className="shrink-0 w-24 text-right">
+        {user.goalMet ? (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-600 text-[11px] font-bold border border-emerald-100">
+            ✅ Goal met
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-amber-50 text-amber-600 text-[11px] font-bold border border-amber-100">
+            ⏳ Pending
+          </span>
+        )}
+      </div>
+
+      <div className="text-slate-300 text-base shrink-0">›</div>
+    </div>
+  );
+}
+
+// ── Water Panel ────────────────────────────────────────────────────────────────
+function WaterPanel() {
+  const [users,       setUsers]       = useState([]);
+  const [loading,     setLoading]     = useState(true);
+  const [selected,    setSelected]    = useState(null);
+  const [search,      setSearch]      = useState("");
+  const [filter,      setFilter]      = useState("all");
+  const [error,       setError]       = useState(null);
+  const [currentDate, setCurrentDate] = useState(todayStr());
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data } = await api.get("/api/water/admin/overview");
+      setUsers(data.data || []);
+    } catch (e) {
+      setError(e.response?.data?.message || "Failed to load water data");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  // ✅ Auto-refresh when Sri Lanka date changes at midnight
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const newDate = todayStr();
+      if (newDate !== currentDate) {
+        setCurrentDate(newDate);
+        load();
+      }
+    }, 60000);
+    return () => clearInterval(interval);
+  }, [currentDate, load]);
+
+  const filtered = users.filter((u) => {
+    const matchName = (u.userName || "").toLowerCase().includes(search.toLowerCase());
+    if (filter === "met")   return matchName && u.goalMet;
+    if (filter === "unmet") return matchName && !u.goalMet;
+    if (filter === "5-10")  return matchName && u.ageGroup === "5-10";
+    if (filter === "10-15") return matchName && u.ageGroup === "10-15";
+    return matchName;
+  });
+
+  const totalUsers   = users.length;
+  const goalMetCount = users.filter((u) => u.goalMet).length;
+  const avgProgress  = totalUsers > 0
+    ? Math.round(users.reduce((sum, u) => sum + waterPct(u.cupsConsumed, u.dailyGoalCups), 0) / totalUsers)
+    : 0;
+  const group510  = users.filter((u) => u.ageGroup === "5-10").length;
+  const group1015 = users.filter((u) => u.ageGroup === "10-15").length;
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h2 className="m-0 text-[#042C53] font-black text-2xl">💧 Water Intake Management</h2>
+          <p className="mt-1 text-slate-500 text-sm">
+            Monitor all users' daily water tracking ·{" "}
+            <span className="font-bold text-sky-600">{currentDate}</span>
+          </p>
+        </div>
+        <button
+          onClick={load}
+          className="px-5 py-2.5 rounded-2xl border-2 border-sky-200 bg-white text-sky-700 font-extrabold text-sm cursor-pointer hover:bg-sky-50 transition"
+        >🔄 Refresh</button>
+      </div>
+
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+        {[
+          { icon: "👥", label: "Total Users",   value: totalUsers,        bg: "bg-sky-50",     border: "border-sky-100",    text: "text-sky-600" },
+          { icon: "✅", label: "Goal Met Today", value: goalMetCount,      bg: "bg-emerald-50", border: "border-emerald-100", text: "text-emerald-600",
+            sub: `${totalUsers ? Math.round((goalMetCount / totalUsers) * 100) : 0}% of users` },
+          { icon: "📊", label: "Avg Progress",  value: `${avgProgress}%`, bg: "bg-blue-50",    border: "border-blue-100",   text: "text-blue-600" },
+          { icon: "🧒", label: "Age 5–10",       value: group510,          bg: "bg-sky-50",     border: "border-sky-100",    text: "text-sky-600",   sub: "5 cups/day goal" },
+          { icon: "🧑", label: "Age 10–15",      value: group1015,         bg: "bg-violet-50",  border: "border-violet-100", text: "text-violet-600", sub: "7 cups/day goal" },
+        ].map((s) => (
+          <div key={s.label} className={`${s.bg} border ${s.border} rounded-2xl p-5 flex flex-col gap-1`}>
+            <div className="text-2xl">{s.icon}</div>
+            <div className={`text-3xl font-black leading-tight ${s.text}`}>{s.value}</div>
+            <div className="text-xs font-bold text-slate-500 uppercase tracking-wide">{s.label}</div>
+            {s.sub && <div className="text-[11px] text-slate-400 font-semibold">{s.sub}</div>}
+          </div>
+        ))}
+      </div>
+
+      <div className="bg-linear-to-br from-sky-50 to-blue-100 rounded-2xl p-5 border border-sky-200">
+        <h3 className="m-0 mb-3 text-sky-800 font-extrabold text-sm">💡 Water Goal System</h3>
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            ["Age 5–10",  "5 cups/day", "🧒"],
+            ["Age 10–15", "7 cups/day", "🧑"],
+            ["Tracking",  "Active ✅",  "📡"],
+          ].map(([title, val, ic]) => (
+            <div key={title} className="bg-white/70 rounded-xl p-3 text-center">
+              <div className="text-xl mb-1">{ic}</div>
+              <div className="font-extrabold text-sky-800 text-xs">{title}</div>
+              <div className="text-sky-600 font-bold text-xs mt-0.5">{val}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex gap-3 flex-wrap">
+        <input
+          value={search} onChange={(e) => setSearch(e.target.value)}
+          placeholder="🔍 Search by name…"
+          className="flex-1 min-w-48 rounded-xl border-2 border-sky-100 bg-white px-3.5 py-2.5 text-sm text-slate-800 outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100 transition"
+        />
+        <div className="flex gap-1.5 flex-wrap">
+          {[
+            ["all",   "All",      users.length],
+            ["met",   "✅ Met",   goalMetCount],
+            ["unmet", "⏳ Unmet", totalUsers - goalMetCount],
+            ["5-10",  "🧒 5-10",  group510],
+            ["10-15", "🧑 10-15", group1015],
+          ].map(([f, label, count]) => (
             <button
-              key={v} onClick={() => setRange(v)}
-              className={`px-4 py-2 rounded-xl border-2 font-bold text-sm cursor-pointer transition
-                ${range === v
+              key={f} onClick={() => setFilter(f)}
+              className={`px-3 py-2 rounded-xl border-2 font-bold text-xs cursor-pointer transition whitespace-nowrap
+                ${filter === f
                   ? "border-sky-700 bg-sky-700 text-white"
                   : "border-sky-100 bg-white text-sky-700 hover:border-sky-400"}`}
-            >{l}</button>
+            >{label} ({count})</button>
           ))}
         </div>
       </div>
 
       {loading ? (
-        <div className="text-center py-12 text-slate-400">⏳ Loading report…</div>
-      ) : report ? (
-        <>
-          {/* Summary cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-            {[
-              { label: "Total Logs",     value: report.totalLogs,              icon: "📋", color: "text-sky-600",    bg: "bg-sky-50",    border: "border-sky-100" },
-              { label: "Total Points",   value: report.totalPoints,            icon: "⭐", color: "text-amber-500",  bg: "bg-amber-50",  border: "border-amber-100" },
-              { label: "Current Streak", value: `${report.currentStreak} 🔥`,  icon: "🔥", color: "text-orange-500", bg: "bg-orange-50", border: "border-orange-100" },
-              { label: "Best Streak",    value: `${report.longestStreak} days`, icon: "🏆", color: "text-violet-600", bg: "bg-violet-50", border: "border-violet-100" },
-            ].map((s) => (
-              <div key={s.label} className={`${s.bg} border ${s.border} rounded-2xl p-4`}>
-                <div className="text-2xl">{s.icon}</div>
-                <div className={`text-2xl font-black ${s.color} leading-tight mt-1`}>{s.value}</div>
-                <div className="text-xs text-slate-500 font-semibold mt-0.5">{s.label}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Daily bar chart */}
-          {report.daily?.length > 0 && (
-            <div className="bg-white rounded-2xl p-6 border border-sky-100 shadow-sm mb-5">
-              <h3 className="m-0 mb-4 text-[#042C53] font-extrabold text-base">📅 Daily Breakdown</h3>
-              <div className="flex flex-col gap-2.5">
-                {report.daily.slice(-7).map((day) => {
-                  const maxPts = Math.max(...report.daily.map((d) => d.points), 1);
-                  const pct = Math.round((day.points / maxPts) * 100);
-                  return (
-                    <div key={day.date} className="flex items-center gap-3">
-                      <div className="w-24 text-xs text-slate-500 font-semibold shrink-0">{day.date}</div>
-                      <div className="flex-1 bg-sky-50 rounded-lg h-5 overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-sky-600 to-emerald-500 rounded-lg transition-all duration-700"
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                      <div className="w-28 text-xs text-sky-700 font-bold text-right shrink-0">
-                        {day.completions}✓ · {day.points}pts
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Most / Least */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {report.mostCompleted && (
-              <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
-                <div className="text-xs text-emerald-600 font-bold mb-1">🏆 Most Completed</div>
-                <div className="font-extrabold text-[#042C53] text-sm">{report.mostCompleted.activity}</div>
-                <div className="text-emerald-600 font-bold text-sm">{report.mostCompleted.count} times</div>
-              </div>
-            )}
-            {report.leastCompleted && (
-              <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4">
-                <div className="text-xs text-orange-500 font-bold mb-1">📉 Needs Attention</div>
-                <div className="font-extrabold text-[#042C53] text-sm">{report.leastCompleted.activity}</div>
-                <div className="text-orange-500 font-bold text-sm">{report.leastCompleted.count} times</div>
-              </div>
-            )}
-          </div>
-        </>
-      ) : (
-        <div className="text-center py-12 text-slate-400">
-          <div className="text-5xl mb-2">📊</div>
-          <p className="font-semibold">No report data available</p>
+        <div className="text-center py-16 text-slate-400">
+          <div className="text-5xl mb-3 animate-bounce">💧</div>
+          <p className="font-semibold">Loading water data…</p>
         </div>
+      ) : error ? (
+        <div className="text-center py-16">
+          <div className="text-4xl mb-3">⚠️</div>
+          <p className="text-red-500 font-bold text-sm">{error}</p>
+          <p className="text-slate-400 text-xs mt-2">
+            Make sure <code className="bg-slate-100 px-1 rounded">/api/water/admin/overview</code> exists in your backend.
+          </p>
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-16 text-slate-400">
+          <div className="text-5xl mb-3">🔍</div>
+          <p className="font-semibold">No users found</p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2.5">
+          {filtered.map((u) => (
+            <WaterUserRow key={u.userId} user={u} onViewDetail={setSelected} />
+          ))}
+        </div>
+      )}
+
+      {selected && (
+        <WaterUserDetailModal user={selected} onClose={() => setSelected(null)} />
       )}
     </div>
   );
@@ -715,14 +878,17 @@ export default function ActivityAdminDashboard() {
       <Sidebar active={active} setActive={setActive} collapsed={collapsed} setCollapsed={setCollapsed} />
 
       <main className="flex-1 p-7 overflow-y-auto max-h-screen">
-        {/* Top bar */}
         <div className="flex items-center justify-between mb-7 px-5 py-3.5 bg-white rounded-2xl shadow-sm border border-sky-100">
           <div className="font-extrabold text-[#042C53] text-sm">👋 Admin Dashboard · AquaChamp</div>
           <div className="flex gap-2.5 items-center">
+            {/* ✅ Correct Sri Lanka date via Intl */}
+            <span className="px-2.5 py-1 rounded-lg bg-sky-50 text-sky-600 text-[11px] font-bold border border-sky-100">
+              📅 {todayStr()}
+            </span>
             <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-600 text-[11px] font-bold border border-emerald-100">
               🟢 System Active
             </span>
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-sky-700 to-emerald-500 flex items-center justify-center text-white font-black text-base">
+            <div className="w-9 h-9 rounded-xl bg-linear-to-br from-sky-700 to-emerald-500 flex items-center justify-center text-white font-black text-base">
               A
             </div>
           </div>
@@ -730,7 +896,6 @@ export default function ActivityAdminDashboard() {
 
         {active === "activities" && <ActivitiesPanel toast={showToast} />}
         {active === "water"      && <WaterPanel />}
-        {active === "reports"    && <ReportsPanel toast={showToast} />}
       </main>
     </div>
   );
