@@ -10,6 +10,8 @@ import DilsharaAdminLogin from "./pages/dilshara-AdminLogin";
 import VerifyEmail from "./pages/kaveesha-verifyEmail";
 import EmailVerified from "./pages/kaveesha-emailVerified";
 import ResetPassword from "./pages/kaveesha-resetPassword";
+import ActivityAdminDashboard from "./components/amasha-ActivityAdminDashboard";
+import UserActivityView from "./components/amasha-UserActivityView";
 
 // Dashboard pages
 import Sidebar from "./components/dushani-Sidebar.jsx";
@@ -53,8 +55,13 @@ function App() {
         {/* Profile page */}
         <Route path="/profile" element={<KaveeshaUserProfile />} />
 
-        {/* Super Admin Dashboard */}
-        <Route path="/super-admin" element={<DilsharaSuperAdminDashboard />} />
+        {/* super admin dashboard */}
+      <Route path="/super-admin" element={<DilsharaSuperAdminDashboard />} />
+
+       {/* admin login*/}
+       <Route path="/admin-login" element={<DilsharaAdminLogin />} />
+       <Route path="/activity-dashboard" element={<ActivityAdminDashboard />} />
+       <Route path="/my-activities" element={<UserActivityView />} />
 
         {/* Admin Login */}
         <Route path="/admin-login" element={<DilsharaAdminLogin />} />
