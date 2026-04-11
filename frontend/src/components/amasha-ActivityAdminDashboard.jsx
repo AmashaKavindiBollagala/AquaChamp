@@ -28,47 +28,42 @@ const DESC_MAX   = 300;
 const POINTS_MIN = 1;
 const POINTS_MAX = 100;
 
-// Returns true if the string contains at least one real Unicode letter or digit
 const hasAlphanumeric = (str) => /[\p{L}\p{N}]/u.test(str);
 
-// Returns true only if the code point belongs to a Unicode emoji block.
-// Explicitly rejects ASCII (letters, digits, punctuation, whitespace).
 const isEmojiChar = (cp) => {
-  if (cp <= 0x007E) return false; // entire ASCII range — letters, digits, symbols
-  if (cp === 0x200D) return true; // ZWJ
-  if (cp === 0xFE0F) return true; // variation selector-16 (emoji presentation)
-  if (cp >= 0x1F3FB && cp <= 0x1F3FF) return true; // skin tone modifiers
-  if (cp >= 0x1F1E0 && cp <= 0x1F1FF) return true; // regional indicator letters (flags)
+  if (cp <= 0x007E) return false;
+  if (cp === 0x200D) return true;
+  if (cp === 0xFE0F) return true;
+  if (cp >= 0x1F3FB && cp <= 0x1F3FF) return true;
+  if (cp >= 0x1F1E0 && cp <= 0x1F1FF) return true;
   if (cp >= 0x2194 && cp <= 0x2199) return true;
   if (cp >= 0x2300 && cp <= 0x23FF) return true;
   if (cp >= 0x2600 && cp <= 0x26FF) return true;
   if (cp >= 0x2700 && cp <= 0x27BF) return true;
   if (cp >= 0x2B00 && cp <= 0x2BFF) return true;
-  if (cp >= 0xFE00 && cp <= 0xFE0F) return true; // variation selectors
-  if (cp >= 0x1F000 && cp <= 0x1F02F) return true; // Mahjong
-  if (cp >= 0x1F0A0 && cp <= 0x1F0FF) return true; // Playing cards
-  if (cp >= 0x1F100 && cp <= 0x1F1FF) return true; // Enclosed alphanumeric supplement
-  if (cp >= 0x1F200 && cp <= 0x1F2FF) return true; // Enclosed ideographic supplement
-  if (cp >= 0x1F300 && cp <= 0x1F5FF) return true; // Misc symbols & pictographs
-  if (cp >= 0x1F600 && cp <= 0x1F64F) return true; // Emoticons
-  if (cp >= 0x1F680 && cp <= 0x1F6FF) return true; // Transport & map
-  if (cp >= 0x1F700 && cp <= 0x1F77F) return true; // Alchemical
-  if (cp >= 0x1F780 && cp <= 0x1F7FF) return true; // Geometric shapes extended
-  if (cp >= 0x1F800 && cp <= 0x1F8FF) return true; // Supplemental arrows
-  if (cp >= 0x1F900 && cp <= 0x1F9FF) return true; // Supplemental symbols & pictographs
-  if (cp >= 0x1FA00 && cp <= 0x1FA6F) return true; // Chess symbols
-  if (cp >= 0x1FA70 && cp <= 0x1FAFF) return true; // Symbols & pictographs extended-A
-  if (cp >= 0x231A && cp <= 0x231B)   return true; // Watch, hourglass
-  if (cp >= 0x23E9 && cp <= 0x23F3)   return true; // Clock/arrow emoji
+  if (cp >= 0xFE00 && cp <= 0xFE0F) return true;
+  if (cp >= 0x1F000 && cp <= 0x1F02F) return true;
+  if (cp >= 0x1F0A0 && cp <= 0x1F0FF) return true;
+  if (cp >= 0x1F100 && cp <= 0x1F1FF) return true;
+  if (cp >= 0x1F200 && cp <= 0x1F2FF) return true;
+  if (cp >= 0x1F300 && cp <= 0x1F5FF) return true;
+  if (cp >= 0x1F600 && cp <= 0x1F64F) return true;
+  if (cp >= 0x1F680 && cp <= 0x1F6FF) return true;
+  if (cp >= 0x1F700 && cp <= 0x1F77F) return true;
+  if (cp >= 0x1F780 && cp <= 0x1F7FF) return true;
+  if (cp >= 0x1F800 && cp <= 0x1F8FF) return true;
+  if (cp >= 0x1F900 && cp <= 0x1F9FF) return true;
+  if (cp >= 0x1FA00 && cp <= 0x1FA6F) return true;
+  if (cp >= 0x1FA70 && cp <= 0x1FAFF) return true;
+  if (cp >= 0x231A && cp <= 0x231B)   return true;
+  if (cp >= 0x23E9 && cp <= 0x23F3)   return true;
   if (cp >= 0x25AA && cp <= 0x25AB)   return true;
   if (cp >= 0x25FB && cp <= 0x25FE)   return true;
   if (cp >= 0x2614 && cp <= 0x2615)   return true;
-  if (cp >= 0x2648 && cp <= 0x2653)   return true; // Zodiac signs
+  if (cp >= 0x2648 && cp <= 0x2653)   return true;
   return false;
 };
 
-// Returns true if the trimmed string is exactly one emoji grapheme cluster
-// composed entirely of emoji code points.
 const isSingleEmoji = (str) => {
   const trimmed = str.trim();
   if (!trimmed) return false;
@@ -80,7 +75,6 @@ const isSingleEmoji = (str) => {
   return codePoints.length <= 8;
 };
 
-// Extracts the last valid single emoji from raw input; returns fallback if none found.
 const extractEmoji = (raw, fallback = "") => {
   const trimmed = raw.trim();
   if (!trimmed) return fallback;
@@ -94,11 +88,9 @@ const extractEmoji = (raw, fallback = "") => {
   return valid.length > 0 ? valid[valid.length - 1] : fallback;
 };
 
-// Returns an errors object; empty means valid.
 function validateActivityForm(form) {
   const errors = {};
 
-  // ── Icon ────────────────────────────────────────────────────────────────
   const iconTrimmed = (form.icon || "").trim();
   if (!iconTrimmed) {
     errors.icon = "Please choose an icon.";
@@ -106,7 +98,6 @@ function validateActivityForm(form) {
     errors.icon = "Only a single emoji is allowed — no letters, numbers, or symbols.";
   }
 
-  // ── Name ────────────────────────────────────────────────────────────────
   const nameTrimmed = (form.name || "").trim();
   if (!nameTrimmed) {
     errors.name = "Activity name is required.";
@@ -118,13 +109,11 @@ function validateActivityForm(form) {
     errors.name = `Name must not exceed ${NAME_MAX} characters.`;
   }
 
-  // ── Description (optional but bounded) ──────────────────────────────────
   const descTrimmed = (form.description || "").trim();
   if (descTrimmed.length > DESC_MAX) {
     errors.description = `Description must not exceed ${DESC_MAX} characters.`;
   }
 
-  // ── Points ──────────────────────────────────────────────────────────────
   const pts = Number(form.points);
   if (form.points === "" || form.points === null || form.points === undefined) {
     errors.points = "Points are required.";
@@ -155,7 +144,7 @@ const NAV = [
   { id: "water",      icon: "💧", label: "Water Intake" },
 ];
 
-function Sidebar({ active, setActive, collapsed, setCollapsed }) {
+function Sidebar({ active, setActive, collapsed, setCollapsed, onLogout }) {
   return (
     <aside
       className={`relative flex flex-col min-h-screen z-10 shadow-2xl
@@ -202,9 +191,19 @@ function Sidebar({ active, setActive, collapsed, setCollapsed }) {
 
       <button
         onClick={() => setCollapsed((p) => !p)}
-        className="mx-2 mb-4 py-2.5 rounded-xl border border-white/20 bg-white/10 text-white/70 text-sm font-bold cursor-pointer flex items-center justify-center hover:bg-white/20 transition-all"
+        className="mx-2 mb-2 py-2.5 rounded-xl border border-white/20 bg-white/10 text-white/70 text-sm font-bold cursor-pointer flex items-center justify-center hover:bg-white/20 transition-all"
       >
         {collapsed ? "→" : "← Collapse"}
+      </button>
+
+      {/* ── Logout Button ── */}
+      <button
+        onClick={onLogout}
+        className={`mx-2 mb-4 py-2.5 rounded-xl border border-red-400/30 bg-red-500/10 text-red-300 text-sm font-bold cursor-pointer flex items-center justify-center gap-2 hover:bg-red-500/25 hover:text-red-200 transition-all
+          ${collapsed ? "px-0" : "px-3"}`}
+      >
+        <span>🚪</span>
+        {!collapsed && <span>Logout</span>}
       </button>
     </aside>
   );
@@ -247,6 +246,47 @@ function Modal({ title, onClose, children }) {
   );
 }
 
+// ── Logout Confirmation Modal ─────────────────────────────────────────────────
+function LogoutModal({ onConfirm, onCancel }) {
+  return (
+    <div
+      className="fixed inset-0 z-[999] flex items-center justify-center bg-[#042C53]/60 backdrop-blur-sm"
+      onClick={onCancel}
+    >
+      <div
+        className="bg-white rounded-3xl p-8 max-w-sm w-full mx-4 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex justify-center mb-4">
+          <div className="w-20 h-20 rounded-full flex items-center justify-center text-5xl bg-amber-50 border-2 border-amber-300 shadow-lg">
+            👋
+          </div>
+        </div>
+        <h3 className="text-xl font-black text-center text-[#042C53] mb-2">
+          Logout Confirmation
+        </h3>
+        <p className="text-slate-500 text-sm text-center font-medium mb-6">
+          Are you sure you want to logout? You will need to login again to access the admin panel.
+        </p>
+        <div className="flex gap-3">
+          <button
+            onClick={onCancel}
+            className="flex-1 py-3 rounded-2xl border-2 border-sky-100 bg-white text-sky-700 font-extrabold text-sm cursor-pointer hover:bg-sky-50 transition"
+          >
+            ❌ No, Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="flex-1 py-3 rounded-2xl border-none bg-gradient-to-r from-red-500 to-red-600 text-white font-extrabold text-sm cursor-pointer shadow-lg hover:-translate-y-0.5 transition"
+          >
+            ✅ Yes, Logout
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Activity Form ─────────────────────────────────────────────────────────────
 const ICONS = ["🧼", "🪥", "🚿", "🌙", "✂️", "💇", "👕", "🚽", "💊", "🏃", "🥦", "😴"];
 
@@ -260,7 +300,6 @@ function ActivityForm({ initial, onSave, onCancel, loading }) {
   const [errors,  setErrors]  = useState({});
   const [touched, setTouched] = useState({});
 
-  // Generic field change — re-validates only the changed field instantly
   const handleChange = (k) => (e) => {
     const val = e.target.value;
     setForm((p) => ({ ...p, [k]: val }));
@@ -272,7 +311,6 @@ function ActivityForm({ initial, onSave, onCancel, loading }) {
 
   const markTouched = (k) => setTouched((p) => ({ ...p, [k]: true }));
 
-  // Icon pick from preset buttons
   const handleIconPick = (ic) => {
     setForm((p) => ({ ...p, icon: ic }));
     setErrors((prev) => {
@@ -282,7 +320,6 @@ function ActivityForm({ initial, onSave, onCancel, loading }) {
     setTouched((p) => ({ ...p, icon: true }));
   };
 
-  // Icon typed/pasted — strip non-emoji characters before storing
   const handleIconInput = (e) => {
     const extracted = extractEmoji(e.target.value, form.icon);
     handleIconPick(extracted);
@@ -304,7 +341,6 @@ function ActivityForm({ initial, onSave, onCancel, loading }) {
 
   const isFormValid = Object.keys(validateActivityForm(form)).length === 0;
 
-  // Shared input class builder
   const inputCls = (k) =>
     `w-full rounded-xl border-2 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition
     ${touched[k] && errors[k]
@@ -430,7 +466,6 @@ function ActivityForm({ initial, onSave, onCancel, loading }) {
      className={inputCls("points")}
    />
         {touched.points && <FieldError msg={errors.points} />}
-        {/* Visual range hint */}
         <div className="flex justify-between mt-1.5 px-1">
           {[1, 10, 25, 50, 75, 100].map((v) => (
             <button
@@ -990,7 +1025,6 @@ function WaterPanel() {
 
   useEffect(() => { load(); }, [load]);
 
-  // ✅ Auto-refresh when Sri Lanka date changes at midnight
   useEffect(() => {
     const interval = setInterval(() => {
       const newDate = todayStr();
@@ -1130,17 +1164,33 @@ function WaterPanel() {
 
 // ── Main Dashboard ────────────────────────────────────────────────────────────
 export default function ActivityAdminDashboard() {
-  const [active,    setActive]    = useState("activities");
-  const [collapsed, setCollapsed] = useState(false);
-  const [toast,     setToast]     = useState({ msg: "", type: "success" });
+  const [active,      setActive]      = useState("activities");
+  const [collapsed,   setCollapsed]   = useState(false);
+  const [toast,       setToast]       = useState({ msg: "", type: "success" });
+  const [showLogout,  setShowLogout]  = useState(false);
 
   const showToast = (msg, type = "success") => setToast({ msg, type });
+
+  const handleLogout = () => {
+    ["superAdminToken", "aquachamp_token", "adminRoles", "adminUsername"]
+      .forEach((k) => {
+        localStorage.removeItem(k);
+        sessionStorage.removeItem(k);
+      });
+    window.location.href = "/";
+  };
 
   return (
     <div className="flex min-h-screen bg-[#EAF5FF]">
       <Toast msg={toast.msg} type={toast.type} onClose={() => setToast({ msg: "" })} />
 
-      <Sidebar active={active} setActive={setActive} collapsed={collapsed} setCollapsed={setCollapsed} />
+      <Sidebar
+        active={active}
+        setActive={setActive}
+        collapsed={collapsed}
+        setCollapsed={setCollapsed}
+        onLogout={() => setShowLogout(true)}
+      />
 
       <main className="flex-1 p-7 overflow-y-auto max-h-screen">
         <div className="flex items-center justify-between mb-7 px-5 py-3.5 bg-white rounded-2xl shadow-sm border border-sky-100">
@@ -1161,6 +1211,14 @@ export default function ActivityAdminDashboard() {
         {active === "activities" && <ActivitiesPanel toast={showToast} />}
         {active === "water"      && <WaterPanel />}
       </main>
+
+      {/* ── Logout Confirmation Modal ── */}
+      {showLogout && (
+        <LogoutModal
+          onConfirm={handleLogout}
+          onCancel={() => setShowLogout(false)}
+        />
+      )}
     </div>
   );
 }
