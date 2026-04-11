@@ -698,6 +698,26 @@ function TextPanel({ subtopic, onRefresh }) {
   const [isEditing, setIsEditing] = useState(false);
   const [hasSavedContent, setHasSavedContent] = useState(!!subtopic?.content);
 
+  // Helper function to download file with correct name and type
+  const handleFileDownload = async (fileUrl, fileName) => {
+    try {
+      const response = await fetch(fileUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Download error:', error);
+      // Fallback: open in new tab
+      window.open(fileUrl, '_blank');
+    }
+  };
+
   const saveText = async () => {
     if (!subtopic?._id) return;
     try {
@@ -926,8 +946,11 @@ function TextPanel({ subtopic, onRefresh }) {
                       </div>
                     </div>
                     <div className="flex gap-2 ml-3">
-                      <a href={file.url.startsWith("/") ? `${API}${file.url}` : file.url} target="_blank" rel="noopener noreferrer"
-                        className="px-3 py-2 rounded-xl text-sm font-bold" style={{ background: "#7c3aed", color: "#fff", fontSize: 13 }}>👁️ View</a>
+                      <button onClick={() => {
+                        const fileUrl = file.url.startsWith("/") ? `${API}${file.url}` : file.url;
+                        handleFileDownload(fileUrl, file.name);
+                      }}
+                        className="px-3 py-2 rounded-xl text-sm font-bold transition-all hover:scale-105" style={{ background: "#7c3aed", color: "#fff", fontSize: 13 }}>👁️ View</button>
                       <label className="px-3 py-2 rounded-xl text-sm font-bold cursor-pointer transition-all hover:scale-105" style={{ background: "#dbeafe", border: "1.5px solid #93c5fd", color: "#1e40af", fontSize: 13 }}>
                         🔄 Update
                         <input type="file" accept=".pdf,.ppt,.pptx" className="hidden" onChange={async (e) => {
