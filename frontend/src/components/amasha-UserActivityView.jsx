@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const API = "http://localhost:4000";
 
@@ -24,10 +25,25 @@ const todayStr = () => {
 };
 
 // ─────────────────────────────────────────────
-// 🔔 SMART REMINDERS (ADD THIS)
+// 🔒 AUTH GUARD HOOK
 // ─────────────────────────────────────────────
+function useAuthGuard() {
+  const navigate = useNavigate();
 
-const REMINDER_HOUR = 20; // 8 PM
+  useEffect(() => {
+    const token = getToken();
+    if (!token) {
+      navigate("/login", { replace: true });
+    }
+  }, [navigate]);
+
+  return !!getToken();
+}
+
+// ─────────────────────────────────────────────
+// 🔔 SMART REMINDERS
+// ─────────────────────────────────────────────
+const REMINDER_HOUR = 20;
 
 function requestNotificationPermission() {
   if ("Notification" in window && Notification.permission === "default") {
@@ -44,18 +60,12 @@ function sendNotification(title, body) {
 function useSmartReminders(activities, logs) {
   useEffect(() => {
     requestNotificationPermission();
-    console.log("🔔 Reminder running");
 
     const interval = setInterval(() => {
       const now = new Date();
-
-      const loggedIds = new Set(
-        logs.map((l) => l.activityId?._id || l.activityId)
-      );
-
+      const loggedIds = new Set(logs.map((l) => l.activityId?._id || l.activityId));
       const incomplete = activities.filter((a) => !loggedIds.has(a._id));
 
-      // 🕐 1PM reminder
       if (now.getHours() === 13 && now.getMinutes() === 0) {
         if (incomplete.length > 0) {
           sendNotification(
@@ -65,7 +75,6 @@ function useSmartReminders(activities, logs) {
         }
       }
 
-      // 🌙 8PM reminder
       if (now.getHours() === REMINDER_HOUR && now.getMinutes() === 0) {
         if (incomplete.length > 0) {
           sendNotification(
@@ -124,17 +133,17 @@ function Toast({ msg, type, onClose }) {
   }, [msg]);
   if (!msg) return null;
   return (
-    <div className={`fixed top-5 left-1/2 -translate-x-1/2 z-9999 flex items-center gap-2.5 px-6 py-3.5 rounded-2xl font-extrabold text-sm shadow-2xl
+    <div className={`fixed top-5 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-2.5 px-6 py-3.5 rounded-2xl font-extrabold text-sm shadow-2xl
       ${type === "error"
         ? "bg-red-50 border border-red-200 text-red-600"
-        : "bg-linear-to-r from-sky-700 to-emerald-500 text-white"}`}
+        : "bg-gradient-to-r from-sky-700 to-emerald-500 text-white"}`}
     >
       {type === "error" ? "❌" : "🎉"} {msg}
     </div>
   );
 }
 
-// ── Streak Banner (enhanced) ──────────────────────────────────────────────────
+// ── Streak Banner ─────────────────────────────────────────────────────────────
 function StreakBanner({ streak }) {
   if (!streak) return null;
   const { currentStreak, longestStreak } = streak;
@@ -144,25 +153,19 @@ function StreakBanner({ streak }) {
   const progressPct    = nextMilestone
     ? Math.round(((currentStreak - prevMilestone) / (nextMilestone - prevMilestone)) * 100)
     : 100;
-
-  // Which milestone badges has the user earned?
   const earned = MILESTONES.filter((m) => currentStreak >= m);
 
   return (
     <div className="relative overflow-hidden rounded-3xl p-5 mb-5
-      bg-linear-to-br from-[#042C53] via-[#185FA5] to-[#1D9E75]
+      bg-gradient-to-br from-[#042C53] via-[#185FA5] to-[#1D9E75]
       shadow-[0_8px_32px_rgba(4,44,83,0.22)]">
-
-      {/* Decorative circles */}
       <div className="absolute -right-5 -top-5 w-24 h-24 rounded-full bg-white/5" />
       <div className="absolute right-10 -bottom-8 w-20 h-20 rounded-full bg-emerald-300/10" />
 
-      {/* ── Top row: emoji / streak count / best ── */}
       <div className="relative flex items-center gap-4 flex-wrap">
         <div className="w-14 h-14 rounded-2xl bg-white/15 border-2 border-amber-300/30 flex items-center justify-center text-3xl shrink-0">
           {getStreakEmoji(currentStreak)}
         </div>
-
         <div className="flex-1">
           <div className="text-emerald-300 text-[10px] font-extrabold uppercase tracking-[0.2em] mb-1">Your Streak</div>
           <div className="text-white font-black text-2xl leading-tight">
@@ -170,7 +173,6 @@ function StreakBanner({ streak }) {
           </div>
           <div className={`text-xs mt-1 font-semibold ${color}`}>{msg}</div>
         </div>
-
         <div className="text-center shrink-0">
           <div className="text-white/50 text-[10px] font-bold uppercase tracking-wider">Best</div>
           <div className="text-amber-300 font-black text-2xl">{longestStreak}</div>
@@ -178,7 +180,6 @@ function StreakBanner({ streak }) {
         </div>
       </div>
 
-      {/* ── Progress to next milestone ── */}
       {nextMilestone && (
         <div className="relative mt-4">
           <div className="flex justify-between items-center mb-1.5">
@@ -191,7 +192,7 @@ function StreakBanner({ streak }) {
           </div>
           <div className="w-full h-2 rounded-full bg-white/15 overflow-hidden">
             <div
-              className="h-full rounded-full bg-linear-to-r from-amber-300 to-emerald-300 transition-all duration-700"
+              className="h-full rounded-full bg-gradient-to-r from-amber-300 to-emerald-300 transition-all duration-700"
               style={{ width: `${progressPct}%` }}
             />
           </div>
@@ -201,7 +202,6 @@ function StreakBanner({ streak }) {
         </div>
       )}
 
-      {/* ── Earned milestone badges ── */}
       {earned.length > 0 && (
         <div className="relative mt-4 pt-4 border-t border-white/15">
           <div className="text-white/50 text-[10px] font-extrabold uppercase tracking-[0.15em] mb-2">
@@ -209,10 +209,7 @@ function StreakBanner({ streak }) {
           </div>
           <div className="flex gap-2 flex-wrap">
             {earned.map((m) => (
-              <div
-                key={m}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/15 border border-amber-300/30"
-              >
+              <div key={m} className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/15 border border-amber-300/30">
                 <span className="text-base leading-none">{MILESTONE_META[m]?.icon}</span>
                 <span className="text-white text-[10px] font-extrabold">{MILESTONE_META[m]?.label}</span>
               </div>
@@ -221,7 +218,6 @@ function StreakBanner({ streak }) {
         </div>
       )}
 
-      {/* ── No streak yet nudge ── */}
       {currentStreak === 0 && (
         <div className="relative mt-4 pt-4 border-t border-white/15 flex items-center gap-2">
           <span className="text-2xl">💧</span>
@@ -237,7 +233,7 @@ function StreakBanner({ streak }) {
 // ── Points Card ───────────────────────────────────────────────────────────────
 function PointsCard({ points }) {
   return (
-    <div className="bg-linear-to-br from-amber-50 to-yellow-100 border border-amber-200 rounded-2xl p-4 flex items-center gap-3 shadow-sm">
+    <div className="bg-gradient-to-br from-amber-50 to-yellow-100 border border-amber-200 rounded-2xl p-4 flex items-center gap-3 shadow-sm">
       <div className="text-4xl">⭐</div>
       <div>
         <div className="text-amber-800 text-[10px] font-extrabold uppercase tracking-widest">Total Points</div>
@@ -290,7 +286,7 @@ function UserActivityCard({ activity, isLogged, onLog, logging, onEdit, onDelete
     >
       {isLogged && (
         <div className="flex justify-end mb-1">
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-linear-to-r from-emerald-500 to-sky-600 text-white text-[10px] font-extrabold tracking-wide">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-gradient-to-r from-emerald-500 to-sky-600 text-white text-[10px] font-extrabold tracking-wide">
             ✓ DONE
           </span>
         </div>
@@ -299,8 +295,8 @@ function UserActivityCard({ activity, isLogged, onLog, logging, onEdit, onDelete
       <div className="flex items-start gap-3">
         <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shrink-0 border transition-all
           ${isLogged
-            ? "bg-linear-to-br from-emerald-100 to-green-100 border-emerald-200"
-            : "bg-linear-to-br from-sky-50 to-blue-100 border-sky-200"}`}
+            ? "bg-gradient-to-br from-emerald-100 to-green-100 border-emerald-200"
+            : "bg-gradient-to-br from-sky-50 to-blue-100 border-sky-200"}`}
         >{activity.icon}</div>
 
         <div className="flex-1 min-w-0">
@@ -339,10 +335,10 @@ function UserActivityCard({ activity, isLogged, onLog, logging, onEdit, onDelete
         disabled={isLogged || logging === activity._id}
         className={`mt-3 w-full py-2.5 rounded-2xl border-none font-extrabold text-sm cursor-pointer transition-all
           ${isLogged
-            ? "bg-linear-to-r from-emerald-100 to-green-100 text-emerald-700 cursor-default"
+            ? "bg-gradient-to-r from-emerald-100 to-green-100 text-emerald-700 cursor-default"
             : logging === activity._id
               ? "bg-sky-200 text-white cursor-not-allowed"
-              : "bg-linear-to-r from-sky-700 to-emerald-500 text-white shadow-md hover:-translate-y-0.5"}`}
+              : "bg-gradient-to-r from-sky-700 to-emerald-500 text-white shadow-md hover:-translate-y-0.5"}`}
       >
         {isLogged
           ? "✅ Completed Today!"
@@ -367,13 +363,12 @@ function CustomActivityModal({ onSave, onClose, loading, initial }) {
 
   return (
     <div
-      className="fixed inset-0 z-500 bg-[#042C53]/50 backdrop-blur-sm flex items-center justify-center p-4"
+      className="fixed inset-0 z-[500] bg-[#042C53]/50 backdrop-blur-sm flex items-center justify-center p-4"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="bg-white rounded-3xl p-7 w-full max-w-sm shadow-2xl">
-        {/* Header */}
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-11 h-11 rounded-2xl bg-linear-to-br from-sky-700 to-emerald-500 flex items-center justify-center text-xl text-white shadow-md">
+          <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-sky-700 to-emerald-500 flex items-center justify-center text-xl text-white shadow-md">
             ✨
           </div>
           <div>
@@ -386,7 +381,6 @@ function CustomActivityModal({ onSave, onClose, loading, initial }) {
           >✕</button>
         </div>
 
-        {/* Icon Picker */}
         <div className="mb-4">
           <label className="block text-[10px] font-extrabold uppercase tracking-[0.12em] text-sky-700 mb-2">Pick an Icon</label>
           <div className="flex items-center gap-2 mb-3">
@@ -448,7 +442,7 @@ function CustomActivityModal({ onSave, onClose, loading, initial }) {
             type="button"
             onClick={() => form.name.trim() && onSave(form)}
             disabled={loading || !form.name.trim()}
-            className="flex-2 py-2.5 rounded-2xl border-none bg-linear-to-r from-sky-700 to-emerald-500 text-white font-extrabold text-sm cursor-pointer shadow-lg hover:-translate-y-0.5 transition disabled:opacity-60 disabled:cursor-not-allowed"
+            className="flex-1 py-2.5 rounded-2xl border-none bg-gradient-to-r from-sky-700 to-emerald-500 text-white font-extrabold text-sm cursor-pointer shadow-lg hover:-translate-y-0.5 transition disabled:opacity-60 disabled:cursor-not-allowed"
           >{loading ? "Adding…" : "✨ Add Activity"}</button>
         </div>
       </div>
@@ -456,8 +450,41 @@ function CustomActivityModal({ onSave, onClose, loading, initial }) {
   );
 }
 
+// ─────────────────────────────────────────────
+// 🔒 NOT LOGGED IN SCREEN
+// ─────────────────────────────────────────────
+function NotLoggedIn() {
+  const navigate = useNavigate();
+  return (
+    <div className="min-h-screen bg-[#EAF5FF] flex items-center justify-center p-6">
+      <div className="bg-white rounded-3xl p-10 max-w-sm w-full text-center shadow-xl border border-sky-100">
+        <div className="text-6xl mb-4">🔒</div>
+        <h2 className="text-[#042C53] font-black text-2xl mb-2">Login Required</h2>
+        <p className="text-slate-400 text-sm mb-6 leading-relaxed">
+          You need to be logged in to view and track your activities.
+        </p>
+        <button
+          onClick={() => navigate("/login")}
+          className="w-full py-3 rounded-2xl bg-gradient-to-r from-sky-700 to-emerald-500 text-white font-extrabold text-base shadow-lg hover:-translate-y-0.5 transition border-none cursor-pointer"
+        >
+          🚀 Go to Login
+        </button>
+        <button
+          onClick={() => navigate("/")}
+          className="mt-3 w-full py-3 rounded-2xl border-2 border-sky-100 bg-white text-sky-700 font-extrabold text-sm cursor-pointer hover:bg-sky-50 transition"
+        >
+          🏠 Back to Home
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Main User View ────────────────────────────────────────────────────────────
 export default function UserActivityView() {
+  // ── 🔒 AUTH GUARD — must be first ────────────────────────────────────────
+  const isAuthenticated = useAuthGuard();
+
   const [activities,   setActivities]   = useState([]);
   const [logs,         setLogs]         = useState([]);
   const [streak,       setStreak]       = useState(null);
@@ -486,12 +513,22 @@ export default function UserActivityView() {
       if (logRes.status    === "fulfilled") setLogs(logRes.value.data.data || []);
       if (streakRes.status === "fulfilled") setStreak(streakRes.value.data);
       if (ptsRes.status    === "fulfilled") setPoints(ptsRes.value.data.data);
-    } catch { showToast("Failed to load data", "error"); }
-    finally { setLoading(false); }
+    } catch {
+      showToast("Failed to load data", "error");
+    } finally {
+      setLoading(false);
+    }
   }, [today]);
 
-  useEffect(() => { loadAll(); }, [loadAll]);
+  useEffect(() => {
+    // Only fetch data if authenticated
+    if (isAuthenticated) loadAll();
+  }, [loadAll, isAuthenticated]);
+
   useSmartReminders(activities, logs);
+
+  // ── If not authenticated, show the lock screen (useAuthGuard also redirects) ──
+  if (!isAuthenticated) return <NotLoggedIn />;
 
   const loggedIds = new Set(logs.map((l) => l.activityId?._id || l.activityId));
 
@@ -505,7 +542,9 @@ export default function UserActivityView() {
       const msg = e.response?.data?.message;
       if (msg?.includes("already logged")) showToast("Already logged today!", "error");
       else showToast(msg || "Error logging activity", "error");
-    } finally { setLogging(null); }
+    } finally {
+      setLogging(null);
+    }
   };
 
   const handleCreateCustom = async (form) => {
@@ -515,8 +554,11 @@ export default function UserActivityView() {
       showToast("Custom activity added! ✨");
       setShowCustom(false);
       await loadAll();
-    } catch (e) { showToast(e.response?.data?.message || "Error", "error"); }
-    finally { setSavingCustom(false); }
+    } catch (e) {
+      showToast(e.response?.data?.message || "Error", "error");
+    } finally {
+      setSavingCustom(false);
+    }
   };
 
   const handleEditCustom = async (form) => {
@@ -526,8 +568,11 @@ export default function UserActivityView() {
       showToast("Activity updated ✅");
       setEditActivity(null);
       await loadAll();
-    } catch (e) { showToast(e.response?.data?.message || "Error", "error"); }
-    finally { setSavingCustom(false); }
+    } catch (e) {
+      showToast(e.response?.data?.message || "Error", "error");
+    } finally {
+      setSavingCustom(false);
+    }
   };
 
   const handleDeleteCustom = async (activity) => {
@@ -536,7 +581,9 @@ export default function UserActivityView() {
       await api.delete(`/api/activities/${activity._id}`);
       showToast("Activity deleted 🗑️");
       await loadAll();
-    } catch { showToast("Error deleting activity", "error"); }
+    } catch {
+      showToast("Error deleting activity", "error");
+    }
   };
 
   const customActivities = activities.filter((a) => a.source === "custom");
@@ -577,7 +624,7 @@ export default function UserActivityView() {
       )}
 
       {/* Header */}
-      <div className="relative overflow-hidden bg-linear-to-br from-[#042C53] via-[#185FA5] to-[#1D9E75] px-5 pt-5 pb-20">
+      <div className="relative overflow-hidden bg-gradient-to-br from-[#042C53] via-[#185FA5] to-[#1D9E75] px-5 pt-5 pb-20">
         <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-white/5" />
         <div className="absolute -left-5 bottom-0 w-24 h-24 rounded-full bg-emerald-300/10" />
         <div className="relative flex items-center gap-3">
@@ -616,7 +663,7 @@ export default function UserActivityView() {
           <PointsCard points={points} />
         </div>
 
-        {/* Enhanced Streak banner */}
+        {/* Streak banner */}
         <StreakBanner streak={streak?.data} />
 
         {/* Tabs */}
@@ -626,7 +673,7 @@ export default function UserActivityView() {
               key={t.id} onClick={() => setTab(t.id)}
               className={`flex-1 py-2.5 rounded-xl border-none font-extrabold text-xs cursor-pointer transition-all
                 ${tab === t.id
-                  ? "bg-linear-to-r from-sky-700 to-emerald-500 text-white shadow-md"
+                  ? "bg-gradient-to-r from-sky-700 to-emerald-500 text-white shadow-md"
                   : "bg-transparent text-slate-500 hover:text-sky-700"}`}
             >{t.label}</button>
           ))}
@@ -660,7 +707,7 @@ export default function UserActivityView() {
             {tab === "custom" && (
               <button
                 onClick={() => setShowCustom(true)}
-                className="mt-5 px-6 py-2.5 rounded-2xl border-none bg-linear-to-r from-sky-700 to-emerald-500 text-white font-extrabold text-sm cursor-pointer shadow-lg hover:-translate-y-0.5 transition"
+                className="mt-5 px-6 py-2.5 rounded-2xl border-none bg-gradient-to-r from-sky-700 to-emerald-500 text-white font-extrabold text-sm cursor-pointer shadow-lg hover:-translate-y-0.5 transition"
               >✨ Add My First Activity</button>
             )}
           </div>
@@ -681,7 +728,7 @@ export default function UserActivityView() {
         )}
 
         {/* Daily tip */}
-        <div className="bg-linear-to-br from-sky-50 to-blue-100 rounded-2xl p-4 border border-sky-200 flex gap-3 items-start">
+        <div className="bg-gradient-to-br from-sky-50 to-blue-100 rounded-2xl p-4 border border-sky-200 flex gap-3 items-start">
           <div className="text-3xl shrink-0">💡</div>
           <div>
             <div className="font-extrabold text-sky-800 text-sm">Daily Hygiene Tip</div>

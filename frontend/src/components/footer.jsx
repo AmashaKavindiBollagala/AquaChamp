@@ -7,7 +7,7 @@ export default function Footer() {
         @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&display=swap');
       `}</style>
 
-      <footer className="bg-gradient-to-br from-blue-900 via-blue-800 to-cyan-900 text-white mt-20">
+      <footer className="bg-gradient-to-br from-blue-900 to-cyan-800 to-emerald-800 text-white mt-20">
         {/* Wave */}
         <div className="overflow-hidden leading-none">
           <svg viewBox="0 0 1440 60" className="w-full block" fill="white">

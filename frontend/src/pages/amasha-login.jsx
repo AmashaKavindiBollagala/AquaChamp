@@ -513,7 +513,7 @@ export default function UserLogin() {
                         )}
                       </div>
                       <span className="text-[12px] font-semibold text-slate-600">
-                        Remember me for 30 days
+                        Remember me for 7 days
                       </span>
                     </label>
 
