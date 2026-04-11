@@ -271,8 +271,19 @@ const checkAndAwardMilestoneBadges = async (studentProgress) => {
           $inc: { earnedCount: 1 }
         });
         
-        // Create badge notification for animation (ONLY for newly earned badges)
-        await BadgeNotification.createNotification(studentProgress.userId, badge);
+        // Create badge notification ONLY if it doesn't already exist (PREVENT DUPLICATES)
+        const existingNotification = await BadgeNotification.findOne({
+          userId: studentProgress.userId,
+          badgeId: badge._id
+        });
+        
+        if (!existingNotification) {
+          await BadgeNotification.createNotification(studentProgress.userId, badge);
+          console.log(`  🎬 Created notification for "${badge.badgeName}"`);
+        } else {
+          console.log(`  ⏭️  Notification already exists for "${badge.badgeName}" - skipping duplicate`);
+        }
+        
         badgesAwarded++;
         newlyAwardedBadges.push(badge.badgeName);
         
