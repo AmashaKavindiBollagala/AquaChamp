@@ -116,8 +116,6 @@ export default function KaveeshaStudentDashboard() {
         .progress-bar { transition: width 1s cubic-bezier(0.4,0,0.2,1); }
       `}</style>
 
-      <KaveeshaStudentNav user={user} ageGroup={ageGroup} />
-
       <main className="max-w-6xl mx-auto px-4 py-8 pb-16">
         {/* Welcome Hero */}
         <div
