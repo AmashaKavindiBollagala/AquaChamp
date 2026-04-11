@@ -36,10 +36,11 @@ import KaveeshaTopicDetail from "./components/kaveesha-topicDetail";
 import KaveeshaSubtopicLearn from "./components/kaveesha-subtopicLearn";
 import KaveeshaStudentProgress from "./components/kaveesha-studentProgress";
 import KaveeshaProtectedRoute from "./components/kaveesha-protectedRoute";
+import { Bubble } from "@typebot.io/react";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 🔒 TOKEN HELPER — checks all storage + validates JWT is not expired
-// ─────────────────────────────────────────────────────────────────────────────
+// 
+//  TOKEN HELPER — checks all storage + validates JWT is not expired
+// 
 function getValidToken() {
   const token =
     localStorage.getItem("aquachamp_token") ||
@@ -70,9 +71,9 @@ function getValidToken() {
   return token;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 🔒 PRIVATE ROUTE — redirects to /login if no valid token
-// ─────────────────────────────────────────────────────────────────────────────
+// 
+//  PRIVATE ROUTE — redirects to /login if no valid token
+// 
 function PrivateRoute({ children }) {
   const token = getValidToken();
   if (!token) {
@@ -81,7 +82,7 @@ function PrivateRoute({ children }) {
   return children;
 }
 
-// ── Dashboard layout ──────────────────────────────────────────────────────────
+// Dashboard layout 
 function DashboardLayout() {
   const [activePage, setActivePage] = useState("overview");
   const pages = {
@@ -98,7 +99,7 @@ function DashboardLayout() {
   );
 }
 
-// ── Routes where Header & Footer should NOT appear ────────────────────────────
+//  Routes where Header & Footer should NOT appear 
 const NO_SHELL_ROUTES = [
   "/login",
   "/register",
@@ -129,7 +130,7 @@ function AppShell({ children }) {
   );
 }
 
-// ── App ───────────────────────────────────────────────────────────────────────
+// App
 function App() {
   return (
     <BrowserRouter>
@@ -200,8 +201,16 @@ function App() {
 
         </Routes>
       </AppShell>
+      <Bubble
+      typebot="my-typebot-kth7b69"
+      apiHost="https://typebot.io"
+      theme={{ button: { backgroundColor: "#4A8BB2" } }}
+    />
     </BrowserRouter>
+
+    
   );
+  
 }
 
 export default App;
