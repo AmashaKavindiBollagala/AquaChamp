@@ -74,28 +74,14 @@ export const getAllBadges = async (req, res) => {
     const BadgeNotification = (await import('../models/dushani-BadgeNotification.js')).default;
     const User = (await import('../models/dushani-User.js')).default;
     
-    console.log('\n🔄 STARTING FRESH BADGE RECALCULATION...\n');
+    console.log('\n🔄 STARTING BADGE STATUS CHECK...\n');
     
-    // STEP 1: Clear ALL existing badges from all students
+    // DON'T clear badges - just check and award new ones
     const allStudents = await StudentProgress.find();
     console.log(`📊 Found ${allStudents.length} students in database`);
     
-    let clearedCount = 0;
-    for (const student of allStudents) {
-      if (student.badgesEarned.length > 0) {
-        student.badgesEarned = [];
-        await student.save();
-        clearedCount++;
-      }
-    }
-    
-    if (clearedCount > 0) {
-      console.log(`🗑️  Cleared badges from ${clearedCount} students`);
-    }
-    
-    // STEP 2: Reset all badge earnedCount to 0
-    await Badge.updateMany({}, { earnedCount: 0 });
-    console.log(`🔄 Reset all badge earned counts to 0\n`);
+    // DON'T reset earnedCount - keep historical data
+    // Get active badges and check for new awards
     
     // STEP 3: Get active badges and recalculate for each student
     const activeMilestoneBadges = await Badge.find({
@@ -141,8 +127,18 @@ export const getAllBadges = async (req, res) => {
           student.addBadge(badge);
           await Badge.findByIdAndUpdate(badge._id, { $inc: { earnedCount: 1 } });
           
-          // CREATE notification for newly earned badge
-          await BadgeNotification.createNotification(student.userId, badge);
+          // CREATE notification ONLY if it doesn't already exist (PREVENT DUPLICATES)
+          const existingNotification = await BadgeNotification.findOne({
+            userId: student.userId,
+            badgeId: badge._id
+          });
+          
+          if (!existingNotification) {
+            await BadgeNotification.createNotification(student.userId, badge);
+            console.log(`  🎬 Created notification for "${badge.badgeName}"`);
+          } else {
+            console.log(`  ⏭️  Notification already exists for "${badge.badgeName}" - skipping duplicate`);
+          }
           
           badgesAwarded++;
           totalBadgesAwarded++;
@@ -705,8 +701,18 @@ export const recalculateAllBadges = async (req, res) => {
           student.addBadge(badge);
           await Badge.findByIdAndUpdate(badge._id, { $inc: { earnedCount: 1 } });
           
-          // CREATE notification for newly earned badge during recalculation
-          await BadgeNotification.createNotification(student.userId, badge);
+          // CREATE notification ONLY if it doesn't already exist (PREVENT DUPLICATES)
+          const existingNotification = await BadgeNotification.findOne({
+            userId: student.userId,
+            badgeId: badge._id
+          });
+          
+          if (!existingNotification) {
+            await BadgeNotification.createNotification(student.userId, badge);
+            console.log(`  🎬 Created notification for "${badge.badgeName}"`);
+          } else {
+            console.log(`  ⏭️  Notification already exists for "${badge.badgeName}" - skipping duplicate`);
+          }
           
           badgesAwarded++;
           totalBadgesAwarded++;
