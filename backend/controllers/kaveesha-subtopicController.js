@@ -59,7 +59,6 @@ function percentageFromProgress(progress, req) {
   );
 }
 
-// ------------------ SUBTOPIC CRUD ------------------
 
 // Create subtopic
 export const createSubtopic = async (req, res) => {
@@ -201,7 +200,6 @@ export const getLessonsByUserAge = async (req, res) => {
   }
 };
 
-// ------------------ UPDATE CONTENT ------------------
 
 // Update video
 export const updateVideo = async (req, res) => {
@@ -316,7 +314,7 @@ export const uploadContentFile = async (req, res) => {
       subtopic.contentFiles = [];
     }
     
-    // ☁️ Upload file to Cloudinary
+    // Upload file to Cloudinary
     console.log("Starting Cloudinary upload...");
     const result = await new Promise((resolve, reject) => {
       const originalName = req.file.originalname;
@@ -391,7 +389,7 @@ export const deleteContentFile = async (req, res) => {
       return res.status(404).json({ message: "File not found" });
     }
     
-    // ☁️ Delete file from Cloudinary if it's a Cloudinary URL
+    // Delete file from Cloudinary if it's a Cloudinary URL
     if (fileToDelete.url && fileToDelete.url.includes("cloudinary.com")) {
       try {
         const parts = fileToDelete.url.split("/");
@@ -445,7 +443,7 @@ export const updateImages = async (req, res) => {
       return res.status(404).json({ message: "Subtopic not found" });
     }
 
-    // ☁️ Delete old images from cloudinary
+    // Delete old images from cloudinary
     if (subtopic.images && subtopic.images.length > 0) {
       for (const imgPath of subtopic.images) {
         if (imgPath.includes("cloudinary.com")) {
@@ -467,7 +465,7 @@ export const updateImages = async (req, res) => {
 
     let imagePaths = [];
 
-    // ☁️ Images uploaded from device - upload to cloudinary
+    // Images uploaded from device - upload to cloudinary
     if (req.files && req.files.length > 0) {
       const uploadPromises = req.files.map((file) => {
         return new Promise((resolve, reject) => {
@@ -521,7 +519,7 @@ export const deleteImages = async (req, res) => {
     if (!subtopic)
       return res.status(404).json({ message: "Subtopic not found" });
 
-    // ☁️ Delete files from cloudinary
+    // Delete files from cloudinary
     if (subtopic.images && subtopic.images.length > 0) {
       for (const imgPath of subtopic.images) {
         if (imgPath.includes("cloudinary.com")) {
@@ -562,7 +560,7 @@ export const appendSubtopicImage = async (req, res) => {
       return res.status(404).json({ message: "Subtopic not found" });
     }
 
-    // ☁️ upload image to cloudinary
+    // upload image to cloudinary
     const result = await new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
         {
@@ -641,7 +639,7 @@ export const deleteSingleImage = async (req, res) => {
       return res.status(404).json({ message: "Image not found" });
     }
     
-    // ☁️ delete from cloudinary if it's a cloudinary URL
+    // delete from cloudinary if it's a cloudinary URL
     if (imageToDelete.includes("cloudinary.com")) {
       try {
         const parts = imageToDelete.split("/");
@@ -708,7 +706,7 @@ export const updateSingleImage = async (req, res) => {
     
     const oldPath = subtopic.images[idx];
     
-    // ☁️ delete old image from cloudinary if it's a cloudinary URL
+    // delete old image from cloudinary if it's a cloudinary URL
     if (oldPath.includes("cloudinary.com")) {
       try {
         const parts = oldPath.split("/");
@@ -730,7 +728,7 @@ export const updateSingleImage = async (req, res) => {
       }
     }
     
-    // ☁️ upload new image to cloudinary
+    // upload new image to cloudinary
     const result = await new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
         {
@@ -759,7 +757,6 @@ export const updateSingleImage = async (req, res) => {
   }
 };
 
-// ------------------ PROGRESSION & LOCKING ------------------
 
 // Complete subtopic content
 export const completeSubtopicContent = async (req, res) => {
@@ -840,7 +837,6 @@ export const completeSubtopicContent = async (req, res) => {
   }
 };
 
-// ------------------ PROGRESS PERCENTAGES ------------------
 
 // Subtopic % completion
 export const getSubtopicProgress = async (req, res) => {

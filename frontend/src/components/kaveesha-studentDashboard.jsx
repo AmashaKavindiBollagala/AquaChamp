@@ -316,7 +316,7 @@ export default function KaveeshaStudentDashboard() {
   );
 }
 
-/* ─── Topic Card ─── */
+/* Topic Card */
 function TopicCard({ topic, subtopics, progress, index, onClick }) {
   // Debug log to see what subtopics are passed
   console.log(`📋 TopicCard "${topic?.title}":`, { subtopicsCount: subtopics?.length, subtopics });
@@ -500,7 +500,7 @@ function TopicCard({ topic, subtopics, progress, index, onClick }) {
   );
 }
 
-/* ─── Basic Lessons Panel (for 11-15 students) ─── */
+/* Basic Lessons Panel (for 11-15 students) */
 function KaveeshaBasicLessonsPanel({ userId, navigate }) {
   const [topics, setTopics] = useState([]);
   const [progress, setProgress] = useState({});
@@ -519,7 +519,6 @@ function KaveeshaBasicLessonsPanel({ userId, navigate }) {
       localStorage.getItem("aquachamp_token") ||
       sessionStorage.getItem("aquachamp_token");
     
-    // FIX: Query for both "5-10" AND "6-10" since database might have either
     Promise.all([
       axios.get(`${API}/api/topics`),
       axios.get(`${API}/api/subtopics`, { params: { ageGroup: "5-10" } }),

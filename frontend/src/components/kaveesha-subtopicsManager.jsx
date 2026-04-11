@@ -245,7 +245,7 @@ export default function KaveeshaSubtopicsManager({
         </div>
       </div>
 
-      {/* ── TOPIC SELECTOR — LIGHT VERSION ── */}
+      {/* TOPIC SELECTOR — LIGHT VERSION */}
       <div
         className="rounded-3xl overflow-hidden"
         style={{
@@ -377,7 +377,7 @@ export default function KaveeshaSubtopicsManager({
         )}
       </div>
 
-      {/* ── AGE GROUP SELECTOR ── */}
+      {/* AGE GROUP SELECTOR */}
       {activeTopic && (
         <div
           className="rounded-3xl overflow-hidden"

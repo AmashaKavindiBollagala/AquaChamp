@@ -18,7 +18,7 @@ import {
 
 const router = express.Router();
 
-// ------------------ Change Password (Protected Routes) ------------------
+// Change Password (Protected Routes) 
 // All change password routes require authentication
 // Update existing user password
 router.put("/change-password/:id", verifyJWT, securityChangePassword);
@@ -32,7 +32,7 @@ router.post("/change-password/verify-otp", verifyJWT, verifyChangePasswordOTP);
 // Resend OTP for password change
 router.post("/change-password/resend-otp", verifyJWT, resendChangePasswordOTP);
 
-// ------------------ Reset Password (Forgot Password) ------------------
+// Reset Password (Forgot Password)
 // Step 1: Request reset link
 router.post("/forgot-password", requestPasswordReset);
 
@@ -48,12 +48,12 @@ router.post("/forgot-password/request-otp", requestResetPasswordOTP);
 // Step 4: Verify OTP and set new password
 router.post("/forgot-password/verify-otp", verifyResetPasswordOTP);
 
-// ------------------ Email Verification ------------------
+// Email Verification
 router.get("/verify-email/:token", verifyEmail);
 
 router.post("/resend-verification", resendVerificationEmail);
 
-// ------------------ Login (if you have it later) ------------------
+// Login (if you have it later)
 // router.post("/login", loginUser);
 
 export default router;

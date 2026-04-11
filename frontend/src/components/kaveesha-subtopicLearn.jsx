@@ -67,7 +67,7 @@ export default function KaveeshaSubtopicLearn() {
   const effectiveUserId =
     effectiveUserIdRaw != null ? String(effectiveUserIdRaw) : undefined;
   
-  // FIX: Get ageGroup from multiple sources - localStorage (set on login), location.state, or user object
+  // Get ageGroup from multiple sources - localStorage (set on login), location.state, or user object
   const getStoredAgeGroup = () => {
     // From localStorage (set by login/student dashboard)
     const stored = localStorage.getItem("aquachamp_ageGroup");
@@ -224,7 +224,7 @@ export default function KaveeshaSubtopicLearn() {
     if (!topicId || !effectiveUserId || !resolvedAgeGroup) return;
     try {
       // 1. Get all subtopics for this topic (try both age groups)
-      // FIX: Query for both "5-10" AND "6-10" since database might have either
+      // Query for both "5-10" AND "6-10" since database might have either
       const [res5to10, res6to10] = await Promise.all([
         axios.get(`${API}/api/subtopics`, {
           params: { topicId, ageGroup: "5-10" },
@@ -705,7 +705,7 @@ export default function KaveeshaSubtopicLearn() {
   );
 }
 
-/* ─── VIDEO SECTION ─── */
+/* VIDEO SECTION */
 function KaveeshaVideoSection({ subtopic, done, onComplete, accentFrom, accentTo, isYoung }) {
   const [watched, setWatched] = useState(false);
   const iframeRef = useRef(null);
@@ -826,7 +826,7 @@ function KaveeshaVideoSection({ subtopic, done, onComplete, accentFrom, accentTo
   );
 }
 
-/* ─── TEXT SECTION ─── */
+/* TEXT SECTION */
 function KaveeshaTextSection({ subtopic, done, onComplete, accentFrom, accentTo, isYoung }) {
   const [speaking, setSpeaking] = useState(false);
   const [speechProgress, setSpeechProgress] = useState(0);
@@ -1038,7 +1038,7 @@ function KaveeshaTextSection({ subtopic, done, onComplete, accentFrom, accentTo,
   );
 }
 
-/* ─── IMAGES SECTION ─── */
+/* IMAGES SECTION */
 function KaveeshaImagesSection({ subtopic, done, onComplete, accentFrom, accentTo, isYoung }) {
   const [currentImg, setCurrentImg] = useState(0);
   const [viewedAll, setViewedAll] = useState(false);
@@ -1153,7 +1153,7 @@ function KaveeshaImagesSection({ subtopic, done, onComplete, accentFrom, accentT
   );
 }
 
-/* ─── QUIZ SECTION ─── */
+/* QUIZ SECTION */
 function KaveeshaQuizSection({
   subtopic, quiz, userId, ageGroup, done,
   onComplete, onNavigateBack, accentFrom, accentTo, isYoung,

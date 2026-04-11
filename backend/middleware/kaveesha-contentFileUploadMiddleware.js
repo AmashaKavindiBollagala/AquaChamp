@@ -1,7 +1,7 @@
 import multer from "multer";
 import path from "path";
 
-// ☁️ memory storage (required for Cloudinary uploads)
+// memory storage (required for Cloudinary uploads)
 const storage = multer.memoryStorage();
 
 // allow PDF and presentation files

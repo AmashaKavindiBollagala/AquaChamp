@@ -119,12 +119,9 @@ export const verifyEmail = async (req, res) => {
   }
 };
 
-/**
- * ===============================
- * RESEND EMAIL VERIFICATION
- * POST /api/security/resend-verification
- * ===============================
- */
+ //RESEND EMAIL VERIFICATION
+ //POST /api/security/resend-verification
+
 export const resendVerificationEmail = async (req, res) => {
   try {
     const { email } = req.body;
@@ -499,12 +496,10 @@ export const verifyChangePasswordOTP = async (req, res) => {
   }
 };
 
-/**
- * ===============================
- * RESEND OTP for changing password
- * POST /api/security/change-password/resend-otp
- * ===============================
- */
+
+ //RESEND OTP for changing password
+ //POST /api/security/change-password/resend-otp
+ 
 export const resendChangePasswordOTP = async (req, res) => {
   try {
     console.log("\n🔄 Resend Change Password OTP");
@@ -746,12 +741,10 @@ export const verifyPasswordResetToken = async (req, res) => {
   }
 };
 
-/**
- * ===============================
- * STEP 3: Reset password with token
- * POST /api/security/forgot-password/reset
- * ===============================
- */
+
+ //STEP 3: Reset password with token
+ //POST /api/security/forgot-password/reset
+ 
 export const resetPasswordWithToken = async (req, res) => {
   try {
     console.log("\n🔄 Reset Password with Token");

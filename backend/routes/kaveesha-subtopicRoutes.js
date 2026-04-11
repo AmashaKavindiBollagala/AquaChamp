@@ -36,7 +36,7 @@ const router = express.Router();
 // get lessons for user by age
 router.get("/user/:age", getLessonsByUserAge);
 
-// ---------- VIDEO ----------
+// VIDEO
 router.put("/video/:id",
   verifyJWT,
   verifyRoles("Lessons_ADMIN", "SUPER_ADMIN"),
@@ -50,7 +50,7 @@ router.delete("/video/:id",
   deleteVideo
 );
 
-// ---------- TEXT ----------
+// TEXT
 router.put("/text/:id",
   verifyJWT,
   verifyRoles("Lessons_ADMIN", "SUPER_ADMIN"),
@@ -63,7 +63,7 @@ router.delete("/text/:id",
   deleteText
 );
 
-// ---------- CONTENT FILE UPLOAD (PDF, Presentations) ----------
+// CONTENT FILE UPLOAD (PDF, Presentations) 
 router.put("/content-file/:id",
   verifyJWT,
   verifyRoles("Lessons_ADMIN", "SUPER_ADMIN"),
@@ -77,7 +77,7 @@ router.delete("/content-file/:id",
   deleteContentFile
 );
 
-// ---------- IMAGES UPLOAD ----------
+// IMAGES UPLOAD
 router.put("/images/:id/append",
   verifyJWT,
   verifyRoles("Lessons_ADMIN", "SUPER_ADMIN"),
@@ -118,12 +118,12 @@ router.put("/image/:id",
   updateSingleImage
 );
 
-// ---------- PROGRESS ----------
+// PROGRESS
 router.post("/complete/:id", completeSubtopicContent);
 router.get("/progress/subtopic", getSubtopicProgress);
 router.post("/progress/topic", getTopicProgress);
 
-// ---------- GENERAL ----------
+// GENERAL
 router.get("/", getSubtopics);
 router.get("/:id", getSubtopicById);
 
