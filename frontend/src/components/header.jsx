@@ -111,22 +111,39 @@ export default function Header() {
 
             {/* ── Desktop Nav ── */}
             <nav className="hidden xl:flex items-center gap-0.5">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.label}
-                  to={link.path}
-                  className={`flex items-center gap-1 px-3 py-2 rounded-xl text-[12.5px] font-bold
-                              transition-all duration-200 whitespace-nowrap
-                              ${isActive(link.path)
-                                ? "bg-blue-500 text-white shadow-md"
-                                : "text-blue-700 hover:bg-blue-50 hover:text-blue-500"
-                              }`}
-                  style={{ fontFamily: "'Nunito', sans-serif" }}
-                >
-                  <span className="text-sm">{link.icon}</span>
-                  {link.label}
-                </Link>
-              ))}
+              {navLinks.map((link) => {
+  const protectedRoutes = [
+    "/my-activities",
+    "/water",
+    "/leaderboard",
+    "/student/dashboard",
+    "/student/progress",
+    "/profile",
+  ];
+
+  const isProtected = protectedRoutes.includes(link.path);
+
+  return (
+    <Link
+      key={link.label}
+      to={isProtected && !isLoggedIn ? "/login" : link.path}
+      onClick={(e) => {
+        if (isProtected && !isLoggedIn) {
+          e.preventDefault();
+          navigate("/login");
+        }
+        setMenuOpen(false);
+      }}
+      className={`flex items-center gap-1 px-3 py-2 rounded-xl text-[12.5px] font-bold
+        ${isActive(link.path)
+          ? "bg-blue-500 text-white"
+          : "text-blue-700 hover:bg-blue-50"}`}
+    >
+      <span>{link.icon}</span>
+      {link.label}
+    </Link>
+  );
+})}
             </nav>
 
             {/* ── Login / Logout Button ── */}
