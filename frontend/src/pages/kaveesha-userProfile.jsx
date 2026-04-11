@@ -687,44 +687,6 @@ export default function KaveeshaUserProfile() {
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-      {/* ── NAV BAR ── */}
-      <nav style={{
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "10px 32px",
-        background: "linear-gradient(90deg,#042C53,#185FA5,#1496C8,#1D9E75)",
-        boxShadow: "0 4px 24px rgba(24,95,165,0.35)", flexShrink: 0,
-        position: "relative", overflow: "hidden"
-      }}>
-        <Wave color="rgba(255,255,255,0.1)" />
-        <div style={{ position: "absolute", right: "35%", top: "50%", transform: "translateY(-50%)", opacity: 0.2, animation: "swimLeft 10s linear infinite", pointerEvents: "none" }}>
-          <Fish size={22} color="#fff" flip />
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, zIndex: 1 }}>
-          <div style={{
-            width: 42, height: 42, borderRadius: 14, display: "flex", alignItems: "center",
-            justifyContent: "center", background: "rgba(255,255,255,0.25)",
-            border: "2px solid rgba(255,255,255,0.5)", fontSize: 22
-          }}>🌊</div>
-          <div>
-            <span style={{ fontWeight: 900, fontSize: 20, color: "#fff", letterSpacing: -0.5, display: "block", lineHeight: 1 }}>AquaChamp</span>
-            <span style={{ fontSize: 9, fontWeight: 800, color: "rgba(255,255,255,0.85)", letterSpacing: 1.2 }}>CLEAN WATER HEROES</span>
-          </div>
-          <span style={{ padding: "3px 12px", borderRadius: 20, background: "rgba(239,159,39,0.95)", color: "#fff", fontSize: 10, fontWeight: 900, border: "1.5px solid rgba(255,255,255,0.4)" }}>
-            ⭐ Kids Edition
-          </span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, zIndex: 1 }}>
-          <span style={{ fontWeight: 900, color: "#fff", fontSize: 14 }}>Hi, {user?.firstName}! 👋</span>
-          <div style={{
-            width: 38, height: 38, borderRadius: "50%",
-            background: "linear-gradient(135deg,#4FC3F7,#1D9E75)",
-            border: "2.5px solid rgba(255,255,255,0.6)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontWeight: 900, color: "#fff", fontSize: 16
-          }}>{user?.firstName?.[0]}</div>
-        </div>
-      </nav>
-
       {/* ── HERO HEADER BAND ── */}
       <div style={{
         background: "linear-gradient(135deg,rgba(255,255,255,0.7),rgba(255,255,255,0.4))",
@@ -948,23 +910,6 @@ export default function KaveeshaUserProfile() {
         </div>
 
       </div>
-
-      {/* ── FOOTER ── */}
-      <footer style={{
-        background: "linear-gradient(90deg,#042C53,#185FA5,#1D9E75)",
-        padding: "12px 32px",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        gap: 12, overflow: "hidden", position: "relative"
-      }}>
-        <Wave color="rgba(255,255,255,0.08)" />
-        <span style={{ fontSize: 18, zIndex: 1 }}>🐠</span>
-        <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: "rgba(255,255,255,0.9)", zIndex: 1 }}>
-          💧 Keep saving water, keep winning, AquaChamp! 🌊
-        </p>
-        <WaterDrop size={14} color="rgba(255,255,255,0.5)" style={{ zIndex: 1 }} />
-        <StarBurst size={14} color="#EF9F27" style={{ zIndex: 1 }} />
-        <span style={{ fontSize: 18, zIndex: 1 }}>🐟</span>
-      </footer>
 
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap');
