@@ -4,6 +4,7 @@ import KaveeshaLessonsProgress from "../models/kaveesha-lessonsProgressModel.js"
 import mongoose from "mongoose";
 import fs from "fs";
 import path from "path";
+import cloudinary from "../config/cloudinary.js";
 
 function diskPathForSubtopicImage(imagePath) {
   if (!imagePath || !imagePath.startsWith("/uploads/images/")) return null;
@@ -290,9 +291,17 @@ export const deleteText = async (req, res) => {
   }
 };
 
-// Upload content file (PDF, Presentation)
+// Upload content file (PDF, Presentation) - CLOUDINARY VERSION
 export const uploadContentFile = async (req, res) => {
   try {
+    console.log("Upload request received:", {
+      fileId: req.params.id,
+      hasFile: !!req.file,
+      fileName: req.file?.originalname,
+      fileSize: req.file?.size,
+      fileType: req.body.fileType
+    });
+    
     if (!req.file) {
       return res.status(400).json({ message: "No file uploaded" });
     }
@@ -307,11 +316,35 @@ export const uploadContentFile = async (req, res) => {
       subtopic.contentFiles = [];
     }
     
-    // Add new file to the array
+    // ☁️ Upload file to Cloudinary
+    console.log("Starting Cloudinary upload...");
+    const result = await new Promise((resolve, reject) => {
+      const originalName = req.file.originalname;
+      
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          folder: "subtopics/files",
+          resource_type: "raw",
+          public_id: `file_${Date.now()}_${originalName.split('.')[0].replace(/[^a-zA-Z0-9]/g, '_')}`,
+        },
+        (error, result) => {
+          if (error) {
+            console.error("Cloudinary upload error:", error);
+            reject(error);
+          } else {
+            console.log("Cloudinary upload success:", result.secure_url);
+            resolve(result);
+          }
+        }
+      );
+      uploadStream.end(req.file.buffer);
+    });
+    
+    // Add new file to the array with Cloudinary URL
     const fileType = req.body.fileType || "pdf";
     subtopic.contentFiles.push({
       name: req.file.originalname,
-      url: `/uploads/content/${req.file.filename}`,
+      url: result.secure_url,
       type: fileType,
       size: req.file.size,
       uploadedAt: new Date()
@@ -321,6 +354,7 @@ export const uploadContentFile = async (req, res) => {
     subtopic.contentType = fileType;
     
     await subtopic.save();
+    console.log("Subtopic saved successfully");
     
     res.json({
       message: "File uploaded successfully",
@@ -328,11 +362,16 @@ export const uploadContentFile = async (req, res) => {
       contentFiles: subtopic.contentFiles
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Upload error:", error);
+    console.error("Error stack:", error.stack);
+    res.status(500).json({ 
+      message: error.message || "Failed to upload file",
+      error: error.toString()
+    });
   }
 };
 
-// Delete individual content file
+// Delete individual content file - CLOUDINARY VERSION
 export const deleteContentFile = async (req, res) => {
   try {
     const { fileId } = req.body;
@@ -352,17 +391,29 @@ export const deleteContentFile = async (req, res) => {
       return res.status(404).json({ message: "File not found" });
     }
     
-    // Delete file from filesystem
-    const fs = await import('fs');
-    const path = await import('path');
-    const filePath = path.join(process.cwd(), fileToDelete.url);
-    
-    try {
-      if (fs.default.existsSync(filePath)) {
-        fs.default.unlinkSync(filePath);
+    // ☁️ Delete file from Cloudinary if it's a Cloudinary URL
+    if (fileToDelete.url && fileToDelete.url.includes("cloudinary.com")) {
+      try {
+        const parts = fileToDelete.url.split("/");
+        const file = parts[parts.length - 1];
+        const publicId = `subtopics/files/${file.split(".")[0]}`;
+        await cloudinary.uploader.destroy(publicId, { resource_type: "raw" });
+      } catch (err) {
+        console.log("Cloudinary delete error:", err.message);
       }
-    } catch (err) {
-      console.error("Error deleting file from filesystem:", err);
+    } else {
+      // Fallback for old local files
+      const fs = await import('fs');
+      const path = await import('path');
+      const filePath = path.join(process.cwd(), fileToDelete.url);
+      
+      try {
+        if (fs.default.existsSync(filePath)) {
+          fs.default.unlinkSync(filePath);
+        }
+      } catch (err) {
+        console.error("Error deleting file from filesystem:", err);
+      }
     }
     
     // Remove file from array
@@ -385,7 +436,7 @@ export const deleteContentFile = async (req, res) => {
   }
 };
 
-// Update images
+// Update images - CLOUDINARY VERSION
 export const updateImages = async (req, res) => {
   try {
     const subtopic = await Subtopic.findById(req.params.id);
@@ -394,24 +445,47 @@ export const updateImages = async (req, res) => {
       return res.status(404).json({ message: "Subtopic not found" });
     }
 
-    // Delete old images from uploads folder
+    // ☁️ Delete old images from cloudinary
     if (subtopic.images && subtopic.images.length > 0) {
-      subtopic.images.forEach((imgPath) => {
-        if (imgPath.startsWith("/uploads/images/")) {
+      for (const imgPath of subtopic.images) {
+        if (imgPath.includes("cloudinary.com")) {
+          try {
+            const parts = imgPath.split("/");
+            const file = parts[parts.length - 1];
+            const publicId = `subtopics/${file.split(".")[0]}`;
+            await cloudinary.uploader.destroy(publicId);
+          } catch (err) {
+            console.log("Cloudinary delete error:", err.message);
+          }
+        } else if (imgPath.startsWith("/uploads/images/")) {
+          // fallback for old local files
           const filePath = path.join("uploads/images", path.basename(imgPath));
           if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
         }
-      });
+      }
     }
 
     let imagePaths = [];
 
-    // Images uploaded from device
+    // ☁️ Images uploaded from device - upload to cloudinary
     if (req.files && req.files.length > 0) {
-      const uploadedImages = req.files.map(
-        (file) => `/uploads/images/${file.filename}`,
-      );
-      imagePaths = [...imagePaths, ...uploadedImages];
+      const uploadPromises = req.files.map((file) => {
+        return new Promise((resolve, reject) => {
+          const uploadStream = cloudinary.uploader.upload_stream(
+            {
+              folder: "subtopics",
+              resource_type: "image",
+            },
+            (error, result) => {
+              if (error) reject(error);
+              else resolve(result.secure_url);
+            }
+          );
+          uploadStream.end(file.buffer);
+        });
+      });
+      const uploadedUrls = await Promise.all(uploadPromises);
+      imagePaths = [...imagePaths, ...uploadedUrls];
     }
 
     // Images pasted as URLs
@@ -440,21 +514,31 @@ export const updateImages = async (req, res) => {
   }
 };
 
-// Delete images
+// Delete images - CLOUDINARY VERSION
 export const deleteImages = async (req, res) => {
   try {
     const subtopic = await Subtopic.findById(req.params.id);
     if (!subtopic)
       return res.status(404).json({ message: "Subtopic not found" });
 
-    // Delete files from disk
+    // ☁️ Delete files from cloudinary
     if (subtopic.images && subtopic.images.length > 0) {
-      subtopic.images.forEach((imgPath) => {
-        if (imgPath.startsWith("/uploads/images/")) {
+      for (const imgPath of subtopic.images) {
+        if (imgPath.includes("cloudinary.com")) {
+          try {
+            const parts = imgPath.split("/");
+            const file = parts[parts.length - 1];
+            const publicId = `subtopics/${file.split(".")[0]}`;
+            await cloudinary.uploader.destroy(publicId);
+          } catch (err) {
+            console.log("Cloudinary delete error:", err.message);
+          }
+        } else if (imgPath.startsWith("/uploads/images/")) {
+          // fallback for old local files
           const filePath = path.join("uploads/images", path.basename(imgPath));
           if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
         }
-      });
+      }
     }
 
     subtopic.images = [];
@@ -466,7 +550,7 @@ export const deleteImages = async (req, res) => {
   }
 };
 
-// Append one uploaded image (does not remove existing)
+// Append one uploaded image (does not remove existing) - CLOUDINARY VERSION
 export const appendSubtopicImage = async (req, res) => {
   try {
     if (!req.file) {
@@ -478,8 +562,23 @@ export const appendSubtopicImage = async (req, res) => {
       return res.status(404).json({ message: "Subtopic not found" });
     }
 
+    // ☁️ upload image to cloudinary
+    const result = await new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          folder: "subtopics",
+          resource_type: "image",
+        },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      );
+      uploadStream.end(req.file.buffer);
+    });
+
     if (!subtopic.images) subtopic.images = [];
-    subtopic.images.push(`/uploads/images/${req.file.filename}`);
+    subtopic.images.push(result.secure_url);
     await subtopic.save();
 
     res.json({
@@ -522,7 +621,7 @@ export const appendSubtopicImageUrl = async (req, res) => {
   }
 };
 
-// Delete individual image
+// Delete individual image - CLOUDINARY VERSION
 export const deleteSingleImage = async (req, res) => {
   try {
     const { imagePath } = req.body;
@@ -542,12 +641,25 @@ export const deleteSingleImage = async (req, res) => {
       return res.status(404).json({ message: "Image not found" });
     }
     
-    const filePath = diskPathForSubtopicImage(imageToDelete);
-    if (filePath) {
+    // ☁️ delete from cloudinary if it's a cloudinary URL
+    if (imageToDelete.includes("cloudinary.com")) {
       try {
-        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        const parts = imageToDelete.split("/");
+        const file = parts[parts.length - 1];
+        const publicId = `subtopics/${file.split(".")[0]}`;
+        await cloudinary.uploader.destroy(publicId);
       } catch (err) {
-        console.error("Error deleting image from filesystem:", err);
+        console.log("Cloudinary delete error:", err.message);
+      }
+    } else {
+      // fallback for old local files
+      const filePath = diskPathForSubtopicImage(imageToDelete);
+      if (filePath) {
+        try {
+          if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        } catch (err) {
+          console.error("Error deleting image from filesystem:", err);
+        }
       }
     }
     
@@ -595,16 +707,45 @@ export const updateSingleImage = async (req, res) => {
     }
     
     const oldPath = subtopic.images[idx];
-    const oldFilePath = diskPathForSubtopicImage(oldPath);
-    if (oldFilePath) {
+    
+    // ☁️ delete old image from cloudinary if it's a cloudinary URL
+    if (oldPath.includes("cloudinary.com")) {
       try {
-        if (fs.existsSync(oldFilePath)) fs.unlinkSync(oldFilePath);
+        const parts = oldPath.split("/");
+        const file = parts[parts.length - 1];
+        const publicId = `subtopics/${file.split(".")[0]}`;
+        await cloudinary.uploader.destroy(publicId);
       } catch (err) {
-        console.error("Error deleting old image:", err);
+        console.log("Cloudinary delete error:", err.message);
+      }
+    } else {
+      // fallback for old local files
+      const oldFilePath = diskPathForSubtopicImage(oldPath);
+      if (oldFilePath) {
+        try {
+          if (fs.existsSync(oldFilePath)) fs.unlinkSync(oldFilePath);
+        } catch (err) {
+          console.error("Error deleting old image:", err);
+        }
       }
     }
     
-    subtopic.images[idx] = `/uploads/images/${req.file.filename}`;
+    // ☁️ upload new image to cloudinary
+    const result = await new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          folder: "subtopics",
+          resource_type: "image",
+        },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      );
+      uploadStream.end(req.file.buffer);
+    });
+    
+    subtopic.images[idx] = result.secure_url;
     
     await subtopic.save();
     

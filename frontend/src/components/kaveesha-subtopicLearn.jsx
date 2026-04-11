@@ -679,6 +679,26 @@ function KaveeshaTextSection({ subtopic, done, onComplete, accentFrom, accentTo,
   const [speechProgress, setSpeechProgress] = useState(0);
   const utteranceRef = useRef(null);
 
+  // Helper function to download file with correct name and type
+  const handleDownload = async (fileUrl, fileName) => {
+    try {
+      const response = await fetch(fileUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Download error:', error);
+      // Fallback: open in new tab
+      window.open(fileUrl, '_blank');
+    }
+  };
+
   const handleTextToSpeech = () => {
     if (!hasTextBody) return;
     if (speaking) {
@@ -774,13 +794,21 @@ function KaveeshaTextSection({ subtopic, done, onComplete, accentFrom, accentTo,
           {speaking ? "Stop Reading" : "Read to Me!"}
         </button>
         )}
-        <button
-          onClick={handleDownloadPDF}
-          className="flex items-center gap-2 px-5 py-3 rounded-2xl font-extrabold text-gray-700 bg-gray-100 hover:bg-gray-200 shadow-md transition-all active:scale-95"
-        >
-          <span className="text-xl">📄</span>
-          Download PDF
-        </button>
+        {hasFiles && (() => {
+          const pdfFile = (subtopic.contentFiles || []).find(f => f.type === "pdf" || f.name?.toLowerCase().endsWith(".pdf"));
+          if (!pdfFile) return null;
+          const pdfUrl = pdfFile.url?.startsWith("/") ? `${API}${pdfFile.url}` : pdfFile.url;
+          return (
+            <button
+              onClick={() => handleDownload(pdfUrl, pdfFile.name || "document.pdf")}
+              className="flex items-center gap-2 px-5 py-3 rounded-2xl font-extrabold text-white shadow-md transition-all hover:shadow-lg active:scale-95"
+              style={{ background: "linear-gradient(135deg, #ef4444, #dc2626)" }}
+            >
+              <span className="text-xl">📄</span>
+              Download PDF
+            </button>
+          );
+        })()}
       </div>
 
       {/* Speech progress */}
@@ -818,21 +846,25 @@ function KaveeshaTextSection({ subtopic, done, onComplete, accentFrom, accentTo,
             <span className="text-2xl">📎</span> Your teacher added files
           </p>
           <ul className="space-y-2">
-            {(subtopic.contentFiles || []).map((f) => (
-              <li key={f._id || f.url}>
-                <a
-                  href={f.url?.startsWith("/") ? `${API}${f.url}` : f.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 font-bold text-teal-800 underline decoration-2 hover:text-teal-950"
-                >
-                  📄 {f.name || "Download file"}
-                </a>
-              </li>
-            ))}
+            {(subtopic.contentFiles || []).map((f) => {
+              const fileUrl = f.url?.startsWith("/") ? `${API}${f.url}` : f.url;
+              const isPdf = f.type === "pdf" || f.name?.toLowerCase().endsWith(".pdf");
+              
+              return (
+                <li key={f._id || f.url}>
+                  <button
+                    onClick={() => handleDownload(fileUrl, f.name || "document.pdf")}
+                    className="inline-flex items-center gap-2 font-bold text-teal-800 hover:text-teal-950 transition-colors underline decoration-2"
+                  >
+                    <span className="text-xl">{isPdf ? "📄" : "📊"}</span>
+                    {f.name || "Download file"}
+                  </button>
+                </li>
+              );
+            })}
           </ul>
           <p className="text-sm text-amber-900 font-semibold mt-3">
-            Open each file, then tap complete when you&apos;re done! ✨
+            Click each file to download, then tap complete when you&apos;re done! ✨
           </p>
         </div>
       )}
