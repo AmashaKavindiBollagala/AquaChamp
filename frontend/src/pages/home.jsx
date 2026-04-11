@@ -81,20 +81,20 @@ const gallery = [
     label: "🌊 Water Heroes", span: "col-span-2 row-span-2", h: "h-72 lg:h-auto",
   },
   {
-    src: "https://images.unsplash.com/photo-1604480133435-25b86862d276?w=300&h=200&fit=crop",
-    label: "🧼 Hygiene", span: "", h: "h-36",
+    src: "./hygine.jpeg",
+    label: "🧼 Hygiene", span: "", h: "h-50",
   },
   {
-    src: "https://images.unsplash.com/photo-1559028012-481c04fa702d?w=300&h=200&fit=crop",
-    label: "💧 Water", span: "", h: "h-36",
+    src: "./games.jpeg",
+    label: "🎮 Games", span: "", h: "h-50",
   },
   {
     src: "https://images.unsplash.com/photo-1524503033411-c9566986fc8f?w=300&h=200&fit=crop",
-    label: "📖 Learning", span: "", h: "h-36",
+    label: "📖 Learning", span: "", h: "h-50",
   },
   {
-    src: "https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=300&h=200&fit=crop&crop=face",
-    label: "😊 Happy Kids", span: "", h: "h-36",
+    src: "./happychild.jpg",
+    label: "😊 Happy Kids", span: "", h: "h-50",
   },
 ];
 
@@ -103,7 +103,7 @@ const gallery = [
 ═══════════════════════════════════════════════════════════ */
 export default function HomePage() {
   return (
-    <div className="min-h-screen overflow-x-hidden" style={{ fontFamily: "'Nunito', sans-serif" }}>
+    <div className="min-h-screen overflow-x-hidden " style={{ fontFamily: "'Nunito', sans-serif" }}>
 
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&display=swap');
@@ -120,7 +120,7 @@ export default function HomePage() {
 
       {/* ════════════ HERO ════════════ */}
       <section className="relative min-h-[92vh] flex items-center justify-center
-                          bg-gradient-to-br from-blue-600 via-blue-500 to-cyan-400
+                          bg-gradient-to-br from-blue-900 via-cyan-800 to-emerald-500
                           overflow-hidden pb-16">
 
         {/* Bubbles */}
@@ -152,7 +152,7 @@ export default function HomePage() {
           <div className="flex-1 text-center lg:text-left animate-pop">
             <div className="inline-flex items-center gap-2 bg-white/20 border border-white/30
                             rounded-full px-4 py-2 text-white text-xs font-bold mb-6 tracking-wide">
-              🌍 Supporting SDG Goal 6 — Clean Water for All
+              🌍 Supporting SDG Goal 6  Clean Water for All
             </div>
 
             <h1
@@ -161,13 +161,13 @@ export default function HomePage() {
               style={{ fontFamily: "'Fredoka One', cursive" }}
             >
               Become a<br />
-              <span className="text-yellow-300">Water Hero!</span> 💧
+              <span className="text-yellow-300">AquaChamp!</span> 💧
             </h1>
 
             <p className="text-blue-100 text-lg sm:text-xl leading-relaxed mb-8
                           max-w-lg mx-auto lg:mx-0">
               Learn about clean water &amp; sanitation through super fun games,
-              quizzes, and badges — designed just for kids like you!
+              quizzes, and badges designed just for kids like you!
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
@@ -293,7 +293,7 @@ export default function HomePage() {
       </section>
 
       {/* ════════════ HOW IT WORKS ════════════ */}
-      <section className="bg-gradient-to-br from-blue-600 to-cyan-500 py-20 px-6 relative overflow-hidden">
+      <section className="bg-gradient-to-br from-blue-900 to-cyan-800 to-emerald-500 py-20 px-6 relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none opacity-10">
           <svg viewBox="0 0 800 400" className="w-full h-full">
             <circle cx="100" cy="100" r="120" fill="white" />
@@ -410,7 +410,7 @@ export default function HomePage() {
       </section>
 
       {/* ════════════ CTA ════════════ */}
-      <section className="bg-gradient-to-r from-blue-600 to-cyan-500 py-20 px-6
+      <section className="bg-gradient-to-br from-blue-900 to-cyan-800 to-emerald-500 py-20 px-6
                           text-center relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none select-none">
           {[...Array(6)].map((_, i) => (

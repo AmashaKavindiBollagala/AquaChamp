@@ -89,10 +89,12 @@ export default function Header() {
 
             {/* ── Logo ── */}
             <Link to="/" className="flex items-center gap-3 group shrink-0">
-              <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-400
+              <div className="w-11 h-11 rounded-2xl bg-gradient-to-br 
                               flex items-center justify-center shadow-md
                               group-hover:scale-110 transition-transform duration-300">
-                <span className="text-2xl">💧</span>
+                <div className="header">
+             <img src="/AquaChampLogo.png" alt="Logo" className="logo" />
+            </div>
               </div>
               <div className="leading-tight">
                 <span
