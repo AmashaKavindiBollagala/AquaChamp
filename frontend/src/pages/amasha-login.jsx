@@ -549,6 +549,15 @@ export default function UserLogin() {
                       ))}
                     </div>
                   </form>
+                  {/* ── Mobile Admin Login link (only visible when left panel is hidden) ── */}
+                  <div className="mt-6 flex justify-center">
+                    <button
+                      onClick={() => navigate("/admin-login")}
+                      className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 hover:text-slate-600 transition"
+                    >
+                      <span>🛡️</span> Admin Login
+                    </button>
+                  </div>
                 </>
               )}
             </div>
