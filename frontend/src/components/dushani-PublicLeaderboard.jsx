@@ -7,11 +7,23 @@ export default function PublicLeaderboard() {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(true);
 
   useEffect(() => {
+    // Check if user is logged in
+    const token = localStorage.getItem('aquachamp_token') || 
+                  localStorage.getItem('token') || 
+                  sessionStorage.getItem('aquachamp_token');
+    
+    if (!token) {
+      console.log('⚠️ No authentication token found');
+      setIsAuthenticated(false);
+      setLoading(false);
+      return;
+    }
+
     const fetchLeaderboard = async () => {
       try {
-        const token = localStorage.getItem('token') || localStorage.getItem('superAdminToken');
         let res;
         try {
           res = await fetch('http://localhost:4000/api/points/leaderboard', {
@@ -22,6 +34,15 @@ export default function PublicLeaderboard() {
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
           });
         }
+
+        // If unauthorized (401), show auth required message
+        if (res.status === 401 || res.status === 403) {
+          console.log('⚠️ Authentication failed');
+          setIsAuthenticated(false);
+          setLoading(false);
+          return;
+        }
+
         const data = await res.json();
         if (data.success) {
           const list = data.students || data.leaderboard || [];
@@ -40,7 +61,7 @@ export default function PublicLeaderboard() {
       }
     };
     fetchLeaderboard();
-  }, []);
+  }, [navigate]);
 
   const calculateRanks = (list) => {
     if (!list.length) return [];
@@ -148,9 +169,37 @@ export default function PublicLeaderboard() {
     return '';
   };
 
+  // Show authentication required message
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center relative overflow-hidden"
+           style={{ background: "linear-gradient(160deg,#C8E6FA 0%,#B2EDD8 35%,#FEE9BF 70%,#C8E6FA 100%)" }}>
+        <div className="text-center space-y-6 max-w-md mx-4">
+          <div className="text-7xl animate-bounce">🔒</div>
+          <div className="space-y-3">
+            <h2 className="text-3xl font-bold text-gray-800">Login Required</h2>
+            <p className="text-lg text-gray-600">
+              You need to be logged in to view the leaderboard
+            </p>
+            <p className="text-sm text-gray-500">
+              Please login as a student or admin to see the rankings
+            </p>
+          </div>
+          <button
+            onClick={() => navigate('/login')}
+            className="px-8 py-3 bg-gradient-to-r from-violet-600 to-sky-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+          >
+            Go to Login →
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-violet-100 via-sky-50 to-emerald-100 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center relative overflow-hidden"
+           style={{ background: "linear-gradient(160deg,#C8E6FA 0%,#B2EDD8 35%,#FEE9BF 70%,#C8E6FA 100%)" }}>
         <div className="text-center space-y-3">
           <div className="text-5xl animate-bounce">🏆</div>
           <p className="text-lg font-semibold text-gray-700">Loading leaderboard...</p>
@@ -161,14 +210,15 @@ export default function PublicLeaderboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-violet-100 via-sky-50 to-emerald-100 relative overflow-x-hidden">
+    <div className="min-h-screen relative overflow-x-hidden"
+         style={{ background: "linear-gradient(160deg,#C8E6FA 0%,#B2EDD8 35%,#FEE9BF 70%,#C8E6FA 100%)" }}>
 
       {/* Decorative blobs */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute -top-24 -left-24 w-96 h-96 bg-violet-300/30 rounded-full blur-3xl" />
-        <div className="absolute top-1/3 -right-32 w-[28rem] h-[28rem] bg-sky-300/25 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-1/4 w-80 h-80 bg-emerald-300/25 rounded-full blur-3xl" />
-        <div className="absolute top-2/3 left-1/2 w-64 h-64 bg-amber-200/20 rounded-full blur-2xl" />
+        <div className="absolute -top-24 -left-24 w-96 h-96 bg-[#185FA5]/10 rounded-full blur-3xl" />
+        <div className="absolute top-1/3 -right-32 w-[28rem] h-[28rem] bg-[#1D9E75]/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-1/4 w-80 h-80 bg-[#EF9F27]/10 rounded-full blur-3xl" />
+        <div className="absolute top-2/3 left-1/2 w-64 h-64 bg-[#4FC3F7]/15 rounded-full blur-2xl" />
       </div>
 
       {/* Header
