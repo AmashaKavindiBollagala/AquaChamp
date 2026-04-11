@@ -7,11 +7,23 @@ export default function PublicLeaderboard() {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(true);
 
   useEffect(() => {
+    // Check if user is logged in
+    const token = localStorage.getItem('aquachamp_token') || 
+                  localStorage.getItem('token') || 
+                  sessionStorage.getItem('aquachamp_token');
+    
+    if (!token) {
+      console.log('⚠️ No authentication token found');
+      setIsAuthenticated(false);
+      setLoading(false);
+      return;
+    }
+
     const fetchLeaderboard = async () => {
       try {
-        const token = localStorage.getItem('token') || localStorage.getItem('superAdminToken');
         let res;
         try {
           res = await fetch('http://localhost:4000/api/points/leaderboard', {
@@ -22,6 +34,15 @@ export default function PublicLeaderboard() {
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
           });
         }
+
+        // If unauthorized (401), show auth required message
+        if (res.status === 401 || res.status === 403) {
+          console.log('⚠️ Authentication failed');
+          setIsAuthenticated(false);
+          setLoading(false);
+          return;
+        }
+
         const data = await res.json();
         if (data.success) {
           const list = data.students || data.leaderboard || [];
@@ -40,7 +61,7 @@ export default function PublicLeaderboard() {
       }
     };
     fetchLeaderboard();
-  }, []);
+  }, [navigate]);
 
   const calculateRanks = (list) => {
     if (!list.length) return [];
@@ -147,6 +168,32 @@ export default function PublicLeaderboard() {
     if (rank === 3) return 'bg-teal-50/40';
     return '';
   };
+
+  // Show authentication required message
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-violet-100 via-sky-50 to-emerald-100 flex items-center justify-center">
+        <div className="text-center space-y-6 max-w-md mx-4">
+          <div className="text-7xl animate-bounce">🔒</div>
+          <div className="space-y-3">
+            <h2 className="text-3xl font-bold text-gray-800">Login Required</h2>
+            <p className="text-lg text-gray-600">
+              You need to be logged in to view the leaderboard
+            </p>
+            <p className="text-sm text-gray-500">
+              Please login as a student or admin to see the rankings
+            </p>
+          </div>
+          <button
+            onClick={() => navigate('/login')}
+            className="px-8 py-3 bg-gradient-to-r from-violet-600 to-sky-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+          >
+            Go to Login →
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
