@@ -76,7 +76,7 @@ export const updateTopic = async (req, res) => {
 
 
 
-// 🔥 CLOUDINARY IMAGE UPLOAD (UPDATED)
+// CLOUDINARY IMAGE UPLOAD (UPDATED)
 export const uploadTopicImage = async (req, res) => {
   try {
     if (!req.file) {
@@ -88,7 +88,7 @@ export const uploadTopicImage = async (req, res) => {
       return res.status(404).json({ message: "Topic not found" });
     }
 
-    // 🧹 delete old image from cloudinary (if exists)
+    // delete old image from cloudinary (if exists)
     if (topic.imageUrl) {
       try {
         const parts = topic.imageUrl.split("/");
@@ -101,7 +101,7 @@ export const uploadTopicImage = async (req, res) => {
       }
     }
 
-    // ☁️ upload new image to cloudinary
+    // upload new image to cloudinary
     const result = await new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
         {
@@ -127,7 +127,7 @@ export const uploadTopicImage = async (req, res) => {
 
 
 
-// 🔥 DELETE IMAGE (CLOUDINARY VERSION)
+// DELETE IMAGE (CLOUDINARY VERSION)
 export const deleteTopicImage = async (req, res) => {
   try {
     const topic = await Topic.findById(req.params.id);
@@ -177,7 +177,7 @@ export const deleteTopic = async (req, res) => {
       });
     }
 
-    // 🧹 delete cloudinary image if exists
+    // delete cloudinary image if exists
     if (topicDoc.imageUrl) {
       try {
         const parts = topicDoc.imageUrl.split("/");

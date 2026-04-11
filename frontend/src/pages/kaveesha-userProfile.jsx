@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
-// ── Water Drop SVG ────────────────────────────────────────────────────────
+// Water Drop SVG
 const WaterDrop = ({ size = 24, color = "#185FA5", style = {} }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill={color} style={style}>
     <path d="M12 2 C12 2 5 10 5 15 C5 18.866 8.134 22 12 22 C15.866 22 19 18.866 19 15 C19 10 12 2 12 2Z" />
@@ -37,7 +37,7 @@ const Wave = ({ color = "#185FA520" }) => (
   </svg>
 );
 
-// ── Avatar ────────────────────────────────────────────────────────────────
+// Avatar
 const AvatarBubble = ({ firstName, lastName }) => {
   const initials = `${firstName?.[0] ?? ""}${lastName?.[0] ?? ""}`.toUpperCase();
   return (
@@ -62,7 +62,7 @@ const AvatarBubble = ({ firstName, lastName }) => {
   );
 };
 
-// ── Toast ─────────────────────────────────────────────────────────────────
+// Toast
 const Toast = ({ message, type, onClose }) => {
   useEffect(() => { const t = setTimeout(onClose, 3500); return () => clearTimeout(t); }, [onClose]);
   return (
@@ -85,7 +85,7 @@ const Toast = ({ message, type, onClose }) => {
   );
 };
 
-// ── Success Modal ─────────────────────────────────────────────────────────
+// Success Modal
 const SuccessModal = ({ onOk }) => (
   <div style={{
     position: "fixed", inset: 0, zIndex: 9999,
@@ -118,7 +118,7 @@ const SuccessModal = ({ onOk }) => (
   </div>
 );
 
-// ── Input ─────────────────────────────────────────────────────────────────
+// Input
 const StyledInput = ({ label, emoji, name, type = "text", value, onChange, error, placeholder }) => (
   <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
     <label style={{ fontSize: 10, fontWeight: 900, color: "#185FA5", textTransform: "uppercase", letterSpacing: 1.2, fontFamily: "'Nunito', sans-serif" }}>
@@ -137,7 +137,7 @@ const StyledInput = ({ label, emoji, name, type = "text", value, onChange, error
   </div>
 );
 
-// ── Profile Field Component ───────────────────────────────────────────────
+// Profile Field Component 
 const ProfileField = ({ label, name, type = "text", emoji, disabled = false, editMode, formData, errors, setFormData, setErrors }) => (
   <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
     <label style={{ fontSize: 10, fontWeight: 900, color: "#185FA5", textTransform: "uppercase", letterSpacing: 1.2, fontFamily: "'Nunito', sans-serif" }}>
@@ -174,9 +174,8 @@ const ProfileField = ({ label, name, type = "text", emoji, disabled = false, edi
   </div>
 );
 
-// ══════════════════════════════════════════════════════════════════════════
+
 // CHANGE PASSWORD PANEL
-// ══════════════════════════════════════════════════════════════════════════
 const ChangePasswordPanel = ({ navigate }) => {
   const [step, setStep] = useState("form");
   const [form, setForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
@@ -462,9 +461,8 @@ const ChangePasswordPanel = ({ navigate }) => {
   );
 };
 
-// ══════════════════════════════════════════════════════════════════════════
 // MAIN PROFILE PAGE
-// ══════════════════════════════════════════════════════════════════════════
+
 export default function KaveeshaUserProfile() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
@@ -672,7 +670,7 @@ export default function KaveeshaUserProfile() {
       overflowX: "hidden",
     }}>
 
-      {/* ── Floating decorative BG elements ── */}
+      {/* Floating decorative BG elements */}
       <WaterDrop size={90} color="#185FA518" style={{ position: "absolute", top: 60, left: 20, animation: "floatSlow 8s ease-in-out infinite", pointerEvents: "none" }} />
       <WaterDrop size={60} color="#1D9E7518" style={{ position: "absolute", top: 200, right: 40, animation: "floatSlow 6s ease-in-out infinite 2s", pointerEvents: "none" }} />
       <WaterDrop size={45} color="#EF9F2720" style={{ position: "absolute", bottom: 180, left: 60, animation: "floatSlow 7s ease-in-out infinite 1s", pointerEvents: "none" }} />
@@ -687,7 +685,7 @@ export default function KaveeshaUserProfile() {
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-      {/* ── HERO HEADER BAND ── */}
+      {/* HERO HEADER BAND */}
       <div style={{
         background: "linear-gradient(135deg,rgba(255,255,255,0.7),rgba(255,255,255,0.4))",
         backdropFilter: "blur(10px)",
@@ -776,10 +774,10 @@ export default function KaveeshaUserProfile() {
         </div>
       </div>
 
-      {/* ── MAIN CONTENT — vertical stack ── */}
+      {/* MAIN CONTENT — vertical stack */}
       <div style={{ maxWidth: 960, margin: "0 auto", padding: "28px 24px 32px", display: "flex", flexDirection: "column", gap: 22 }}>
 
-        {/* ══ SECTION 1 — Profile Info Card ══ */}
+        {/* SECTION 1 — Profile Info Card */}
         <div style={{
           background: "rgba(255,255,255,0.88)",
           borderRadius: 28,
@@ -890,7 +888,7 @@ export default function KaveeshaUserProfile() {
           )}
         </div>
 
-        {/* ══ SECTION 2 — Change Password Card ══ */}
+        {/* SECTION 2 — Change Password Card */}
         <div style={{
           background: "rgba(255,255,255,0.88)",
           borderRadius: 28,

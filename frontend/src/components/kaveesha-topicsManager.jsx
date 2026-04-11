@@ -476,7 +476,7 @@ export default function KaveeshaTopicsManager({ onSelectTopic, compact }) {
                       </div>
                     </div>
 
-                    {/* ── Card body ── */}
+                    {/* Card body */}
                     <div className="p-5 flex flex-col flex-1" style={{ borderTop: `3px solid ${pal.accent}` }}>
 
                       {/* Top row: topic icon + edit/delete buttons */}

@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 import KaveeshaStatsBar from "./kaveesha-statsBar";
 import {
   Chart as ChartJS,
@@ -61,9 +59,6 @@ export default function KaveeshaChartsPanel({ compact }) {
   const [subtopics, setSubtopics] = useState([]);
   const [students, setStudents] = useState([]);
   const [selectedTopic, setSelectedTopic] = useState(null);
-  const [selectedTopics, setSelectedTopics] = useState([]);
-  const [selectedSubtopics, setSelectedSubtopics] = useState([]);
-  const [selectedAgeGroup, setSelectedAgeGroup] = useState("all");
   const [topicSubtopics, setTopicSubtopics] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -172,140 +167,6 @@ export default function KaveeshaChartsPanel({ compact }) {
   const students610 = students.filter(s => s.age >= 5 && s.age <= 10).length;
   const students1115 = students.filter(s => s.age >= 11 && s.age <= 15).length;
   const totalStudents = students.length;
-
-  // Get subtopics for selected topics
-  const getFilteredSubtopics = () => {
-    let filtered = subtopics;
-    
-    // Filter by age group
-    if (selectedAgeGroup !== "all") {
-      filtered = filtered.filter(s => s.ageGroup === selectedAgeGroup);
-    }
-    
-    // Filter by selected topics
-    if (selectedTopics.length > 0) {
-      filtered = filtered.filter(s => 
-        selectedTopics.includes(s.topicId) || selectedTopics.includes(s.topicId?._id)
-      );
-    }
-    
-    // Filter by selected subtopics
-    if (selectedSubtopics.length > 0) {
-      filtered = filtered.filter(s => selectedSubtopics.includes(s._id));
-    }
-    
-    return filtered;
-  };
-
-  // Generate PDF Report
-  const generateReport = () => {
-    const filteredSubtopics = getFilteredSubtopics();
-    
-    // Group subtopics by topic
-    const topicMap = {};
-    filteredSubtopics.forEach(sub => {
-      const topicId = sub.topicId?._id || sub.topicId;
-      const topic = topics.find(t => t._id === topicId);
-      if (topic) {
-        if (!topicMap[topic.title]) {
-          topicMap[topic.title] = { topic, subtopics: [] };
-        }
-        topicMap[topic.title].subtopics.push(sub);
-      }
-    });
-
-    const doc = new jsPDF();
-    
-    // Title
-    doc.setFontSize(24);
-    doc.setTextColor(15, 23, 42);
-    doc.text("AquaChamp - Learning Report", 14, 22);
-    
-    // Date
-    doc.setFontSize(10);
-    doc.setTextColor(100, 116, 139);
-    doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 30);
-    
-    // Summary Section
-    doc.setFontSize(16);
-    doc.setTextColor(15, 23, 42);
-    doc.text("Summary", 14, 42);
-    
-    doc.setFontSize(11);
-    doc.setTextColor(51, 65, 85);
-    doc.text(`Total Students: ${totalStudents}`, 14, 52);
-    doc.text(`Age 5-10: ${students610} students`, 14, 60);
-    doc.text(`Age 11-15: ${students1115} students`, 14, 68);
-    doc.text(`Total Topics: ${Object.keys(topicMap).length}`, 14, 76);
-    doc.text(`Total Subtopics: ${filteredSubtopics.length}`, 14, 84);
-    
-    // Filters Applied
-    doc.setFontSize(14);
-    doc.setTextColor(15, 23, 42);
-    doc.text("Filters Applied", 14, 98);
-    
-    doc.setFontSize(10);
-    doc.setTextColor(51, 65, 85);
-    doc.text(`Age Group: ${selectedAgeGroup === "all" ? "All Ages" : selectedAgeGroup}`, 14, 106);
-    doc.text(`Topics: ${selectedTopics.length > 0 ? selectedTopics.length : "All Topics"}`, 14, 114);
-    
-    // Detailed Content
-    doc.setFontSize(16);
-    doc.setTextColor(15, 23, 42);
-    doc.text("Detailed Content", 14, 128);
-    
-    // Table
-    const tableData = [];
-    Object.values(topicMap).forEach(({ topic, subtopics: subs }) => {
-      subs.forEach((sub, idx) => {
-        tableData.push([
-          idx === 0 ? topic.title : "",
-          sub.title,
-          sub.ageGroup,
-          sub.videoUrl ? "✓" : "—",
-          sub.content ? "✓" : "—",
-          sub.images?.length > 0 ? "✓" : "—",
-        ]);
-      });
-    });
-    
-    autoTable(doc, {
-      startY: 135,
-      head: [["Topic", "Subtopic", "Age Group", "Video", "Text", "Images"]],
-      body: tableData,
-      theme: "grid",
-      headStyles: {
-        fillColor: [99, 102, 241],
-        textColor: 255,
-        fontStyle: "bold",
-        fontSize: 9,
-      },
-      bodyStyles: {
-        fontSize: 8,
-        textColor: [51, 65, 85],
-      },
-      alternateRowStyles: {
-        fillColor: [248, 250, 252],
-      },
-      columnStyles: {
-        0: { fontStyle: "bold", cellWidth: 35 },
-        1: { cellWidth: 50 },
-        2: { cellWidth: 25, halign: "center" },
-        3: { cellWidth: 15, halign: "center" },
-        4: { cellWidth: 15, halign: "center" },
-        5: { cellWidth: 15, halign: "center" },
-      },
-      didDrawPage: (data) => {
-        // Footer
-        doc.setFontSize(8);
-        doc.setTextColor(148, 163, 184);
-        doc.text("AquaChamp Learning Management System", 14, doc.internal.pageSize.height - 10);
-        doc.text(`Page ${doc.internal.getNumberOfPages()}`, doc.internal.pageSize.width - 20, doc.internal.pageSize.height - 10);
-      },
-    });
-    
-    doc.save("aquachamp-report.pdf");
-  };
 
   const ageDistData = {
     labels: ["Age 5–10", "Age 11–15"],
@@ -547,99 +408,6 @@ export default function KaveeshaChartsPanel({ compact }) {
           </div>
         </ChartCard>
       </div>
-
-      {/* Report Generation Section */}
-      <ChartCard title="📄 Report Generation" subtitle="Generate and download comprehensive reports" accent="#10b981" accentLight="#d1fae5">
-        <div className="space-y-5">
-          {/* Filters */}
-          <div className="grid grid-cols-3 gap-4">
-            {/* Age Group Filter */}
-            <div>
-              <label className="text-xs font-bold uppercase tracking-widest block mb-2" style={{ color: "#065f46" }}>
-                Age Group
-              </label>
-              <select
-                value={selectedAgeGroup}
-                onChange={(e) => setSelectedAgeGroup(e.target.value)}
-                className="w-full text-sm rounded-xl px-4 py-3 font-semibold focus:outline-none transition-all"
-                style={{ background: "#f0fdf4", border: "2px solid #86efac", color: "#166534" }}
-              >
-                <option value="all">All Ages</option>
-                <option value="6-10">Age 6-10</option>
-                <option value="11-15">Age 11-15</option>
-              </select>
-            </div>
-
-            {/* Topic Filter */}
-            <div>
-              <label className="text-xs font-bold uppercase tracking-widest block mb-2" style={{ color: "#065f46" }}>
-                Topics (Multiple)
-              </label>
-              <select
-                multiple
-                value={selectedTopics}
-                onChange={(e) => {
-                  const values = Array.from(e.target.selectedOptions, option => option.value);
-                  setSelectedTopics(values);
-                }}
-                className="w-full text-sm rounded-xl px-4 py-3 font-semibold focus:outline-none transition-all"
-                style={{ background: "#f0fdf4", border: "2px solid #86efac", color: "#166534", minHeight: "80px" }}
-              >
-                {topics.map((t) => (
-                  <option key={t._id} value={t._id}>{t.title}</option>
-                ))}
-              </select>
-              <p className="text-xs text-slate-500 mt-1">Hold Ctrl/Cmd to select multiple</p>
-            </div>
-
-            {/* Subtopic Filter */}
-            <div>
-              <label className="text-xs font-bold uppercase tracking-widest block mb-2" style={{ color: "#065f46" }}>
-                Subtopics (Optional)
-              </label>
-              <select
-                multiple
-                value={selectedSubtopics}
-                onChange={(e) => {
-                  const values = Array.from(e.target.selectedOptions, option => option.value);
-                  setSelectedSubtopics(values);
-                }}
-                className="w-full text-sm rounded-xl px-4 py-3 font-semibold focus:outline-none transition-all"
-                style={{ background: "#f0fdf4", border: "2px solid #86efac", color: "#166534", minHeight: "80px" }}
-              >
-                {subtopics.map((s) => (
-                  <option key={s._id} value={s._id}>{s.title}</option>
-                ))}
-              </select>
-              <p className="text-xs text-slate-500 mt-1">Leave empty for all subtopics</p>
-            </div>
-          </div>
-
-          {/* Generate Button */}
-          <div className="flex items-center justify-between pt-4" style={{ borderTop: "2px solid #d1fae5" }}>
-            <div className="text-sm text-slate-600">
-              <span className="font-bold">Preview:</span> {getFilteredSubtopics().length} subtopics will be included
-            </div>
-            <button
-              onClick={generateReport}
-              className="flex items-center gap-3 px-6 py-3 rounded-xl text-sm font-bold text-white transition-all hover:-translate-y-0.5"
-              style={{
-                background: "linear-gradient(135deg, #10b981, #059669)",
-                boxShadow: "0 4px 14px rgba(16,185,129,0.4)",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.boxShadow = "0 6px 20px rgba(16,185,129,0.5)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.boxShadow = "0 4px 14px rgba(16,185,129,0.4)";
-              }}
-            >
-              <span>📥</span>
-              <span>Download PDF Report</span>
-            </button>
-          </div>
-        </div>
-      </ChartCard>
     </div>
   );
 }

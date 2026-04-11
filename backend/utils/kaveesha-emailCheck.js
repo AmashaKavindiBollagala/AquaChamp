@@ -4,18 +4,18 @@ import dns from "dns/promises";
 export const isValidEmail = async (email) => {
   console.log(`📧 Starting email validation for: ${email}`);
   
-  // ✅ 1. Check email format (example: user@gmail.com)
+  //  1. Check email format (example: user@gmail.com)
   if (!validator.validate(email)) {
     console.log(`❌ Email format invalid: ${email}`);
     return false;
   }
 
-  // ✅ 2. Extract domain from email
+  //  2. Extract domain from email
   const domain = email.split("@")[1];
   console.log(`🔍 Extracted domain: ${domain}`);
 
   try {
-    // ✅ 3. MX RECORD CHECK with timeout (3 seconds)
+    //  3. MX RECORD CHECK with timeout (3 seconds)
     const timeoutPromise = new Promise((_, reject) => {
       setTimeout(() => reject(new Error('DNS lookup timeout')), 3000);
     });

@@ -44,7 +44,7 @@ const inputStyle = {
   transition: "border-color 0.2s, box-shadow 0.2s",
 };
 
-/* ─────────────── MAIN EXPORT ─────────────── */
+// MAIN EXPORT
 export default function KaveeshaContentManager({ selectedSubtopic, onBack }) {
   const [subtopics, setSubtopics] = useState([]);
   const [topics, setTopics] = useState([]);
@@ -124,7 +124,7 @@ export default function KaveeshaContentManager({ selectedSubtopic, onBack }) {
 
   return (
     <div style={{ minHeight: "100vh", paddingBottom: 48, fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
-      {/* ── PAGE HEADER ── */}
+      {/* PAGE HEADER  */}
       <div
         className="rounded-3xl p-7 mb-7 flex items-center justify-between flex-wrap gap-4"
         style={{
@@ -156,7 +156,7 @@ export default function KaveeshaContentManager({ selectedSubtopic, onBack }) {
         )}
       </div>
 
-      {/* ── SUBTOPIC PICKER (when not pre-selected) ── */}
+      {/* SUBTOPIC PICKER (when not pre-selected) */}
       {!selectedSubtopic && (
         <SubtopicPicker
           topics={topics}
@@ -169,7 +169,7 @@ export default function KaveeshaContentManager({ selectedSubtopic, onBack }) {
         />
       )}
 
-      {/* ── CONTENT AREA ── */}
+      {/* CONTENT AREA */}
       {activeSubtopic && (
         <div className="mt-7 space-y-6">
           {/* Active subtopic banner */}
@@ -185,7 +185,7 @@ export default function KaveeshaContentManager({ selectedSubtopic, onBack }) {
             <span className="ml-auto px-3 py-1 rounded-full text-xs font-bold" style={{ background: "#dbeafe", color: "#1e40af", border: "1px solid #93c5fd" }}>Age {activeSubtopic.ageGroup}</span>
           </div>
 
-          {/* ── TAB BAR ── */}
+          {/* TAB BAR */}
           <div
             className="flex gap-2 p-2 rounded-2xl"
             style={{ background: "#0f172a", boxShadow: "0 8px 32px rgba(15,23,42,0.25)" }}
@@ -216,7 +216,7 @@ export default function KaveeshaContentManager({ selectedSubtopic, onBack }) {
             })}
           </div>
 
-          {/* ── TAB PANEL ── */}
+          {/* TAB PANEL */}
           <div className="rounded-3xl overflow-hidden" style={{ border: "2px solid #e0e7ff", boxShadow: "0 8px 40px rgba(99,102,241,0.08)" }}>
             {/* Panel header strip */}
             {(() => {
@@ -251,7 +251,7 @@ export default function KaveeshaContentManager({ selectedSubtopic, onBack }) {
   );
 }
 
-/* ─────────────── SUBTOPIC PICKER ─────────────── */
+/* SUBTOPIC PICKER */
 function SubtopicPicker({ topics, loadSubtopicsForTopic, onSelect, onContextChange, activeSubtopic, topicColors, getContentIcons }) {
   const [selTopic, setSelTopic] = useState(null);
   const [selTopicIdx, setSelTopicIdx] = useState(0);
@@ -286,7 +286,7 @@ function SubtopicPicker({ topics, loadSubtopicsForTopic, onSelect, onContextChan
 
   return (
     <div className="space-y-5">
-      {/* ── STEP 1: AGE GROUP ── */}
+      {/* STEP 1: AGE GROUP */}
       <div
         className="rounded-3xl overflow-hidden"
         style={{ background: "linear-gradient(145deg,#fffbeb,#fff,#fef3c7)", border: "2px solid #fde68a", boxShadow: "0 12px 40px rgba(245,158,11,0.12)" }}
@@ -323,7 +323,7 @@ function SubtopicPicker({ topics, loadSubtopicsForTopic, onSelect, onContextChan
         </div>
       </div>
 
-      {/* ── STEP 2: TOPIC ── */}
+      {/* STEP 2: TOPIC */}
       <div
         className="rounded-3xl overflow-hidden"
         style={{ background: "linear-gradient(145deg,#f8faff,#fff,#f0f4ff)", border: "2px solid #e0e7ff", boxShadow: "0 8px 32px rgba(99,102,241,0.10)" }}
@@ -365,7 +365,7 @@ function SubtopicPicker({ topics, loadSubtopicsForTopic, onSelect, onContextChan
         )}
       </div>
 
-      {/* ── STEP 3: SUBTOPICS ── */}
+      {/* STEP 3: SUBTOPICS */}
       {selTopic && (
         <div
           className="rounded-3xl overflow-hidden"
@@ -464,7 +464,7 @@ function SubtopicPicker({ topics, loadSubtopicsForTopic, onSelect, onContextChan
   );
 }
 
-/* ─────────────── HELPERS ─────────────── */
+/* HELPERS */
 function Alert({ msg }) {
   if (!msg) return null;
   const isError = msg.startsWith("❌");
@@ -516,7 +516,7 @@ function DangerBtn({ onClick, label }) {
   );
 }
 
-/* ─────────────── VIDEO PANEL ─────────────── */
+/* VIDEO PANEL */
 function VideoPanel({ subtopic, onRefresh }) {
   const [url, setUrl] = useState(subtopic?.videoUrl || "");
   const [videoFile, setVideoFile] = useState(null);
@@ -688,7 +688,7 @@ function VideoPanel({ subtopic, onRefresh }) {
   );
 }
 
-/* ─────────────── TEXT PANEL ─────────────── */
+/* TEXT PANEL */
 function TextPanel({ subtopic, onRefresh }) {
   const [content, setContent] = useState(subtopic?.content || "");
   const [contentFiles, setContentFiles] = useState(subtopic?.contentFiles || []);
@@ -986,7 +986,7 @@ function TextPanel({ subtopic, onRefresh }) {
   );
 }
 
-/* ─────────────── IMAGES PANEL ─────────────── */
+/* IMAGES PANEL */
 function ImagesPanel({ subtopic, onRefresh }) {
   const [imageUrlInput, setImageUrlInput] = useState("");
   const [msg, setMsg] = useState("");
@@ -1113,7 +1113,7 @@ function ImagesPanel({ subtopic, onRefresh }) {
   );
 }
 
-/* ─────────────── QUIZ PANEL ─────────────── */
+/* QUIZ PANEL */
 function makeEmptyQuestion() {
   return { clientId: `local-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`, question: "", options: ["", ""], correctAnswer: "" };
 }

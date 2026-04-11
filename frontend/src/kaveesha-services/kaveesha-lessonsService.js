@@ -21,7 +21,7 @@ export const topicsAPI = {
   delete: (id) => axios.delete(`${BASE}/api/topics/${id}`, { headers: getHeaders(), withCredentials: true }),
 };
 
-// ── SUBTOPICS ──
+// SUBTOPICS
 export const subtopicsAPI = {
   getAll: (params) => axios.get(`${BASE}/api/subtopics`, { params }),
   getById: (id) => axios.get(`${BASE}/api/subtopics/${id}`),
@@ -55,7 +55,7 @@ export const subtopicsAPI = {
     axios.post(`${BASE}/api/subtopics/progress/topic`, { userId, topicId, ageGroup }),
 };
 
-// ── MINIQUIZ ──
+// MINIQUIZ
 export const quizAPI = {
   get: (subtopicId, ageGroup) =>
     axios.get(`${BASE}/api/kaveesha-miniquiz`, { params: { subtopicId, ageGroup } }),
@@ -67,7 +67,7 @@ export const quizAPI = {
     axios.delete(`${BASE}/api/kaveesha-miniquiz/${id}`, { headers: getHeaders(), withCredentials: true }),
 };
 
-// ── YOUTUBE ──
+// YOUTUBE
 export const youtubeAPI = {
   search: async (query) => {
     const key = API_KEYS.YOUTUBE;
@@ -78,7 +78,7 @@ export const youtubeAPI = {
   },
 };
 
-// ── GEMINI AI ──
+// GEMINI AI
 export const geminiAPI = {
   generateContent: async (subtopicTitle, prompt) => {
     try {
@@ -124,7 +124,7 @@ Please include:
   },
 };
 
-// ── OPENAI ──
+// OPENAI
 export const openaiAPI = {
   generateLessonContent: async (subtopicTitle, prompt) => {
     const key = API_KEYS.OPENAI;
