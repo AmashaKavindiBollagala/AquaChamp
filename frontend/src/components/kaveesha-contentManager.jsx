@@ -536,7 +536,7 @@ function VideoPanel({ subtopic, onRefresh }) {
     setSearching(true); setMsg("");
     try {
       const res = await axios.get("https://www.googleapis.com/youtube/v3/search", {
-        params: { part: "snippet", q: youtubeSearch, type: "video", maxResults: 6, key: YOUTUBE_API_KEY },
+        params: { part: "snippet", q: youtubeSearch, type: "video", maxResults: 12, key: YOUTUBE_API_KEY },
       });
       const items = res.data.items || [];
       if (items.length === 0) { setMsg("⚠️ No videos found."); } else { setYoutubeResults(items); setMsg(`✅ Found ${items.length} videos!`); }
