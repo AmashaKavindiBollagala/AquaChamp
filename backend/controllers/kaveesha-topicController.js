@@ -1,23 +1,7 @@
 import Topic from "../models/kaveesha-topicModel.js";
 import Subtopic from "../models/kaveesha-subtopicModel.js";
-import fs from "fs";
-import path from "path";
-
-function diskPathForTopicImage(imageUrl) {
-  if (!imageUrl || !imageUrl.startsWith("/uploads/images/")) return null;
-  return path.join(process.cwd(), imageUrl.replace(/^\/+/, ""));
-}
-
-function unlinkTopicImageIfLocal(imageUrl) {
-  const p = diskPathForTopicImage(imageUrl);
-  if (p && fs.existsSync(p)) {
-    try {
-      fs.unlinkSync(p);
-    } catch (e) {
-      console.error("unlink topic image:", e);
-    }
-  }
-}
+import cloudinary from "../config/cloudinary.js";
+import streamifier from "streamifier";
 
 // create topic
 export const createTopic = async (req, res) => {
@@ -32,7 +16,6 @@ export const createTopic = async (req, res) => {
 
     res.status(201).json(topic);
   } catch (error) {
-    // duplicate title error
     if (error.code === 11000) {
       return res.status(400).json({
         message: "Topic already exists",
@@ -91,6 +74,9 @@ export const updateTopic = async (req, res) => {
   }
 };
 
+
+
+// 🔥 CLOUDINARY IMAGE UPLOAD (UPDATED)
 export const uploadTopicImage = async (req, res) => {
   try {
     if (!req.file) {
@@ -102,18 +88,46 @@ export const uploadTopicImage = async (req, res) => {
       return res.status(404).json({ message: "Topic not found" });
     }
 
+    // 🧹 delete old image from cloudinary (if exists)
     if (topic.imageUrl) {
-      unlinkTopicImageIfLocal(topic.imageUrl);
+      try {
+        const parts = topic.imageUrl.split("/");
+        const file = parts[parts.length - 1];
+        const publicId = `topics/${file.split(".")[0]}`;
+
+        await cloudinary.uploader.destroy(publicId);
+      } catch (err) {
+        console.log("Old image delete error:", err.message);
+      }
     }
 
-    topic.imageUrl = `/uploads/images/${req.file.filename}`;
+    // ☁️ upload new image to cloudinary
+    const result = await new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          folder: "topics",
+          resource_type: "image",
+        },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      );
+      uploadStream.end(req.file.buffer);
+    });
+
+    topic.imageUrl = result.secure_url;
     await topic.save();
+
     res.json(topic);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
+
+
+// 🔥 DELETE IMAGE (CLOUDINARY VERSION)
 export const deleteTopicImage = async (req, res) => {
   try {
     const topic = await Topic.findById(req.params.id);
@@ -121,19 +135,29 @@ export const deleteTopicImage = async (req, res) => {
       return res.status(404).json({ message: "Topic not found" });
     }
 
+    // delete from cloudinary
     if (topic.imageUrl) {
-      unlinkTopicImageIfLocal(topic.imageUrl);
+      try {
+        const parts = topic.imageUrl.split("/");
+        const file = parts[parts.length - 1];
+        const publicId = `topics/${file.split(".")[0]}`;
+
+        await cloudinary.uploader.destroy(publicId);
+      } catch (err) {
+        console.log("Cloudinary delete error:", err.message);
+      }
     }
 
     topic.imageUrl = null;
     await topic.save();
+
     res.json(topic);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// delete topic
+
 
 // delete topic with restrict check
 export const deleteTopic = async (req, res) => {
@@ -145,7 +169,6 @@ export const deleteTopic = async (req, res) => {
       return res.status(404).json({ message: "Topic not found" });
     }
 
-    // Check if subtopics exist under this topic
     const subtopics = await Subtopic.find({ topicId });
     if (subtopics.length > 0) {
       return res.status(400).json({
@@ -154,11 +177,21 @@ export const deleteTopic = async (req, res) => {
       });
     }
 
+    // 🧹 delete cloudinary image if exists
     if (topicDoc.imageUrl) {
-      unlinkTopicImageIfLocal(topicDoc.imageUrl);
+      try {
+        const parts = topicDoc.imageUrl.split("/");
+        const file = parts[parts.length - 1];
+        const publicId = `topics/${file.split(".")[0]}`;
+
+        await cloudinary.uploader.destroy(publicId);
+      } catch (err) {
+        console.log("Cloudinary delete error:", err.message);
+      }
     }
 
     await Topic.findByIdAndDelete(topicId);
+
     res.json({ message: "Topic deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: error.message });

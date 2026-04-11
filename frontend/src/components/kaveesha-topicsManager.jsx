@@ -30,8 +30,7 @@ export default function KaveeshaTopicsManager({ onSelectTopic, compact }) {
 
   const topicImageSrc = (topic) => {
     if (!topic?.imageUrl) return null;
-    const u = topic.imageUrl;
-    return u.startsWith("/") ? `${API}${u}` : u;
+    return topic.imageUrl;
   };
 
   const handleTopicImageUpload = async (topic, file) => {
@@ -412,7 +411,7 @@ export default function KaveeshaTopicsManager({ onSelectTopic, compact }) {
                       ) : (
                         <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
                           {/* CHANGED: topic icon in cover larger */}
-                          <span className="text-6xl opacity-90">🏊</span>
+                          
                           <span className="text-xs font-bold uppercase tracking-widest" style={{ color: pal.badgeText }}>
                             Add a cover
                           </span>
