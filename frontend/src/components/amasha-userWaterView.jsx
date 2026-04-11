@@ -9,9 +9,9 @@ const getToken = () =>
   localStorage.getItem("aquachamp_token") ||
   sessionStorage.getItem("aquachamp_token");
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 🔒  Auth Guard Hook — redirects to /login if no token found
-// ─────────────────────────────────────────────────────────────────────────────
+// 
+//  Auth Guard Hook — redirects to /login if no token found
+// 
 function useAuthGuard(redirectTo = "/login") {
   const [checking, setChecking] = useState(true);
 
@@ -34,13 +34,13 @@ api.interceptors.request.use((cfg) => {
   return cfg;
 });
 
-// ✅ Uses Intl API — matches backend todayString() exactly
+
 const todayStr = () =>
   new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Colombo" });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 🌤️  Weather Hook
-// ─────────────────────────────────────────────────────────────────────────────
+// 
+//  Weather Hook
+// 
 function useWeather() {
   const [weather, setWeather] = useState(null);
   const [error,   setError]   = useState(null);
@@ -145,9 +145,9 @@ function useWeather() {
   };
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 🌡️  Weather Card
-// ─────────────────────────────────────────────────────────────────────────────
+// 
+//  Weather Card
+// 
 function WeatherCard({ wx }) {
   if (wx.loading) {
     return (
@@ -217,9 +217,9 @@ function WeatherCard({ wx }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 🧼  Hygiene Panel
-// ─────────────────────────────────────────────────────────────────────────────
+// 
+//  Hygiene Panel
+// 
 function HygienePanel({ reminders }) {
   if (!reminders || reminders.length === 0) return null;
   return (
@@ -239,9 +239,9 @@ function HygienePanel({ reminders }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 🌤️  Weather Badge
-// ─────────────────────────────────────────────────────────────────────────────
+// 
+//  Weather Badge
+// 
 function WeatherBadge({ wx }) {
   if (wx.loading || !wx.weather) return null;
   const badgeClass = wx.isVeryHot
@@ -262,9 +262,9 @@ function WeatherBadge({ wx }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 // Ring Progress
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 function RingProgress({ pct, cups, goal, isHot }) {
   const r    = 56;
   const circ = 2 * Math.PI * r;
@@ -296,9 +296,9 @@ function RingProgress({ pct, cups, goal, isHot }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 // Cup Button
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 function CupButton({ index, cups, goal, onSet }) {
   const [hover, setHover] = useState(false);
   const isFilled    = index < cups;
@@ -331,9 +331,9 @@ function CupButton({ index, cups, goal, onSet }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 // Edit Cups Modal
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 function EditCupsModal({ current, goal, onSave, onClose, loading }) {
   const [value, setValue] = useState(current);
 
@@ -392,9 +392,9 @@ function EditCupsModal({ current, goal, onSave, onClose, loading }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 // Encouragement Banner
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 function EncouragementBanner({ msg, emoji, level }) {
   const styles = {
     complete: "bg-emerald-50 border-emerald-200 text-emerald-700",
@@ -410,9 +410,9 @@ function EncouragementBanner({ msg, emoji, level }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 // History Row
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 function HistoryRow({ day }) {
   const progress = Math.min(100, Math.round((day.cupsConsumed / day.dailyGoalCups) * 100));
   const color    = day.goalMet
@@ -434,9 +434,9 @@ function HistoryRow({ day }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 🔒  Auth Loading Screen
-// ─────────────────────────────────────────────────────────────────────────────
+// 
+//   Auth Loading Screen
+// 
 function AuthCheckScreen() {
   return (
     <div className="h-screen bg-[#EAF5FF] flex items-center justify-center">
@@ -448,9 +448,9 @@ function AuthCheckScreen() {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 🏠  Main User View
-// ─────────────────────────────────────────────────────────────────────────────
+// 
+//   Main User View
+// 
 export default function UserWaterView() {
   // 🔒 Auth guard — redirects to /login if no token
   const authChecking = useAuthGuard("/login");
@@ -506,7 +506,7 @@ export default function UserWaterView() {
     if (!authChecking) init();
   }, [authChecking, init]);
 
-  // ✅ Auto-refresh when Sri Lanka date changes (midnight rollover)
+  //  Auto-refresh when Sri Lanka date changes (midnight rollover)
   useEffect(() => {
     let lastDate = todayStr();
     const interval = setInterval(() => {
@@ -592,7 +592,7 @@ export default function UserWaterView() {
   const extraCups    = wx.waterAdvice?.extraCups ?? 0;
   const adjustedGoal = goal + extraCups;
 
-  // ✅ Human-readable date using Intl — correct Sri Lanka time
+  //  Human-readable date using Intl — correct Sri Lanka time
   const displayDate = new Date().toLocaleDateString("en-US", {
     timeZone: "Asia/Colombo",
     weekday: "long",
@@ -708,7 +708,7 @@ export default function UserWaterView() {
           )}
         </div>
 
-        {/* ── RIGHT COLUMN ── */}
+        {/*  RIGHT COLUMN  */}
         <div className="flex flex-col gap-3 min-h-0">
 
           <WeatherCard wx={wx} />

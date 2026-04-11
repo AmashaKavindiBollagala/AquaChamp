@@ -12,7 +12,7 @@ const navLinks = [
   { label: "Profile",       path: "/profile",            icon: "👤" },
 ];
 
-// ─── Logout Confirmation Modal ─────────────────────────────────────────────────
+//  Logout Confirmation Modal 
 function LogoutModal({ onConfirm, onCancel }) {
   return (
     <div
@@ -46,7 +46,7 @@ function LogoutModal({ onConfirm, onCancel }) {
   );
 }
 
-// ─── Main Header ───────────────────────────────────────────────────────────────
+// Main Header 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);

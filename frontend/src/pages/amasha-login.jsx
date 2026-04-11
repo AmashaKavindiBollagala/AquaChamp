@@ -2,7 +2,7 @@ import React, { useState, memo, useCallback } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
-// ─── Reusable Field ────────────────────────────────────────────────────────────
+//  Reusable Field 
 const Field = memo(function Field({
   name,
   label,
@@ -63,7 +63,7 @@ const Field = memo(function Field({
   );
 });
 
-// ─── Forgot Password Modal ─────────────────────────────────────────────────────
+//  Forgot Password Modal 
 const ForgotPasswordModal = memo(function ForgotPasswordModal({ onClose }) {
   const [step, setStep] = useState("request"); // "request" | "sent"
   const [email, setEmail] = useState("");
@@ -178,7 +178,7 @@ const ForgotPasswordModal = memo(function ForgotPasswordModal({ onClose }) {
   );
 });
 
-// ─── Main Login Component ──────────────────────────────────────────────────────
+//  Main Login Component 
 export default function UserLogin() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState({});
@@ -255,8 +255,8 @@ export default function UserLogin() {
           sessionStorage.setItem("aquachamp_token", token);
         }
 
-        // FIX: Store user data in localStorage for other components to access
-        // IMPORTANT: Store username (not firstName) for game scores database
+        //  Store user data in localStorage for other components to access
+        //  Store username for game scores database
         const user = response.data.user;
         const userAgeGroup = (user?.age >= 5 && user?.age <= 10) ? "5-10" : "11-15";
         localStorage.setItem("aquachamp_user", JSON.stringify(user));
@@ -267,7 +267,7 @@ export default function UserLogin() {
         setUserData(user);
       setLoginSuccess(true);
 
-        // 🎯 CLAIM DAILY LOGIN POINTS AUTOMATICALLY
+        //  CLAIM DAILY LOGIN POINTS AUTOMATICALLY
         try {
           console.log("🎁 Attempting to claim daily login reward...");
           const dailyLoginRes = await axios.post(
@@ -288,7 +288,7 @@ export default function UserLogin() {
           }
         }
 
-        // ✅ Navigate to default path "/"
+        //  Navigate to default path "/"
         setTimeout(() => {
           navigate("/");
         }, 100);
@@ -397,7 +397,7 @@ export default function UserLogin() {
             </p>
           </aside>
 
-          {/* ── RIGHT PANEL ── */}
+          {/* RIGHT PANEL  */}
           <main className="flex min-h-screen flex-1 items-center justify-center px-4 py-6 lg:px-8">
             <div className="w-full max-w-md rounded-[28px] bg-white/85 p-5 shadow-[0_20px_60px_rgba(24,95,165,0.15)] backdrop-blur-xl lg:p-8">
               {/* Mobile Branding */}
@@ -418,7 +418,7 @@ export default function UserLogin() {
               </div>
 
               {loginSuccess ? (
-                /* ── Success State ── */
+                /*  Success State  */
                 <div className="flex min-h-100 flex-col items-center justify-center text-center">
                   <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-linear-to-br from-emerald-500 to-sky-600 text-4xl text-white shadow-xl">
                     🏆
@@ -452,7 +452,7 @@ export default function UserLogin() {
                   </button>
                 </div>
               ) : (
-                /* ── Login Form ── */
+                /*  Login Form  */
                 <>
                   <div className="mb-5">
                     <h3 className="text-3xl font-extrabold text-sky-950">Welcome Back!</h3>

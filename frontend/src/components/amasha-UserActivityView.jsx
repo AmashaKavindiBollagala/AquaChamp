@@ -360,7 +360,7 @@ const hasAlphanumeric = (str) => /[\p{L}\p{N}]/u.test(str);
 
 // Returns true only if every code point in the string is an emoji-related character.
 // Rejects plain letters (a-z, A-Z), digits (0-9), punctuation, whitespace, and symbols
-// that are not part of Unicode's emoji set.
+
 const isEmojiChar = (cp) => {
   // Reject ASCII letters, digits, basic punctuation and whitespace outright
   if (cp <= 0x007E) return false;
@@ -398,8 +398,7 @@ const isEmojiChar = (cp) => {
   return false;
 };
 
-// Returns true if the trimmed string is a single grapheme cluster made entirely
-// of emoji code points (emoji + ZWJ sequences, skin tones, flags, etc.)
+
 const isSingleEmoji = (str) => {
   const trimmed = str.trim();
   if (!trimmed) return false;
@@ -414,8 +413,7 @@ const isSingleEmoji = (str) => {
   return codePoints.length <= 8; // conservative fallback for ZWJ sequences
 };
 
-// Strips any non-emoji characters from a raw input string and returns
-// the last valid single emoji found, or a fallback.
+
 const extractEmoji = (raw, fallback = "") => {
   const trimmed = raw.trim();
   if (!trimmed) return fallback;
@@ -732,7 +730,7 @@ export default function UserActivityView() {
 
   useSmartReminders(activities, logs);
 
-  // ── If not authenticated, show the lock screen (useAuthGuard also redirects) ──
+  // If not authenticated, show the lock screen 
   if (!isAuthenticated) return <NotLoggedIn />;
 
   const loggedIds = new Set(logs.map((l) => l.activityId?._id || l.activityId));

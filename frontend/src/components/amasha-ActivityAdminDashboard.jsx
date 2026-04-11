@@ -19,9 +19,9 @@ api.interceptors.request.use((cfg) => {
   return cfg;
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 🔍 VALIDATION HELPERS
-// ─────────────────────────────────────────────────────────────────────────────
+// 
+//  VALIDATION HELPERS
+// 
 const NAME_MIN   = 3;
 const NAME_MAX   = 60;
 const DESC_MAX   = 300;
@@ -128,7 +128,7 @@ function validateActivityForm(form) {
   return errors;
 }
 
-// ── Field-level error label ───────────────────────────────────────────────────
+// Field-level error label
 function FieldError({ msg }) {
   if (!msg) return null;
   return (
@@ -138,7 +138,7 @@ function FieldError({ msg }) {
   );
 }
 
-// ── Sidebar ───────────────────────────────────────────────────────────────────
+// Sidebar
 const NAV = [
   { id: "activities", icon: "🧼", label: "Activity Management" },
   { id: "water",      icon: "💧", label: "Water Intake" },
@@ -209,7 +209,7 @@ function Sidebar({ active, setActive, collapsed, setCollapsed, onLogout }) {
   );
 }
 
-// ── Toast ─────────────────────────────────────────────────────────────────────
+//  Toast 
 function Toast({ msg, type, onClose }) {
   useEffect(() => {
     if (msg) { const t = setTimeout(onClose, 3200); return () => clearTimeout(t); }
@@ -225,7 +225,7 @@ function Toast({ msg, type, onClose }) {
   );
 }
 
-// ── Modal ─────────────────────────────────────────────────────────────────────
+// Modal
 function Modal({ title, onClose, children }) {
   return (
     <div
@@ -246,7 +246,7 @@ function Modal({ title, onClose, children }) {
   );
 }
 
-// ── Logout Confirmation Modal ─────────────────────────────────────────────────
+//  Logout Confirmation Modal
 function LogoutModal({ onConfirm, onCancel }) {
   return (
     <div
@@ -287,7 +287,7 @@ function LogoutModal({ onConfirm, onCancel }) {
   );
 }
 
-// ── Activity Form ─────────────────────────────────────────────────────────────
+// Activity Form
 const ICONS = ["🧼", "🪥", "🚿", "🌙", "✂️", "💇", "👕", "🚽", "💊", "🏃", "🥦", "😴"];
 
 function ActivityForm({ initial, onSave, onCancel, loading }) {
@@ -350,7 +350,7 @@ function ActivityForm({ initial, onSave, onCancel, loading }) {
   return (
     <div className="flex flex-col gap-4">
 
-      {/* ── Icon ─────────────────────────────────────────────────────────── */}
+      {/*  Icon */}
       <div>
         <label className="block text-[10px] font-extrabold uppercase tracking-[0.12em] text-sky-700 mb-2">
           Icon <span className="text-red-400">*</span>
@@ -387,7 +387,7 @@ function ActivityForm({ initial, onSave, onCancel, loading }) {
         </div>
       </div>
 
-      {/* ── Name ─────────────────────────────────────────────────────────── */}
+      {/*  Name */}
       <div>
         <div className="flex justify-between items-center mb-1.5">
           <label className="block text-[10px] font-extrabold uppercase tracking-[0.12em] text-sky-700">
@@ -407,7 +407,7 @@ function ActivityForm({ initial, onSave, onCancel, loading }) {
         {touched.name && <FieldError msg={errors.name} />}
       </div>
 
-      {/* ── Description ──────────────────────────────────────────────────── */}
+      {/* Description */}
       <div>
         <div className="flex justify-between items-center mb-1.5">
           <label className="block text-[10px] font-extrabold uppercase tracking-[0.12em] text-sky-700">
@@ -428,7 +428,7 @@ function ActivityForm({ initial, onSave, onCancel, loading }) {
         {touched.description && <FieldError msg={errors.description} />}
       </div>
 
-      {/* ── Points ───────────────────────────────────────────────────────── */}
+      {/*  Points */}
       <div>
         <label className="block text-[10px] font-extrabold uppercase tracking-[0.12em] text-sky-700 mb-1.5">
           Points <span className="text-red-400">*</span>
@@ -487,7 +487,7 @@ function ActivityForm({ initial, onSave, onCancel, loading }) {
         </div>
       </div>
 
-      {/* ── Actions ──────────────────────────────────────────────────────── */}
+      {/* Actions */}
       <div className="flex gap-3 mt-2">
         <button
           type="button" onClick={onCancel}
@@ -507,7 +507,7 @@ function ActivityForm({ initial, onSave, onCancel, loading }) {
   );
 }
 
-// ── User Detail Modal (Activities) ────────────────────────────────────────────
+//  User Detail Modal (Activities) 
 function UserDetailModal({ activity, onClose }) {
   const user = activity.userId;
   const initials = user?.name
@@ -600,7 +600,7 @@ function UserDetailModal({ activity, onClose }) {
   );
 }
 
-// ── Activity Card ─────────────────────────────────────────────────────────────
+//  Activity Card 
 function ActivityCard({ activity, onEdit, onDelete }) {
   const [showDetail, setShowDetail] = useState(false);
 
@@ -656,7 +656,7 @@ function ActivityCard({ activity, onEdit, onDelete }) {
   );
 }
 
-// ── Activities Panel ──────────────────────────────────────────────────────────
+//  Activities Panel 
 function ActivitiesPanel({ toast }) {
   const [activities, setActivities] = useState([]);
   const [loading,    setLoading]    = useState(true);
@@ -803,7 +803,7 @@ function ActivitiesPanel({ toast }) {
   );
 }
 
-// ── Water Panel Helpers ────────────────────────────────────────────────────────
+//  Water Panel Helpers
 const waterPct = (cups, goal) => Math.min(100, Math.round((cups / goal) * 100));
 
 const ageColor = (group) =>
@@ -818,7 +818,7 @@ const levelStyle = (p) => {
   return         { bar: "from-slate-300 to-slate-400",         label: "Just started 💧", text: "text-slate-500" };
 };
 
-// ── Water User Detail Modal ────────────────────────────────────────────────────
+//  Water User Detail Modal 
 function WaterUserDetailModal({ user, onClose }) {
   const [history, setHistory] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -946,7 +946,7 @@ function WaterUserDetailModal({ user, onClose }) {
   );
 }
 
-// ── Water User Row ─────────────────────────────────────────────────────────────
+//  Water User Row 
 function WaterUserRow({ user, onViewDetail }) {
   const progress = waterPct(user.cupsConsumed, user.dailyGoalCups);
   const lvl      = levelStyle(progress);
@@ -1000,7 +1000,7 @@ function WaterUserRow({ user, onViewDetail }) {
   );
 }
 
-// ── Water Panel ────────────────────────────────────────────────────────────────
+//  Water Panel 
 function WaterPanel() {
   const [users,       setUsers]       = useState([]);
   const [loading,     setLoading]     = useState(true);
@@ -1162,7 +1162,7 @@ function WaterPanel() {
   );
 }
 
-// ── Main Dashboard ────────────────────────────────────────────────────────────
+//  Main Dashboard 
 export default function ActivityAdminDashboard() {
   const [active,      setActive]      = useState("activities");
   const [collapsed,   setCollapsed]   = useState(false);

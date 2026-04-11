@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 
-/* ── Floating bubbles config ─────────────────────────────── */
+/*  Floating bubbles config  */
 const bubbles = [
   { size: 80,  left: "5%",  top: "12%", delay: "0s",   dur: "6s"  },
   { size: 50,  left: "15%", top: "70%", delay: "1s",   dur: "8s"  },
@@ -11,7 +11,7 @@ const bubbles = [
   { size: 90,  left: "25%", top: "30%", delay: "2.5s", dur: "10s" },
 ];
 
-/* ── Mission values ──────────────────────────────────────── */
+/*  Mission values  */
 const values = [
   {
     emoji: "💧", title: "Clean Water Access",
@@ -35,7 +35,7 @@ const values = [
   },
 ];
 
-/* ── Team members ────────────────────────────────────────── */
+/* Team members  */
 const team = [
   { name: "Dr. Priya Nair",   role: "Founder & Water Scientist", avatar: "👩‍🔬", color: "from-blue-400 to-cyan-400",    fact: "Has worked in 12 countries on clean water projects!" },
   { name: "James Okafor",     role: "Lead Educator & Designer",  avatar: "👨‍🎨", color: "from-cyan-400 to-teal-500",    fact: "Turned 50+ hygiene lessons into fun adventures." },
@@ -43,7 +43,7 @@ const team = [
   { name: "Arun Sharma",      role: "Tech Lead & Developer",     avatar: "👨‍💻", color: "from-teal-400 to-cyan-600",    fact: "Built AquaChamp from the ground up with ❤️." },
 ];
 
-/* ── Timeline milestones ─────────────────────────────────── */
+/*  Timeline milestones  */
 const milestones = [
   { year: "2021", icon: "💡", title: "The Idea",        desc: "AquaChamp was born from a school science fair project about clean water." },
   { year: "2022", icon: "🛠️", title: "Built & Tested",  desc: "We partnered with 10 schools to test our first lessons and quizzes." },
@@ -52,7 +52,7 @@ const milestones = [
   { year: "2025", icon: "🏆", title: "5,000+ Heroes",   desc: "Over 5,000 AquaChamps worldwide protecting water every day." },
 ];
 
-/* ── SDG Goals ───────────────────────────────────────────── */
+/*  SDG Goals  */
 const sdgPoints = [
   { icon: "🚰", text: "Universal access to safe drinking water" },
   { icon: "🚽", text: "Adequate sanitation and hygiene for all" },
@@ -61,9 +61,9 @@ const sdgPoints = [
   { icon: "🤝", text: "International cooperation on water issues" },
 ];
 
-/* ══════════════════════════════════════════════════════════
+/* 
    ABOUT PAGE
-══════════════════════════════════════════════════════════ */
+ */
 export default function AboutPage() {
   return (
     <div className="min-h-screen overflow-x-hidden" style={{ fontFamily: "'Nunito', sans-serif" }}>
@@ -86,7 +86,7 @@ export default function AboutPage() {
         .animate-slide-up { animation: slideUp 0.7s ease forwards; }
       `}</style>
 
-      {/* ════════════ HERO ════════════ */}
+      {/*  HERO */}
       <section className="relative min-h-[70vh] flex items-center justify-center
                           bg-gradient-to-br from-blue-900 via-cyan-800 to-emerald-500
                           overflow-hidden pb-16">
@@ -155,7 +155,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* ════════════ OUR STORY ════════════ */}
+      {/* OUR STORY */}
       <section id="our-story" className="bg-white py-20 px-6">
         <div className="max-w-6xl mx-auto flex flex-col lg:flex-row items-center gap-14">
 
@@ -211,7 +211,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* ════════════ VALUES ════════════ */}
+      {/* VALUES  */}
       <section className="bg-gradient-to-b from-white to-blue-50 py-20 px-6">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-14">
@@ -258,7 +258,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* ════════════ SDG SECTION ════════════ */}
+      {/*  SDG SECTION  */}
       <section className="bg-gradient-to-br from-blue-900 via-cyan-800 to-emerald-500 py-20 px-6 relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none opacity-10">
           <svg viewBox="0 0 800 400" className="w-full h-full">
@@ -318,7 +318,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* ════════════ TIMELINE ════════════ */}
+      {/*  TIMELINE  */}
       <section className="bg-white py-20 px-6">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-14">
@@ -381,7 +381,7 @@ export default function AboutPage() {
 
       
 
-      {/* ════════════ CTA ════════════ */}
+      {/*  CTA  */}
       <section className="bg-gradient-to-br from-blue-900 to-cyan-800 to-emerald-500 py-20 px-6
                           text-center relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none select-none">

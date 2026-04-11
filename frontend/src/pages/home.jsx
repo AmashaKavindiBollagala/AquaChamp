@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 
-/* ── Floating bubbles config ─────────────────────────────── */
+/*  Floating bubbles config  */
 const bubbles = [
   { size: 80,  left: "5%",  top: "12%", delay: "0s",   dur: "6s"  },
   { size: 50,  left: "15%", top: "70%", delay: "1s",   dur: "8s"  },
@@ -11,7 +11,7 @@ const bubbles = [
   { size: 90,  left: "25%", top: "30%", delay: "2.5s", dur: "10s" },
 ];
 
-/* ── Feature cards ───────────────────────────────────────── */
+/* Feature cards  */
 const features = [
   {
     emoji: "📚", title: "Fun Lessons",
@@ -51,7 +51,7 @@ const features = [
   },
 ];
 
-/* ── How it works steps ──────────────────────────────────── */
+/*  How it works steps  */
 const steps = [
   { num: "1", icon: "📖", title: "Learn a Lesson",  desc: "Pick a fun lesson about clean water or hygiene." },
   { num: "2", icon: "✏️", title: "Take the Quiz",   desc: "Answer questions and see how much you know!" },
@@ -59,7 +59,7 @@ const steps = [
   { num: "4", icon: "🌍", title: "Be a Hero!",       desc: "Practice good habits and share with friends." },
 ];
 
-/* ── Stats ───────────────────────────────────────────────── */
+/*  Stats  */
 const stats = [
   { num: "5,000+", label: "Kids Learning",  icon: "👦" },
   { num: "120+",   label: "Fun Lessons",    icon: "📚" },
@@ -67,14 +67,14 @@ const stats = [
   { num: "98%",    label: "Kids Love It",   icon: "❤️" },
 ];
 
-/* ── Testimonials ────────────────────────────────────────── */
+/*  Testimonials */
 const testimonials = [
   { name: "Aisha, Age 9",  quote: "I learned to wash hands properly and got a Gold Badge! So cool! 🌟", avatar: "🧒" },
   { name: "Ravi, Age 11",  quote: "AquaChamp is the best app ever! I'm number 1 on the leaderboard! 🏆", avatar: "👦" },
   { name: "Lily, Age 8",   quote: "I love the water drops and the quizzes are super fun! 💧", avatar: "👧" },
 ];
 
-/* ── Gallery images ──────────────────────────────────────── */
+/*  Gallery images  */
 const gallery = [
   {
     src: "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=600&h=600&fit=crop",
@@ -98,9 +98,9 @@ const gallery = [
   },
 ];
 
-/* ═══════════════════════════════════════════════════════════
+/*
    HOME PAGE
-═══════════════════════════════════════════════════════════ */
+ */
 export default function HomePage() {
   return (
     <div className="min-h-screen overflow-x-hidden " style={{ fontFamily: "'Nunito', sans-serif" }}>
@@ -118,7 +118,7 @@ export default function HomePage() {
         .animate-pop { animation: pop 0.6s ease forwards; }
       `}</style>
 
-      {/* ════════════ HERO ════════════ */}
+      {/*  HERO  */}
       <section className="relative min-h-[92vh] flex items-center justify-center
                           bg-gradient-to-br from-blue-900 via-cyan-800 to-emerald-500
                           overflow-hidden pb-16">
@@ -218,7 +218,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ════════════ STATS ════════════ */}
+      {/*  STATS  */}
       <section className="bg-white py-14">
         <div className="max-w-4xl mx-auto px-6 grid grid-cols-2 lg:grid-cols-4 gap-5">
           {stats.map((s, i) => (
@@ -239,7 +239,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ════════════ FEATURES ════════════ */}
+      {/*  FEATURES  */}
       <section className="bg-gradient-to-b from-white to-blue-50 py-20 px-6">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-14">
@@ -292,7 +292,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ════════════ HOW IT WORKS ════════════ */}
+      {/*  HOW IT WORKS  */}
       <section className="bg-gradient-to-br from-blue-900 to-cyan-800 to-emerald-500 py-20 px-6 relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none opacity-10">
           <svg viewBox="0 0 800 400" className="w-full h-full">
@@ -339,7 +339,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ════════════ GALLERY ════════════ */}
+      {/*GALLERY  */}
       <section className="bg-white py-20 px-6">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
@@ -376,7 +376,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ════════════ TESTIMONIALS ════════════ */}
+      {/*  TESTIMONIALS  */}
       <section className="bg-gradient-to-b from-blue-50 to-white py-20 px-6">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
@@ -409,7 +409,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ════════════ CTA ════════════ */}
+      {/*  CTA  */}
       <section className="bg-gradient-to-br from-blue-900 to-cyan-800 to-emerald-500 py-20 px-6
                           text-center relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none select-none">
