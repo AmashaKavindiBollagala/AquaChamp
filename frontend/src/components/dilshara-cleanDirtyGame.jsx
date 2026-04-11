@@ -3,15 +3,15 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  🔑 UNSPLASH API KEY — replace with your own from https://unsplash.com/developers
-//  Free account: 50 requests/hour, no credit card needed
-// ─────────────────────────────────────────────────────────────────────────────
+
+//  UNSPLASH API KEY
+
+
 const UNSPLASH_ACCESS_KEY = "sPOeRrswOVi84FdlGk1lEQ49S5JqESRmjgXQdKBOSEE";
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  TOPIC-SPECIFIC SEARCH TERMS (matches your existing topicId system)
-// ─────────────────────────────────────────────────────────────────────────────
+
+//  topic search
+
 const TOPIC_QUERIES = {
   "safe-drinking-water":                      { clean: "clean drinking water glass",         dirty: "contaminated water polluted river" },
   "hand-washing-and-personal-hygiene":        { clean: "clean hands soap washing hygiene",    dirty: "dirty hands germs bacteria" },
@@ -21,9 +21,9 @@ const TOPIC_QUERIES = {
   default:                                    { clean: "clean drinking water safe",           dirty: "dirty polluted water unsafe" },
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  SANITATION TIPS — shown after each correct answer
-// ─────────────────────────────────────────────────────────────────────────────
+
+//  SANITATION TIPS 
+
 const SANITATION_TIPS = [
   "💧 Always boil water from unknown sources before drinking!",
   "🧼 Wash hands with soap for 20 seconds after using the toilet.",
@@ -37,10 +37,10 @@ const SANITATION_TIPS = [
   "♻️ Reusing water wisely helps protect our environment.",
 ];
 
-// ─────────────────────────────────────────────────────────────────────────────
+
 //  FALLBACK IMAGES (in case Unsplash API fails or rate-limit hit)
 //  Using public Unsplash images by topic
-// ─────────────────────────────────────────────────────────────────────────────
+
 const FALLBACK_CARDS = [
   { id: "f1", imageUrl: "https://images.unsplash.com/photo-1548839140-29a749e1cf4d?w=400", label: "Crystal Clear Tap Water",        isClean: true,  description: "Safe tap water is treated and clean to drink." },
   { id: "f2", imageUrl: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400", label: "Clean Mountain Spring",         isClean: true,  description: "Fresh spring water from mountains is often very pure." },
@@ -52,9 +52,9 @@ const FALLBACK_CARDS = [
   { id: "f8", imageUrl: "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=400", label: "Plastic Polluted Ocean",        isClean: false, description: "Plastic in water harms marine life and contaminates water sources." },
 ];
 
-// ─────────────────────────────────────────────────────────────────────────────
+
 //  FONTS & ANIMATION CSS
-// ─────────────────────────────────────────────────────────────────────────────
+
 const FONT_LINK = "https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;800;900&display=swap";
 
 const CSS_ANIMATIONS = `
@@ -126,9 +126,9 @@ const CSS_ANIMATIONS = `
 const AVATAR_URL = (seed) =>
   `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(seed)}&backgroundColor=b6e3f4`;
 
-// ─────────────────────────────────────────────────────────────────────────────
+
 //  UNSPLASH FETCH HELPER
-// ─────────────────────────────────────────────────────────────────────────────
+
 async function fetchUnsplashImages(query, count = 4) {
   const url = `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=${count}&orientation=squarish&content_filter=high`;
   const res = await fetch(url, {
@@ -139,14 +139,14 @@ async function fetchUnsplashImages(query, count = 4) {
   return data.results || [];
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+
 //  BUILD CARD DECK FROM UNSPLASH RESULTS
-// ─────────────────────────────────────────────────────────────────────────────
+
 function buildDeckFromUnsplash(cleanPhotos, dirtyPhotos) {
   const cleanCards = cleanPhotos.map((photo, i) => ({
     id: `clean-${photo.id}`,
-    imageUrl: photo.urls.small,
-    imageThumb: photo.urls.thumb,
+   imageUrl: photo.urls.regular,
+imageThumb: photo.urls.small,
     label: photo.alt_description
       ? photo.alt_description.replace(/\b\w/g, c => c.toUpperCase()).slice(0, 30)
       : `Clean Water ${i + 1}`,
@@ -173,9 +173,9 @@ function buildDeckFromUnsplash(cleanPhotos, dirtyPhotos) {
   return [...cleanCards, ...dirtyCards].sort(() => Math.random() - 0.5);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+
 //  CONFETTI BURST COMPONENT
-// ─────────────────────────────────────────────────────────────────────────────
+
 function ConfettiBurst({ active }) {
   if (!active) return null;
   const pieces = ["🎊","⭐","💧","🌊","✨","🎉","💫","🌟"];
@@ -195,9 +195,9 @@ function ConfettiBurst({ active }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+
 //  SANITATION TIP TOAST
-// ─────────────────────────────────────────────────────────────────────────────
+
 function TipToast({ tip, visible }) {
   if (!tip || !visible) return null;
   return (
@@ -217,9 +217,9 @@ function TipToast({ tip, visible }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+
 //  MAIN COMPONENT
-// ─────────────────────────────────────────────────────────────────────────────
+
 export default function cleanDirtyGame({ game, username, onFinish, onNavigateBack }) {
   const navigate = useNavigate();
   
@@ -250,7 +250,7 @@ export default function cleanDirtyGame({ game, username, onFinish, onNavigateBac
   const topicId       = game.topicId || "default";
   const queries       = TOPIC_QUERIES[topicId] || TOPIC_QUERIES.default;
 
-  // ── LOAD IMAGES FROM UNSPLASH ───────────────────────────────────────────────
+  // ── LOAD IMAGES FROM UNSPLASH
   useEffect(() => {
     loadCards();
   }, []);
@@ -286,7 +286,7 @@ export default function cleanDirtyGame({ game, username, onFinish, onNavigateBac
   
   const currentCard = cards[cardIndex];
 
-  // ── HANDLE ANSWER (drag or tap) ─────────────────────────────────────────────
+  // ── HANDLE ANSWER (drag or tap)
   const handleClassify = (guessedClean) => {
     if (feedback) return; // already answered this card
     const isCorrect = guessedClean === currentCard.isClean;
@@ -327,7 +327,7 @@ export default function cleanDirtyGame({ game, username, onFinish, onNavigateBac
     }, 2200);
   };
 
-  // ── DRAG AND DROP HANDLERS ──────────────────────────────────────────────────
+  //  DRAG AND DROP HANDLERS 
   const handleDragStart = (e) => {
     e.dataTransfer.effectAllowed = "move";
     setDragging(true);
@@ -620,10 +620,10 @@ export default function cleanDirtyGame({ game, username, onFinish, onNavigateBac
         }}>⏸ Pause</button>
       </div>
 
-      {/* ── Main Play Area ── */}
+      {/* Main Play Area  */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "12px 16px", gap: 12 }}>
 
-        {/* ── Current Card ── */}
+        {/*  Current Card  */}
         {currentCard && (
           <div
             draggable={!feedback}
@@ -717,7 +717,7 @@ export default function cleanDirtyGame({ game, username, onFinish, onNavigateBac
           </div>
         )}
 
-        {/* ── Drop Zones ── */}
+        {/*  Drop Zones  */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 4 }}>
 
           {/* CLEAN BIN */}
@@ -802,9 +802,9 @@ export default function cleanDirtyGame({ game, username, onFinish, onNavigateBac
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+
 //  SHARED STYLES
-// ─────────────────────────────────────────────────────────────────────────────
+
 const STYLES = {
   screen: {
     minHeight: "100vh",

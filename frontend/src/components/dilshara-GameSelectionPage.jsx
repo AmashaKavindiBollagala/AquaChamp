@@ -1,6 +1,4 @@
-/**
- * dilshara-GameSelectionPage.jsx — BRIGHT CHILD-FRIENDLY THEME
- */
+
 
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
@@ -18,13 +16,16 @@ const TOPIC_LABELS = {
 // Mapping from possible slug variations to the correct topicId
 // This handles cases where the URL slug might differ from the database topicId
 const TOPIC_SLUG_MAP = {
+
   // Standard slugs (pass through)
   "safe-drinking-water": "safe-drinking-water",
   "hand-washing-and-personal-hygiene": "hand-washing-and-personal-hygiene",
   "toilet-and-sanpracticesitation-practices": "toilet-and-sanpracticesitation-practices",
   "water-borne-diseases-and-prevention": "water-borne-diseases-and-prevention",
   "water-conservation-and-environment-care": "water-conservation-and-environment-care",
+
   // Variations that might be generated from topic titles
+
   "handwashing-and-personal-hygiene": "hand-washing-and-personal-hygiene",
   "handwashing-personal-hygiene": "hand-washing-and-personal-hygiene",
   "toilet-and-sanitation-practices": "toilet-and-sanpracticesitation-practices",
@@ -116,15 +117,17 @@ export default function GameSelectionPage() {
     localStorage.getItem("userToken") ||
     localStorage.getItem("superAdminToken");
 
-  // Get username from multiple possible localStorage keys (student login uses different keys)
-  // IMPORTANT: Use username (not firstName) as userId for game scores
+  // Get username from multiple possible localStorage keys
+  
+  // Use username (not firstName) as userId for game scores
   const getUsername = () => {
     // Try to get user object first (student login stores user object)
     const userStr = localStorage.getItem("aquachamp_user") || localStorage.getItem("user");
     if (userStr) {
       try {
         const userObj = JSON.parse(userStr);
-        // IMPORTANT: Use username first for game scores database
+
+        // Use username first for game scores database
         if (userObj.username) return userObj.username;
         if (userObj.firstName) return userObj.firstName;
         if (userObj.name) return userObj.name;
@@ -142,11 +145,9 @@ export default function GameSelectionPage() {
   };
   const username = getUsername();
 
-  // Get ageGroup from multiple sources (navigation state, localStorage, user object)
-  // FIX: Changed from "6-10" to "5-10" to match game database ageGroup
   const getInitialAgeGroup = () => {
-    // From navigation state - but ONLY if explicitly set (not from completing lessons)
-    // We want users to select age group themselves
+
+ 
     if (location.state?.ageGroup && !location.state?.fromLessons) {
       console.log("🎮 Using ageGroup from navigation state:", location.state.ageGroup);
       return location.state.ageGroup;
@@ -312,7 +313,7 @@ export default function GameSelectionPage() {
     });
   };
 
-  // ── AGE GROUP SCREEN ──────────────────────────────────────────────────────
+  // ── AGE GROUP SCREEN 
   if (!ageGroup) return (
     <div style={styles.screen}>
       <link rel="stylesheet" href={FONTS} />
@@ -387,7 +388,7 @@ export default function GameSelectionPage() {
     </div>
   );
 
-  // ── DIFFICULTY SCREEN ─────────────────────────────────────────────────────
+  // ── DIFFICULTY SCREEN 
   return (
     <div style={styles.screen}>
       <link rel="stylesheet" href={FONTS} />

@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-// ─────────────────────────────────────────────────────────────────────────────
+
 //  CARD LIBRARY
-// ─────────────────────────────────────────────────────────────────────────────
+
 const CARD_LIBRARY = {
   "safe-drinking-water": [
     { word: "Boil Water",    icon: "♨️" }, { word: "Clean Cup",       icon: "🥤" },
@@ -80,7 +80,7 @@ const AVATAR_URL = (seed) =>
 
 const FONT_LINK = "https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;800;900&display=swap";
 
-// ─────────────────────────────────────────────────────────────────────────────
+
 export default function MemoryMatch({ game, username, onFinish, onNavigateBack }) {
   const navigate = useNavigate();
   
@@ -164,7 +164,7 @@ export default function MemoryMatch({ game, username, onFinish, onNavigateBack }
 
   const gridCols = "repeat(4, 1fr)";
 
-  // ── INTRO ─────────────────────────────────────────────────────────────────
+  // ── INTRO
   if (phase === "intro") return (
     <div style={screen}>
       <link rel="stylesheet" href={FONT_LINK} />
@@ -200,7 +200,7 @@ export default function MemoryMatch({ game, username, onFinish, onNavigateBack }
     </div>
   );
 
-  // ── RESULT ────────────────────────────────────────────────────────────────
+  // ── RESULT 
   if (phase === "result") return (
     <div style={screen}>
       <link rel="stylesheet" href={FONT_LINK} />
@@ -229,7 +229,7 @@ export default function MemoryMatch({ game, username, onFinish, onNavigateBack }
     </div>
   );
 
-  // ── PLAYING ───────────────────────────────────────────────────────────────
+  // ── PLAYING 
   return (
     <div style={screen}>
       <link rel="stylesheet" href={FONT_LINK} />

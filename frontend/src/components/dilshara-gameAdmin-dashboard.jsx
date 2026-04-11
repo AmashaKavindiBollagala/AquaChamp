@@ -24,10 +24,10 @@ const DIFF_CONFIG = {
   hard:   { timeLimit: 15, pointsPerQuestion: 20, questionCount: 10 },
 };
 
-// ── ADDED "cleanordirty" to this list ──
+//  ADDED "cleanordirty" to this list 
 const NON_QUIZ_TYPES = ["germcatcher", "waterdrop", "memory", "cleanordirty", "cleandirtygame"];
 
-// ── ADDED "cleanordirty" entry ──
+//  ADDED "cleanordirty" entry 
 const GAME_TYPE_INFO = {
 
   cleandirtygame: {
@@ -80,9 +80,9 @@ const sectionStyle = {
   borderRadius: 10, padding: 20, marginBottom: 20,
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
+
 //  SIDEBAR
-// ─────────────────────────────────────────────────────────────────────────────
+
 function Sidebar({ active, setActive, username, onLogout }) {
   return (
     <div style={{
@@ -142,9 +142,9 @@ function Sidebar({ active, setActive, username, onLogout }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+
 //  QUESTION EDITOR
-// ─────────────────────────────────────────────────────────────────────────────
+
 function QuestionEditor({ question, index, onChange, onDelete }) {
   const handleOption = (i, value) => {
     const opts = [...question.options];
@@ -203,9 +203,9 @@ function QuestionEditor({ question, index, onChange, onDelete }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+
 //  NON-QUIZ STEP 2
-// ─────────────────────────────────────────────────────────────────────────────
+
 function NonQuizStep2({ form, onBack, onSave, loading, msg }) {
   const info = GAME_TYPE_INFO[form.subType];
   const diffColor = { easy: "#1D9E75", medium: "#EF9F27", hard: "#E05252" };
@@ -298,9 +298,9 @@ function NonQuizStep2({ form, onBack, onSave, loading, msg }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+
 //  EDIT GAME FORM
-// ─────────────────────────────────────────────────────────────────────────────
+
 function EditGameForm({ game, token, onSuccess, onCancel }) {
   const [loading, setLoading] = useState(false);
   const [msg,     setMsg]     = useState("");
@@ -369,7 +369,7 @@ function EditGameForm({ game, token, onSuccess, onCancel }) {
         description:       form.description.trim(),
         topicId:           form.topicId,
         lessonTopic:       form.topicName,
-        topicName:         form.topicName, // ← FIX: also send topicName so GameCard shows it correctly
+        topicName:         form.topicName, 
         ageGroup:          form.ageGroup,
         difficulty:        form.difficulty,
         subType:           form.subType,
@@ -585,9 +585,9 @@ function EditGameForm({ game, token, onSuccess, onCancel }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+
 //  CREATE GAME FORM
-// ─────────────────────────────────────────────────────────────────────────────
+
 function CreateGameForm({ token, onSuccess }) {
   const [step, setStep]       = useState(1);
   const [loading, setLoading] = useState(false);
@@ -639,7 +639,7 @@ function CreateGameForm({ token, onSuccess }) {
     try {
       const payload = {
         ...form,
-        lessonTopic: form.topicName,  // send both field names for compatibility
+        lessonTopic: form.topicName,  
         topicName:   form.topicName,
         questions: [],
         timeLimit: config.timeLimit, pointsPerQuestion: config.pointsPerQuestion, passMark: 60,
@@ -932,9 +932,9 @@ function CreateGameForm({ token, onSuccess }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+
 //  STAT CARD
-// ─────────────────────────────────────────────────────────────────────────────
+
 function StatCard({ label, value, color }) {
   return (
     <div style={{ background: "#0F2840", border: "1px solid #1E3A56", borderRadius: 10, padding: "16px 20px", flex: 1 }}>
@@ -944,12 +944,12 @@ function StatCard({ label, value, color }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+
 //  GAME CARD
-// ─────────────────────────────────────────────────────────────────────────────
+
 function GameCard({ game, onDelete, onEdit }) {
   const diff = { easy: "#1D9E75", medium: "#EF9F27", hard: "#E05252" };
-  // ── ADDED cleanordirty emoji ──
+  // ── ADDED cleanordirty emoji 
   const subTypeEmoji = { quiz: "📝", germcatcher: "🦠", waterdrop: "💧", memory: "🃏", cleanordirty: "🫧" };
   return (
     <div style={{ background: "#0F2840", border: "1px solid #1E3A56", borderRadius: 10, padding: 16 }}>
@@ -988,9 +988,9 @@ function GameCard({ game, onDelete, onEdit }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+
 //  ALL GAMES
-// ─────────────────────────────────────────────────────────────────────────────
+
 function AllGames({ token, onEdit }) {
   const [games,   setGames]   = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1003,7 +1003,7 @@ function AllGames({ token, onEdit }) {
       if (filter.topicId)    params.set("topicId",    filter.topicId);
       if (filter.ageGroup)   params.set("ageGroup",   filter.ageGroup);
       if (filter.difficulty) params.set("difficulty", filter.difficulty);
-      // ── NOTE: removed &active=true from here — that was Bug #1 ──
+      // removed &active=true from 
       const res  = await fetch(`${API_BASE}/api/games?${params}`, { headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();
       let g = data.games || [];
@@ -1064,9 +1064,9 @@ function AllGames({ token, onEdit }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+
 //  DASHBOARD
-// ─────────────────────────────────────────────────────────────────────────────
+
 function Dashboard({ username, games }) {
   const total  = games.length;
   const easy   = games.filter(g => g.difficulty === "easy").length;
@@ -1181,7 +1181,7 @@ return (
 }
 
 //  ROOT
-// ─────────────────────────────────────────────────────────────────────────────
+
 export default function GameAdminDashboard() {
   const [active,      setActive]      = useState("dashboard");
   const [games,       setGames]       = useState([]);
@@ -1206,10 +1206,9 @@ export default function GameAdminDashboard() {
   };
 
   const handleLogout = () => {
-    ["superAdminToken","adminRoles","adminUsername"].forEach(k => localStorage.removeItem(k));
-    navigate("/");
-  };
-
+  ["superAdminToken","adminRoles","adminUsername"].forEach(k => localStorage.removeItem(k));
+  navigate("/");
+};
   const handleEditGame = (game) => {
     setEditingGame(game);
     setActive("edit");

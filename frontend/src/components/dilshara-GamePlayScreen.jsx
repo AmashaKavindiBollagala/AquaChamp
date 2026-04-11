@@ -1,11 +1,4 @@
-/**
- * dilshara-GamePlayScreen.jsx — BRIGHT CHILD-FRIENDLY THEME
- *
- * CHANGES FROM PREVIOUS VERSION:
- *  1. Imported CleanOrDirty and added its route
- *  2. Fixed handleNextDifficulty — removed &active=true from URL (Bug #1)
- *  3. Added "cleanordirty" to the subType routing switch
- */
+
 
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
@@ -13,7 +6,7 @@ import GermCatcher        from "./dilshara-GermCatcher";
 import WaterDropAdventure from "./dilshara-WaterDropAdventure";
 import MemoryMatch        from "./dilshara-MemoryMatch";
 import CleanOrDirty       from "./dilshara-CleanOrDirty"; 
-import CleanDirtyGame from "./dilshara-cleanDirtyGame"; // my idea of game 
+import CleanDirtyGame from "./dilshara-cleanDirtyGame"; 
 
 const API_BASE = "http://localhost:4000";
 const FONTS    = "https://fonts.googleapis.com/css2?family=Bubblegum+Sans&family=Nunito:wght@400;700;800;900;1000&display=swap";
@@ -56,21 +49,21 @@ export default function GamePlayScreen() {
   const navUserId   = location.state?.userId;
   const navTopicId  = location.state?.topicId;
 
-  // ── CORRECT token + username (reads aquachamp_ keys for student login) ──
+  // ── CORRECT token + username 
   const token =
     localStorage.getItem("aquachamp_token") ||
     localStorage.getItem("userToken") ||
     localStorage.getItem("superAdminToken");
 
-  // Get username from multiple possible localStorage keys (student login uses different keys)
-  // IMPORTANT: Use username (not firstName) as userId for game scores
+  // Get username from multiple possible localStorage keys
+
   const getUsername = () => {
-    // Try to get user object first (student login stores user object)
+    // Try to get user object first 
     const userStr = localStorage.getItem("aquachamp_user") || localStorage.getItem("user");
     if (userStr) {
       try {
         const userObj = JSON.parse(userStr);
-        // IMPORTANT: Use username first for game scores database
+        // Use username first for game scores database
         if (userObj.username) return userObj.username;
         if (userObj.firstName) return userObj.firstName;
         if (userObj.name) return userObj.name;
@@ -135,7 +128,7 @@ export default function GamePlayScreen() {
       return; 
     }
     try {
-      // ── FIX: removed &active=true — that was causing "no game found" (Bug #1) ──
+      // ── FIX: removed &active=true
       const res  = await fetch(
         `${API_BASE}/api/games?topicId=${effectiveTopicId}&ageGroup=${effectiveAgeGroup}&difficulty=${nextDiff}`,
         { headers: { Authorization: `Bearer ${token}` } }
@@ -169,7 +162,7 @@ export default function GamePlayScreen() {
     </div>
   );
 
-  // ── RESULT SCREEN ──────────────────────────────────────────────────────────
+  // ── RESULT SCREEN
   if (finalResult) {
     const difficulty = game?.difficulty || "easy";
     const nextDiff   = DIFF_NEXT[difficulty];
@@ -339,7 +332,7 @@ export default function GamePlayScreen() {
     );
   }
 
-  // ── Route to game component ────────────────────────────────────────────────
+  // ── Route to game component 
   if (!game) return null;
   const subType = game.subType || "quiz";
 
@@ -546,7 +539,7 @@ function StandardQuiz({ game, username, onFinish }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+
 function SplashScreen({ msg, emoji }) {
   return (
     <div style={center}>
