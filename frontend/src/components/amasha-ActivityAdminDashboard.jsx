@@ -19,6 +19,136 @@ api.interceptors.request.use((cfg) => {
   return cfg;
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// 🔍 VALIDATION HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
+const NAME_MIN   = 3;
+const NAME_MAX   = 60;
+const DESC_MAX   = 300;
+const POINTS_MIN = 1;
+const POINTS_MAX = 100;
+
+// Returns true if the string contains at least one real Unicode letter or digit
+const hasAlphanumeric = (str) => /[\p{L}\p{N}]/u.test(str);
+
+// Returns true only if the code point belongs to a Unicode emoji block.
+// Explicitly rejects ASCII (letters, digits, punctuation, whitespace).
+const isEmojiChar = (cp) => {
+  if (cp <= 0x007E) return false; // entire ASCII range — letters, digits, symbols
+  if (cp === 0x200D) return true; // ZWJ
+  if (cp === 0xFE0F) return true; // variation selector-16 (emoji presentation)
+  if (cp >= 0x1F3FB && cp <= 0x1F3FF) return true; // skin tone modifiers
+  if (cp >= 0x1F1E0 && cp <= 0x1F1FF) return true; // regional indicator letters (flags)
+  if (cp >= 0x2194 && cp <= 0x2199) return true;
+  if (cp >= 0x2300 && cp <= 0x23FF) return true;
+  if (cp >= 0x2600 && cp <= 0x26FF) return true;
+  if (cp >= 0x2700 && cp <= 0x27BF) return true;
+  if (cp >= 0x2B00 && cp <= 0x2BFF) return true;
+  if (cp >= 0xFE00 && cp <= 0xFE0F) return true; // variation selectors
+  if (cp >= 0x1F000 && cp <= 0x1F02F) return true; // Mahjong
+  if (cp >= 0x1F0A0 && cp <= 0x1F0FF) return true; // Playing cards
+  if (cp >= 0x1F100 && cp <= 0x1F1FF) return true; // Enclosed alphanumeric supplement
+  if (cp >= 0x1F200 && cp <= 0x1F2FF) return true; // Enclosed ideographic supplement
+  if (cp >= 0x1F300 && cp <= 0x1F5FF) return true; // Misc symbols & pictographs
+  if (cp >= 0x1F600 && cp <= 0x1F64F) return true; // Emoticons
+  if (cp >= 0x1F680 && cp <= 0x1F6FF) return true; // Transport & map
+  if (cp >= 0x1F700 && cp <= 0x1F77F) return true; // Alchemical
+  if (cp >= 0x1F780 && cp <= 0x1F7FF) return true; // Geometric shapes extended
+  if (cp >= 0x1F800 && cp <= 0x1F8FF) return true; // Supplemental arrows
+  if (cp >= 0x1F900 && cp <= 0x1F9FF) return true; // Supplemental symbols & pictographs
+  if (cp >= 0x1FA00 && cp <= 0x1FA6F) return true; // Chess symbols
+  if (cp >= 0x1FA70 && cp <= 0x1FAFF) return true; // Symbols & pictographs extended-A
+  if (cp >= 0x231A && cp <= 0x231B)   return true; // Watch, hourglass
+  if (cp >= 0x23E9 && cp <= 0x23F3)   return true; // Clock/arrow emoji
+  if (cp >= 0x25AA && cp <= 0x25AB)   return true;
+  if (cp >= 0x25FB && cp <= 0x25FE)   return true;
+  if (cp >= 0x2614 && cp <= 0x2615)   return true;
+  if (cp >= 0x2648 && cp <= 0x2653)   return true; // Zodiac signs
+  return false;
+};
+
+// Returns true if the trimmed string is exactly one emoji grapheme cluster
+// composed entirely of emoji code points.
+const isSingleEmoji = (str) => {
+  const trimmed = str.trim();
+  if (!trimmed) return false;
+  const codePoints = [...trimmed].map((ch) => ch.codePointAt(0));
+  if (!codePoints.every(isEmojiChar)) return false;
+  if (typeof Intl !== "undefined" && Intl.Segmenter) {
+    return [...new Intl.Segmenter().segment(trimmed)].length === 1;
+  }
+  return codePoints.length <= 8;
+};
+
+// Extracts the last valid single emoji from raw input; returns fallback if none found.
+const extractEmoji = (raw, fallback = "") => {
+  const trimmed = raw.trim();
+  if (!trimmed) return fallback;
+  if (typeof Intl !== "undefined" && Intl.Segmenter) {
+    const clusters = [...new Intl.Segmenter().segment(trimmed)].map((s) => s.segment);
+    const emojiOnly = clusters.filter((c) => isSingleEmoji(c));
+    return emojiOnly.length > 0 ? emojiOnly[emojiOnly.length - 1] : fallback;
+  }
+  const cps = [...trimmed];
+  const valid = cps.filter((ch) => isEmojiChar(ch.codePointAt(0)));
+  return valid.length > 0 ? valid[valid.length - 1] : fallback;
+};
+
+// Returns an errors object; empty means valid.
+function validateActivityForm(form) {
+  const errors = {};
+
+  // ── Icon ────────────────────────────────────────────────────────────────
+  const iconTrimmed = (form.icon || "").trim();
+  if (!iconTrimmed) {
+    errors.icon = "Please choose an icon.";
+  } else if (!isSingleEmoji(iconTrimmed)) {
+    errors.icon = "Only a single emoji is allowed — no letters, numbers, or symbols.";
+  }
+
+  // ── Name ────────────────────────────────────────────────────────────────
+  const nameTrimmed = (form.name || "").trim();
+  if (!nameTrimmed) {
+    errors.name = "Activity name is required.";
+  } else if (!hasAlphanumeric(nameTrimmed)) {
+    errors.name = "Name must contain at least one letter or number.";
+  } else if (nameTrimmed.length < NAME_MIN) {
+    errors.name = `Name must be at least ${NAME_MIN} characters.`;
+  } else if (nameTrimmed.length > NAME_MAX) {
+    errors.name = `Name must not exceed ${NAME_MAX} characters.`;
+  }
+
+  // ── Description (optional but bounded) ──────────────────────────────────
+  const descTrimmed = (form.description || "").trim();
+  if (descTrimmed.length > DESC_MAX) {
+    errors.description = `Description must not exceed ${DESC_MAX} characters.`;
+  }
+
+  // ── Points ──────────────────────────────────────────────────────────────
+  const pts = Number(form.points);
+  if (form.points === "" || form.points === null || form.points === undefined) {
+    errors.points = "Points are required.";
+  } else if (!Number.isInteger(pts)) {
+    errors.points = "Points must be a whole number.";
+  } else if (pts < POINTS_MIN) {
+    errors.points = `Points must be at least ${POINTS_MIN}.`;
+  } else if (pts > POINTS_MAX) {
+    errors.points = `Points must not exceed ${POINTS_MAX}.`;
+  }
+
+  return errors;
+}
+
+// ── Field-level error label ───────────────────────────────────────────────────
+function FieldError({ msg }) {
+  if (!msg) return null;
+  return (
+    <p className="text-red-500 text-[11px] font-semibold mt-1 flex items-center gap-1">
+      <span>⚠️</span> {msg}
+    </p>
+  );
+}
+
 // ── Sidebar ───────────────────────────────────────────────────────────────────
 const NAV = [
   { id: "activities", icon: "🧼", label: "Activity Management" },
@@ -125,37 +255,93 @@ function ActivityForm({ initial, onSave, onCancel, loading }) {
     name:        initial?.name        || "",
     description: initial?.description || "",
     icon:        initial?.icon        || "🧼",
-    points:      initial?.points      || 10,
+    points:      initial?.points      ?? 10,
   });
-  const f = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
+  const [errors,  setErrors]  = useState({});
+  const [touched, setTouched] = useState({});
+
+  // Generic field change — re-validates only the changed field instantly
+  const handleChange = (k) => (e) => {
+    const val = e.target.value;
+    setForm((p) => ({ ...p, [k]: val }));
+    setErrors((prev) => {
+      const next = validateActivityForm({ ...form, [k]: val });
+      return { ...prev, [k]: next[k] };
+    });
+  };
+
+  const markTouched = (k) => setTouched((p) => ({ ...p, [k]: true }));
+
+  // Icon pick from preset buttons
+  const handleIconPick = (ic) => {
+    setForm((p) => ({ ...p, icon: ic }));
+    setErrors((prev) => {
+      const next = validateActivityForm({ ...form, icon: ic });
+      return { ...prev, icon: next.icon };
+    });
+    setTouched((p) => ({ ...p, icon: true }));
+  };
+
+  // Icon typed/pasted — strip non-emoji characters before storing
+  const handleIconInput = (e) => {
+    const extracted = extractEmoji(e.target.value, form.icon);
+    handleIconPick(extracted);
+  };
+
+  const handleSubmit = () => {
+    setTouched({ icon: true, name: true, description: true, points: true });
+    const errs = validateActivityForm(form);
+    setErrors(errs);
+    if (Object.keys(errs).length > 0) return;
+    onSave({
+      ...form,
+      name:        form.name.trim(),
+      description: form.description.trim(),
+      icon:        form.icon.trim(),
+      points:      Number(form.points),
+    });
+  };
+
+  const isFormValid = Object.keys(validateActivityForm(form)).length === 0;
+
+  // Shared input class builder
+  const inputCls = (k) =>
+    `w-full rounded-xl border-2 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition
+    ${touched[k] && errors[k]
+      ? "border-red-400 focus:border-red-500 focus:ring-4 focus:ring-red-100"
+      : "border-sky-100 focus:border-sky-600 focus:ring-4 focus:ring-sky-100"}`;
 
   return (
     <div className="flex flex-col gap-4">
+
+      {/* ── Icon ─────────────────────────────────────────────────────────── */}
       <div>
-        <label className="block text-[10px] font-extrabold uppercase tracking-[0.12em] text-sky-700 mb-2">Icon</label>
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-12 h-12 rounded-xl border-2 border-sky-200 bg-sky-50 flex items-center justify-center text-2xl shrink-0">
+        <label className="block text-[10px] font-extrabold uppercase tracking-[0.12em] text-sky-700 mb-2">
+          Icon <span className="text-red-400">*</span>
+        </label>
+        <div className="flex items-center gap-2 mb-2">
+          <div className={`w-12 h-12 rounded-xl border-2 flex items-center justify-center text-2xl shrink-0 transition-all
+            ${touched.icon && errors.icon ? "border-red-400 bg-red-50" : "border-sky-200 bg-sky-50"}`}>
             {form.icon}
           </div>
           <div className="flex-1">
             <input
               type="text"
               value={form.icon}
-              onChange={(e) => {
-                const val = [...e.target.value].slice(-1).join("") || "🧼";
-                setForm((p) => ({ ...p, icon: val }));
-              }}
-              placeholder="Type any emoji…"
-              className="w-full rounded-xl border-2 border-sky-100 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100 transition"
+              onChange={handleIconInput}
+              onBlur={() => markTouched("icon")}
+              placeholder="Paste an emoji here…"
+              className={inputCls("icon")}
             />
-            <p className="text-[10px] text-slate-400 mt-1">Type or paste any emoji, or pick below</p>
+            <p className="text-[10px] text-slate-400 mt-1">Only emoji accepted — letters &amp; numbers are blocked</p>
           </div>
         </div>
-        <div className="flex flex-wrap gap-2">
+        {touched.icon && <FieldError msg={errors.icon} />}
+        <div className="flex flex-wrap gap-2 mt-1">
           {ICONS.map((ic) => (
             <button
               key={ic} type="button"
-              onClick={() => setForm((p) => ({ ...p, icon: ic }))}
+              onClick={() => handleIconPick(ic)}
               className={`w-10 h-10 rounded-xl text-xl cursor-pointer transition-all border-2
                 ${form.icon === ic
                   ? "border-sky-600 bg-sky-50 scale-110 shadow-sm"
@@ -165,42 +351,121 @@ function ActivityForm({ initial, onSave, onCancel, loading }) {
         </div>
       </div>
 
+      {/* ── Name ─────────────────────────────────────────────────────────── */}
       <div>
-        <label className="block text-[10px] font-extrabold uppercase tracking-[0.12em] text-sky-700 mb-1.5">Activity Name *</label>
+        <div className="flex justify-between items-center mb-1.5">
+          <label className="block text-[10px] font-extrabold uppercase tracking-[0.12em] text-sky-700">
+            Activity Name <span className="text-red-400">*</span>
+          </label>
+          <span className={`text-[10px] font-semibold ${(form.name.trim().length > NAME_MAX) ? "text-red-500" : "text-slate-400"}`}>
+            {form.name.trim().length}/{NAME_MAX}
+          </span>
+        </div>
         <input
-          value={form.name} onChange={f("name")}
+          value={form.name}
+          onChange={handleChange("name")}
+          onBlur={() => markTouched("name")}
           placeholder="e.g. Brush Teeth (Morning)"
-          className="w-full rounded-xl border-2 border-sky-100 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100 transition"
+          className={inputCls("name")}
         />
+        {touched.name && <FieldError msg={errors.name} />}
       </div>
 
+      {/* ── Description ──────────────────────────────────────────────────── */}
       <div>
-        <label className="block text-[10px] font-extrabold uppercase tracking-[0.12em] text-sky-700 mb-1.5">Description</label>
+        <div className="flex justify-between items-center mb-1.5">
+          <label className="block text-[10px] font-extrabold uppercase tracking-[0.12em] text-sky-700">
+            Description <span className="text-slate-400 normal-case font-normal">(optional)</span>
+          </label>
+          <span className={`text-[10px] font-semibold ${(form.description.trim().length > DESC_MAX) ? "text-red-500" : "text-slate-400"}`}>
+            {form.description.trim().length}/{DESC_MAX}
+          </span>
+        </div>
         <textarea
-          value={form.description} onChange={f("description")} rows={3}
+          value={form.description}
+          onChange={handleChange("description")}
+          onBlur={() => markTouched("description")}
+          rows={3}
           placeholder="Brief description..."
-          className="w-full rounded-xl border-2 border-sky-100 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100 transition resize-y"
+          className={`${inputCls("description")} resize-y`}
         />
+        {touched.description && <FieldError msg={errors.description} />}
       </div>
 
+      {/* ── Points ───────────────────────────────────────────────────────── */}
       <div>
-        <label className="block text-[10px] font-extrabold uppercase tracking-[0.12em] text-sky-700 mb-1.5">Points (1–100)</label>
+        <label className="block text-[10px] font-extrabold uppercase tracking-[0.12em] text-sky-700 mb-1.5">
+          Points <span className="text-red-400">*</span>
+          <span className="text-slate-400 normal-case font-normal ml-1">(1–100)</span>
+        </label>
         <input
-          type="number" min={1} max={100}
-          value={form.points} onChange={f("points")}
-          className="w-full rounded-xl border-2 border-sky-100 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100 transition"
-        />
+            type="number"
+            min={POINTS_MIN}
+            max={POINTS_MAX}
+            step={1}
+            value={form.points}
+            onKeyDown={(e) => {
+         if (["e", "E", "+", "-", "."].includes(e.key)) {
+        e.preventDefault();
+      }
+    }}
+       onChange={(e) => {
+       let val = e.target.value;
+
+      if (val === "") {
+      handleChange("points")(e);
+      return;
+      }
+
+      val = Number(val);
+
+      if (val < POINTS_MIN || val > POINTS_MAX) return;
+
+      handleChange("points")({
+      target: { value: val }
+     });
+    }}
+     onBlur={() => markTouched("points")}
+     placeholder="e.g. 10"
+     className={inputCls("points")}
+   />
+        {touched.points && <FieldError msg={errors.points} />}
+        {/* Visual range hint */}
+        <div className="flex justify-between mt-1.5 px-1">
+          {[1, 10, 25, 50, 75, 100].map((v) => (
+            <button
+              key={v} type="button"
+              onClick={() => {
+                setForm((p) => ({ ...p, points: v }));
+                setErrors((prev) => {
+                  const next = validateActivityForm({ ...form, points: v });
+                  return { ...prev, points: next.points };
+                });
+                setTouched((p) => ({ ...p, points: true }));
+              }}
+              className={`text-[10px] font-bold px-1.5 py-0.5 rounded-lg border transition cursor-pointer
+                ${Number(form.points) === v
+                  ? "border-sky-600 bg-sky-600 text-white"
+                  : "border-sky-100 bg-sky-50 text-sky-600 hover:border-sky-400"}`}
+            >{v}</button>
+          ))}
+        </div>
       </div>
 
+      {/* ── Actions ──────────────────────────────────────────────────────── */}
       <div className="flex gap-3 mt-2">
         <button
           type="button" onClick={onCancel}
           className="flex-1 py-2.5 rounded-2xl border-2 border-sky-100 bg-white text-sky-700 font-extrabold text-sm cursor-pointer hover:bg-sky-50 transition"
         >Cancel</button>
         <button
-          type="button" onClick={() => onSave(form)}
-          disabled={loading || !form.name.trim()}
-          className="flex-1 py-2.5 rounded-2xl border-none bg-linear-to-r from-sky-700 to-emerald-500 text-white font-extrabold text-sm cursor-pointer shadow-lg hover:-translate-y-0.5 transition disabled:opacity-60 disabled:cursor-not-allowed"
+          type="button"
+          onClick={handleSubmit}
+          disabled={loading}
+          className={`flex-1 py-2.5 rounded-2xl border-none font-extrabold text-sm cursor-pointer shadow-lg transition
+            ${!isFormValid
+              ? "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none"
+              : "bg-linear-to-r from-sky-700 to-emerald-500 text-white hover:-translate-y-0.5"}`}
         >{loading ? "Saving…" : "💾 Save Activity"}</button>
       </div>
     </div>
@@ -881,7 +1146,6 @@ export default function ActivityAdminDashboard() {
         <div className="flex items-center justify-between mb-7 px-5 py-3.5 bg-white rounded-2xl shadow-sm border border-sky-100">
           <div className="font-extrabold text-[#042C53] text-sm">👋 Admin Dashboard · AquaChamp</div>
           <div className="flex gap-2.5 items-center">
-            {/* ✅ Correct Sri Lanka date via Intl */}
             <span className="px-2.5 py-1 rounded-lg bg-sky-50 text-sky-600 text-[11px] font-bold border border-sky-100">
               📅 {todayStr()}
             </span>

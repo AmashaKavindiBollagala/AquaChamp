@@ -24,9 +24,9 @@ const todayStr = () => {
   return `${yyyy}-${mm}-${dd}`;
 };
 
-// ─────────────────────────────────────────────
-// 🔒 AUTH GUARD HOOK
-// ─────────────────────────────────────────────
+
+//  AUTH GUARD HOOK
+
 function useAuthGuard() {
   const navigate = useNavigate();
 
@@ -40,9 +40,9 @@ function useAuthGuard() {
   return !!getToken();
 }
 
-// ─────────────────────────────────────────────
-// 🔔 SMART REMINDERS
-// ─────────────────────────────────────────────
+
+// SMART REMINDERS
+
 const REMINDER_HOUR = 20;
 
 function requestNotificationPermission() {
@@ -91,7 +91,7 @@ function useSmartReminders(activities, logs) {
   }, [activities, logs]);
 }
 
-// ── Streak helpers ────────────────────────────────────────────────────────────
+//  Streak helpers
 const MILESTONES = [3, 7, 14, 30, 60, 100];
 
 function getMotivationMessage(streak) {
@@ -126,7 +126,7 @@ const MILESTONE_META = {
   100: { label: "Century Club",   icon: "🌟" },
 };
 
-// ── Toast ─────────────────────────────────────────────────────────────────────
+// Toast
 function Toast({ msg, type, onClose }) {
   useEffect(() => {
     if (msg) { const t = setTimeout(onClose, 3000); return () => clearTimeout(t); }
@@ -143,7 +143,7 @@ function Toast({ msg, type, onClose }) {
   );
 }
 
-// ── Streak Banner ─────────────────────────────────────────────────────────────
+//  Streak Banner 
 function StreakBanner({ streak }) {
   if (!streak) return null;
   const { currentStreak, longestStreak } = streak;
@@ -230,7 +230,7 @@ function StreakBanner({ streak }) {
   );
 }
 
-// ── Points Card ───────────────────────────────────────────────────────────────
+//  Points Card 
 function PointsCard({ points }) {
   return (
     <div className="bg-gradient-to-br from-amber-50 to-yellow-100 border border-amber-200 rounded-2xl p-4 flex items-center gap-3 shadow-sm">
@@ -243,7 +243,7 @@ function PointsCard({ points }) {
   );
 }
 
-// ── Progress Ring ─────────────────────────────────────────────────────────────
+//  Progress Ring
 function ProgressRing({ done, total }) {
   const r = 38;
   const c = 2 * Math.PI * r;
@@ -276,7 +276,7 @@ function ProgressRing({ done, total }) {
   );
 }
 
-// ── User Activity Card ────────────────────────────────────────────────────────
+//  User Activity Card 
 function UserActivityCard({ activity, isLogged, onLog, logging, onEdit, onDelete }) {
   return (
     <div className={`bg-white rounded-2xl p-4 border-2 transition-all shadow-sm
@@ -350,7 +350,131 @@ function UserActivityCard({ activity, isLogged, onLog, logging, onEdit, onDelete
   );
 }
 
-// ── Custom Activity Modal ─────────────────────────────────────────────────────
+//  Validation helpers 
+const NAME_MIN = 3;
+const NAME_MAX = 50;
+const DESC_MAX = 200;
+
+// Returns true if the string contains at least one real Unicode letter or digit
+const hasAlphanumeric = (str) => /[\p{L}\p{N}]/u.test(str);
+
+// Returns true only if every code point in the string is an emoji-related character.
+// Rejects plain letters (a-z, A-Z), digits (0-9), punctuation, whitespace, and symbols
+// that are not part of Unicode's emoji set.
+const isEmojiChar = (cp) => {
+  // Reject ASCII letters, digits, basic punctuation and whitespace outright
+  if (cp <= 0x007E) return false;
+  // Allow combining/modifier ranges used by emoji sequences
+  if (cp === 0x200D) return true;  // ZWJ
+  if (cp === 0xFE0F) return true;  // variation selector-16 (emoji presentation)
+  if (cp >= 0x1F3FB && cp <= 0x1F3FF) return true; // skin tone modifiers
+  if (cp >= 0x1F1E0 && cp <= 0x1F1FF) return true; // regional indicator letters (flags)
+  // Core emoji blocks
+  if (cp >= 0x2194 && cp <= 0x2199) return true;
+  if (cp >= 0x2300 && cp <= 0x23FF) return true;
+  if (cp >= 0x2600 && cp <= 0x26FF) return true;
+  if (cp >= 0x2700 && cp <= 0x27BF) return true;
+  if (cp >= 0x2B00 && cp <= 0x2BFF) return true;
+  if (cp >= 0xFE00 && cp <= 0xFE0F) return true; // variation selectors
+  if (cp >= 0x1F000 && cp <= 0x1F02F) return true; // Mahjong
+  if (cp >= 0x1F0A0 && cp <= 0x1F0FF) return true; // Playing cards
+  if (cp >= 0x1F100 && cp <= 0x1F1FF) return true; // Enclosed alphanumeric supplement
+  if (cp >= 0x1F200 && cp <= 0x1F2FF) return true; // Enclosed ideographic supplement
+  if (cp >= 0x1F300 && cp <= 0x1F5FF) return true; // Misc symbols & pictographs
+  if (cp >= 0x1F600 && cp <= 0x1F64F) return true; // Emoticons
+  if (cp >= 0x1F680 && cp <= 0x1F6FF) return true; // Transport & map
+  if (cp >= 0x1F700 && cp <= 0x1F77F) return true; // Alchemical
+  if (cp >= 0x1F780 && cp <= 0x1F7FF) return true; // Geometric shapes extended
+  if (cp >= 0x1F800 && cp <= 0x1F8FF) return true; // Supplemental arrows
+  if (cp >= 0x1F900 && cp <= 0x1F9FF) return true; // Supplemental symbols & pictographs
+  if (cp >= 0x1FA00 && cp <= 0x1FA6F) return true; // Chess symbols
+  if (cp >= 0x1FA70 && cp <= 0x1FAFF) return true; // Symbols & pictographs extended-A
+  if (cp >= 0x231A && cp <= 0x231B) return true;   // Watch, hourglass
+  if (cp >= 0x23E9 && cp <= 0x23F3) return true;   // Various clock/arrow emoji
+  if (cp >= 0x25AA && cp <= 0x25AB) return true;
+  if (cp >= 0x25FB && cp <= 0x25FE) return true;
+  if (cp >= 0x2614 && cp <= 0x2615) return true;
+  if (cp >= 0x2648 && cp <= 0x2653) return true;   // Zodiac signs
+  return false;
+};
+
+// Returns true if the trimmed string is a single grapheme cluster made entirely
+// of emoji code points (emoji + ZWJ sequences, skin tones, flags, etc.)
+const isSingleEmoji = (str) => {
+  const trimmed = str.trim();
+  if (!trimmed) return false;
+  // All code points must be emoji-related
+  const codePoints = [...trimmed].map((ch) => ch.codePointAt(0));
+  if (!codePoints.every(isEmojiChar)) return false;
+  // Must be exactly one grapheme cluster (one "visual" emoji)
+  if (typeof Intl !== "undefined" && Intl.Segmenter) {
+    const segments = [...new Intl.Segmenter().segment(trimmed)];
+    return segments.length === 1;
+  }
+  return codePoints.length <= 8; // conservative fallback for ZWJ sequences
+};
+
+// Strips any non-emoji characters from a raw input string and returns
+// the last valid single emoji found, or a fallback.
+const extractEmoji = (raw, fallback = "") => {
+  const trimmed = raw.trim();
+  if (!trimmed) return fallback;
+  // Split into grapheme clusters, keep only those that are pure emoji
+  if (typeof Intl !== "undefined" && Intl.Segmenter) {
+    const clusters = [...new Intl.Segmenter().segment(trimmed)].map((s) => s.segment);
+    const emojiOnly = clusters.filter((c) => isSingleEmoji(c));
+    // Return only the last emoji typed (so user can replace by typing a new one)
+    return emojiOnly.length > 0 ? emojiOnly[emojiOnly.length - 1] : fallback;
+  }
+  // Fallback: check each code point
+  const cps = [...trimmed];
+  const valid = cps.filter((ch) => isEmojiChar(ch.codePointAt(0)));
+  return valid.length > 0 ? valid[valid.length - 1] : fallback;
+};
+
+function validateActivityForm(form) {
+  const errors = {};
+
+  //  Icon 
+  const iconTrimmed = form.icon.trim();
+  if (!iconTrimmed) {
+    errors.icon = "Please choose an icon.";
+  } else if (!isSingleEmoji(iconTrimmed)) {
+    errors.icon = "Only a single emoji is allowed — no letters, numbers, or symbols.";
+  }
+
+  //  Name 
+  const nameTrimmed = form.name.trim();
+  if (!nameTrimmed) {
+    errors.name = "Activity name is required.";
+  } else if (!hasAlphanumeric(nameTrimmed)) {
+    errors.name = "Name must contain at least one letter or number.";
+  } else if (nameTrimmed.length < NAME_MIN) {
+    errors.name = `Name must be at least ${NAME_MIN} characters.`;
+  } else if (nameTrimmed.length > NAME_MAX) {
+    errors.name = `Name must not exceed ${NAME_MAX} characters.`;
+  }
+
+  //  Description (optional but bounded) 
+  const descTrimmed = form.description.trim();
+  if (descTrimmed.length > DESC_MAX) {
+    errors.description = `Description must not exceed ${DESC_MAX} characters.`;
+  }
+
+  return errors; 
+}
+
+//  Field-level error label 
+function FieldError({ msg }) {
+  if (!msg) return null;
+  return (
+    <p className="text-red-500 text-[11px] font-semibold mt-1 flex items-center gap-1">
+      <span>⚠️</span> {msg}
+    </p>
+  );
+}
+
+//  Custom Activity Modal 
 const ICONS = ["⭐", "🏃", "🥦", "😴", "📖", "🎵", "🧘", "🌳", "🎨", "🐾", "🧩", "💪"];
 
 function CustomActivityModal({ onSave, onClose, loading, initial }) {
@@ -359,7 +483,44 @@ function CustomActivityModal({ onSave, onClose, loading, initial }) {
     description: initial?.description || "",
     icon: initial?.icon || "⭐",
   });
-  const f = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
+  const [errors, setErrors]   = useState({});
+  const [touched, setTouched] = useState({});
+
+  const f = (k) => (e) => {
+    setForm((p) => ({ ...p, [k]: e.target.value }));
+    // Re-validate the changed field on every keystroke so feedback is instant
+    setErrors((prev) => {
+      const next = validateActivityForm({ ...form, [k]: e.target.value });
+      return { ...prev, [k]: next[k] };
+    });
+  };
+
+  const markTouched = (k) => setTouched((p) => ({ ...p, [k]: true }));
+
+  const handleIconPick = (ic) => {
+    setForm((p) => ({ ...p, icon: ic }));
+    setErrors((prev) => {
+      const next = validateActivityForm({ ...form, icon: ic });
+      return { ...prev, icon: next.icon };
+    });
+    setTouched((p) => ({ ...p, icon: true }));
+  };
+
+  const handleSubmit = () => {
+    // Mark all fields touched so every error shows at once
+    setTouched({ icon: true, name: true, description: true });
+    const errs = validateActivityForm(form);
+    setErrors(errs);
+    if (Object.keys(errs).length > 0) return;
+    onSave({
+      ...form,
+      name: form.name.trim(),
+      description: form.description.trim(),
+      icon: form.icon.trim(),
+    });
+  };
+
+  const isFormValid = Object.keys(validateActivityForm(form)).length === 0;
 
   return (
     <div
@@ -381,10 +542,14 @@ function CustomActivityModal({ onSave, onClose, loading, initial }) {
           >✕</button>
         </div>
 
+        {/*  Icon field */}
         <div className="mb-4">
-          <label className="block text-[10px] font-extrabold uppercase tracking-[0.12em] text-sky-700 mb-2">Pick an Icon</label>
+          <label className="block text-[10px] font-extrabold uppercase tracking-[0.12em] text-sky-700 mb-2">
+            Pick an Icon <span className="text-red-400">*</span>
+          </label>
           <div className="flex items-center gap-2 mb-3">
-            <div className="w-12 h-12 rounded-xl border-2 border-sky-200 bg-sky-50 flex items-center justify-center text-2xl shrink-0">
+            <div className={`w-12 h-12 rounded-xl border-2 flex items-center justify-center text-2xl shrink-0 transition-all
+              ${touched.icon && errors.icon ? "border-red-400 bg-red-50" : "border-sky-200 bg-sky-50"}`}>
               {form.icon}
             </div>
             <div className="flex-1">
@@ -392,20 +557,26 @@ function CustomActivityModal({ onSave, onClose, loading, initial }) {
                 type="text"
                 value={form.icon}
                 onChange={(e) => {
-                  const val = [...e.target.value].slice(-1).join("") || "⭐";
-                  setForm((p) => ({ ...p, icon: val }));
+                  // Only accept emoji characters — letters, digits, and punctuation are silently blocked
+                  const extracted = extractEmoji(e.target.value, form.icon);
+                  handleIconPick(extracted);
                 }}
-                placeholder="Type any emoji…"
-                className="w-full rounded-xl border-2 border-sky-100 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100 transition"
+                onBlur={() => markTouched("icon")}
+                placeholder="Paste an emoji here…"
+                className={`w-full rounded-xl border-2 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition
+                  ${touched.icon && errors.icon
+                    ? "border-red-400 focus:border-red-500 focus:ring-4 focus:ring-red-100"
+                    : "border-sky-100 focus:border-sky-600 focus:ring-4 focus:ring-sky-100"}`}
               />
-              <p className="text-[10px] text-slate-400 mt-1">Type or paste any emoji, or pick below</p>
+              <p className="text-[10px] text-slate-400 mt-1">Only emoji accepted — letters &amp; numbers are blocked</p>
             </div>
           </div>
+          {touched.icon && <FieldError msg={errors.icon} />}
           <div className="flex flex-wrap gap-1.5">
             {ICONS.map((ic) => (
               <button
                 key={ic} type="button"
-                onClick={() => setForm((p) => ({ ...p, icon: ic }))}
+                onClick={() => handleIconPick(ic)}
                 className={`w-10 h-10 rounded-xl text-xl cursor-pointer transition-all border-2
                   ${form.icon === ic
                     ? "border-sky-600 bg-sky-50 scale-110 shadow-sm"
@@ -415,24 +586,55 @@ function CustomActivityModal({ onSave, onClose, loading, initial }) {
           </div>
         </div>
 
+        {/*  Name field  */}
         <div className="mb-4">
-          <label className="block text-[10px] font-extrabold uppercase tracking-[0.12em] text-sky-700 mb-1.5">Activity Name *</label>
+          <div className="flex justify-between items-center mb-1.5">
+            <label className="block text-[10px] font-extrabold uppercase tracking-[0.12em] text-sky-700">
+              Activity Name <span className="text-red-400">*</span>
+            </label>
+            <span className={`text-[10px] font-semibold ${form.name.trim().length > NAME_MAX ? "text-red-500" : "text-slate-400"}`}>
+              {form.name.trim().length}/{NAME_MAX}
+            </span>
+          </div>
           <input
-            value={form.name} onChange={f("name")}
+            value={form.name}
+            onChange={f("name")}
+            onBlur={() => markTouched("name")}
             placeholder="e.g. Evening Stretches"
-            className="w-full rounded-xl border-2 border-sky-100 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100 transition"
+            maxLength={NAME_MAX + 10} // allow typing over to show the error naturally
+            className={`w-full rounded-xl border-2 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition
+              ${touched.name && errors.name
+                ? "border-red-400 focus:border-red-500 focus:ring-4 focus:ring-red-100"
+                : "border-sky-100 focus:border-sky-600 focus:ring-4 focus:ring-sky-100"}`}
           />
+          {touched.name && <FieldError msg={errors.name} />}
         </div>
 
+        {/*  Description field  */}
         <div className="mb-6">
-          <label className="block text-[10px] font-extrabold uppercase tracking-[0.12em] text-sky-700 mb-1.5">Description (optional)</label>
+          <div className="flex justify-between items-center mb-1.5">
+            <label className="block text-[10px] font-extrabold uppercase tracking-[0.12em] text-sky-700">
+              Description <span className="text-slate-400 normal-case font-normal">(optional)</span>
+            </label>
+            <span className={`text-[10px] font-semibold ${form.description.trim().length > DESC_MAX ? "text-red-500" : "text-slate-400"}`}>
+              {form.description.trim().length}/{DESC_MAX}
+            </span>
+          </div>
           <textarea
-            value={form.description} onChange={f("description")} rows={2}
+            value={form.description}
+            onChange={f("description")}
+            onBlur={() => markTouched("description")}
+            rows={2}
             placeholder="What does this activity involve?"
-            className="w-full rounded-xl border-2 border-sky-100 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100 transition resize-none"
+            className={`w-full rounded-xl border-2 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition resize-none
+              ${touched.description && errors.description
+                ? "border-red-400 focus:border-red-500 focus:ring-4 focus:ring-red-100"
+                : "border-sky-100 focus:border-sky-600 focus:ring-4 focus:ring-sky-100"}`}
           />
+          {touched.description && <FieldError msg={errors.description} />}
         </div>
 
+        {/*  Actions  */}
         <div className="flex gap-3">
           <button
             type="button" onClick={onClose}
@@ -440,9 +642,12 @@ function CustomActivityModal({ onSave, onClose, loading, initial }) {
           >Cancel</button>
           <button
             type="button"
-            onClick={() => form.name.trim() && onSave(form)}
-            disabled={loading || !form.name.trim()}
-            className="flex-1 py-2.5 rounded-2xl border-none bg-gradient-to-r from-sky-700 to-emerald-500 text-white font-extrabold text-sm cursor-pointer shadow-lg hover:-translate-y-0.5 transition disabled:opacity-60 disabled:cursor-not-allowed"
+            onClick={handleSubmit}
+            disabled={loading}
+            className={`flex-1 py-2.5 rounded-2xl border-none font-extrabold text-sm cursor-pointer shadow-lg transition
+              ${!isFormValid
+                ? "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none"
+                : "bg-gradient-to-r from-sky-700 to-emerald-500 text-white hover:-translate-y-0.5"}`}
           >{loading ? "Adding…" : "✨ Add Activity"}</button>
         </div>
       </div>
@@ -450,9 +655,9 @@ function CustomActivityModal({ onSave, onClose, loading, initial }) {
   );
 }
 
-// ─────────────────────────────────────────────
-// 🔒 NOT LOGGED IN SCREEN
-// ─────────────────────────────────────────────
+
+//  NOT LOGGED IN SCREEN
+
 function NotLoggedIn() {
   const navigate = useNavigate();
   return (
@@ -480,9 +685,9 @@ function NotLoggedIn() {
   );
 }
 
-// ── Main User View ────────────────────────────────────────────────────────────
+//  Main User View 
 export default function UserActivityView() {
-  // ── 🔒 AUTH GUARD — must be first ────────────────────────────────────────
+  //  AUTH GUARD — must be first 
   const isAuthenticated = useAuthGuard();
 
   const [activities,   setActivities]   = useState([]);
