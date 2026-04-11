@@ -171,7 +171,7 @@ export default function PublicLeaderboard() {
         <div className="absolute top-2/3 left-1/2 w-64 h-64 bg-amber-200/20 rounded-full blur-2xl" />
       </div>
 
-      {/* Header */}
+      {/* Header
       <div className="sticky top-0 z-20 bg-white/60 backdrop-blur-md border-b border-white/50 shadow-sm">
         <div className="max-w-3xl mx-auto px-5 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -193,7 +193,7 @@ export default function PublicLeaderboard() {
             My Profile
           </button>
         </div>
-      </div>
+      </div> */}
 
       <div className="relative z-10 max-w-3xl mx-auto px-5 py-6 space-y-6">
 

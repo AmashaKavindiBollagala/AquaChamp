@@ -111,7 +111,7 @@ export default function DushaniStudentProgress() {
       <Bubble size={40} color="#185FA535" style={{ position: "absolute", top: 350, left: "18%", animation: "floatUp 5s ease-in-out infinite", pointerEvents: "none" }} />
       <Bubble size={28} color="#1D9E7535" style={{ position: "absolute", top: "40%", right: "12%", animation: "floatUp 7s ease-in-out infinite 1.5s", pointerEvents: "none" }} />
 
-      {/* ── NAV BAR ── */}
+      {/* ── NAV BAR ──
       <nav style={{
         display: "flex",
         alignItems: "center",
@@ -187,7 +187,7 @@ export default function DushaniStudentProgress() {
             ← Back to Profile
           </button>
         </div>
-      </nav>
+      </nav> */}
 
       {/* ── MAIN CONTENT ── */}
       <div style={{ maxWidth: 960, margin: "0 auto", padding: "28px 24px 32px" }}>
