@@ -33,8 +33,8 @@ export default function KaveeshaStudentNav({ user, ageGroup }) {
             : "linear-gradient(135deg, #0369a1, #2563eb)",
         }}
       >
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-          {/* Logo */}
+        {/* <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between"> */}
+          {/* Logo
           <div
             className="flex items-center gap-3 cursor-pointer"
             onClick={() => navigate("/student/dashboard")}
@@ -50,10 +50,10 @@ export default function KaveeshaStudentNav({ user, ageGroup }) {
                 {isYoung ? "Water hero 💧" : "WASH explorer 🌍"}
               </div>
             </div>
-          </div>
+          </div> */}
 
           {/* Nav Links */}
-          <div className="hidden md:flex items-center gap-2">
+          {/* <div className="hidden md:flex items-center gap-2">
             {navItems.map((item) => (
               <button
                 key={item.path}
@@ -68,10 +68,10 @@ export default function KaveeshaStudentNav({ user, ageGroup }) {
                 {item.label}
               </button>
             ))}
-          </div>
+          </div> */}
 
           {/* User + Logout */}
-          <div className="flex items-center gap-3">
+          {/* <div className="flex items-center gap-3">
             {user && (
               <div className="hidden md:flex items-center gap-2 bg-white/20 rounded-2xl px-4 py-2 backdrop-blur-sm">
                 <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-lg font-extrabold text-gray-600">
@@ -93,8 +93,8 @@ export default function KaveeshaStudentNav({ user, ageGroup }) {
             >
               👋 Logout
             </button>
-          </div>
-        </div>
+          </div> */}
+        {/* </div> */}
 
         {/* Mobile bottom nav */}
         <div className="md:hidden flex justify-around py-2 border-t border-white/20">

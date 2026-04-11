@@ -122,18 +122,16 @@ export default function KaveeshaStudentProgress() {
         .progress-bar { transition: width 1.5s cubic-bezier(0.4,0,0.2,1); }
       `}</style>
 
-      <KaveeshaStudentNav user={user} ageGroup={ageGroup} />
-
       <main className="max-w-4xl mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="display-font text-4xl font-extrabold text-gray-800 mb-2">
             📊 My Progress
           </h1>
-          <p className="text-gray-500 font-semibold">
+          {/* <p className="text-gray-500 font-semibold">
             {isYoung
               ? "See how awesome you're doing! 🌟"
               : "Track your swimming journey"}
-          </p>
+          </p> */}
         </div>
 
         {/* Overall Progress Circle */}

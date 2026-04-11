@@ -1,65 +1,82 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+
 export default function Sidebar({ activePage, onNavigate }) {
+  const navigate = useNavigate();
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  const isLoggedIn =
+    !!localStorage.getItem("aquachamp_token") ||
+    !!sessionStorage.getItem("aquachamp_token");
+
   const navItems = [
     {
-      section: 'Overview',
-      items: [{ id: 'overview', label: 'Dashboard', icon: '⚡' }],
+      section: "Overview",
+      items: [{ id: "overview", label: "Dashboard", icon: "⚡" }],
     },
     {
-      section: 'Management',
+      section: "Management",
       items: [
-        { id: 'badges', label: 'Badges', icon: '🏅' },
-        { id: 'levels', label: 'Levels', icon: '🏊' },
+        { id: "badges", label: "Badges", icon: "🏅" },
+        { id: "levels", label: "Levels", icon: "🏊" },
       ],
     },
     {
-      section: 'Students',
+      section: "Students",
       items: [
-        { id: 'leaderboard', label: 'Leaderboard', icon: '🏆', external: true },
-        { id: 'progress', label: 'Student Progress', icon: '🎓' },
+        { id: "leaderboard", label: "Leaderboard", icon: "🏆", external: true },
+        { id: "progress", label: "Student Progress", icon: "🎓" },
       ],
     },
   ];
 
   const handleNavigation = (item) => {
     if (item.external) {
-      window.location.href = '/leaderboard';
+      window.location.href = "/leaderboard";
     } else {
       onNavigate(item.id);
     }
   };
 
+  const handleAuthAction = () => {
+    if (isLoggedIn) {
+      setShowConfirm(true);
+    } else {
+      navigate("/");
+    }
+  };
+
+  const confirmLogout = () => {
+    localStorage.removeItem("aquachamp_token");
+    sessionStorage.removeItem("aquachamp_token");
+
+    setShowConfirm(false);
+    navigate("/");
+  };
+
   return (
     <div
-      className="w-64 flex-shrink-0 flex flex-col"
+      className="w-64 flex-shrink-0 flex flex-col text-white"
       style={{
-        background: 'linear-gradient(170deg, #0b2540 0%, #0d3b6e 55%, #0b2540 100%)',
-        borderRight: '1px solid rgba(24,95,165,0.3)',
-        boxShadow: '4px 0 28px rgba(11,37,64,0.5)',
+        background:
+          "linear-gradient(170deg, #0b2540 0%, #0d3b6e 55%, #0b2540 100%)",
+        borderRight: "1px solid rgba(24,95,165,0.3)",
+        boxShadow: "4px 0 28px rgba(11,37,64,0.5)",
         fontFamily: "'Segoe UI', sans-serif",
       }}
     >
       {/* Logo */}
       <div
         className="flex items-center gap-3 px-5 py-6"
-        style={{ borderBottom: '1px solid rgba(24,95,165,0.3)' }}
+        style={{ borderBottom: "1px solid rgba(24,95,165,0.3)" }}
       >
-        <div
-          className="w-11 h-11 rounded-2xl flex items-center justify-center text-xl shrink-0"
-          style={{
-            background: 'linear-gradient(135deg, #0ea5e9, #185FA5)',
-            boxShadow: '0 0 20px rgba(14,165,233,0.5)',
-          }}
-        >
+        <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-xl bg-gradient-to-br from-sky-400 to-blue-700 shadow-lg">
           🌊
         </div>
+
         <div>
-          <div className="text-base font-bold tracking-wide text-white leading-tight">
-            AquaChamp
-          </div>
-          <div
-            className="text-[10px] tracking-widest uppercase font-semibold"
-            style={{ color: '#7EC8F0' }}
-          >
+          <div className="text-base font-bold">AquaChamp</div>
+          <div className="text-[10px] uppercase tracking-widest text-sky-300">
             Progress Admin
           </div>
         </div>
@@ -69,76 +86,36 @@ export default function Sidebar({ activePage, onNavigate }) {
       <nav className="flex-1 py-5 px-3 space-y-5">
         {navItems.map(({ section, items }) => (
           <div key={section}>
-            {/* Section label */}
-            <div
-              className="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-widest"
-              style={{ color: 'rgba(126,200,240,0.45)' }}
-            >
+            <div className="px-3 pb-1 text-[10px] uppercase text-sky-300/50 font-bold tracking-widest">
               {section}
             </div>
 
             <div className="space-y-1">
               {items.map((item) => {
                 const isActive = activePage === item.id;
+
                 return (
                   <button
                     key={item.id}
                     onClick={() => handleNavigation(item)}
-                    className="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 relative text-left"
-                    style={
+                    className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 text-left relative ${
                       isActive
-                        ? {
-                            background: 'linear-gradient(135deg, #185FA5, #0ea5e9)',
-                            color: '#ffffff',
-                            boxShadow: '0 4px 18px rgba(14,165,233,0.45)',
-                            border: '1px solid rgba(126,200,240,0.35)',
-                          }
-                        : {
-                            color: '#7EC8F0',
-                            border: '1px solid transparent',
-                            background: 'transparent',
-                          }
-                    }
-                    onMouseEnter={(e) => {
-                      if (!isActive) {
-                        e.currentTarget.style.background = 'rgba(14,165,233,0.12)';
-                        e.currentTarget.style.color = '#bae6fd';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isActive) {
-                        e.currentTarget.style.background = 'transparent';
-                        e.currentTarget.style.color = '#7EC8F0';
-                      }
-                    }}
+                        ? "bg-gradient-to-r from-blue-700 to-sky-500 text-white shadow-lg"
+                        : "text-sky-300 hover:bg-sky-500/10 hover:text-sky-200"
+                    }`}
                   >
-                    {/* Active left bar */}
                     {isActive && (
-                      <div
-                        className="absolute left-0 top-1/2 -translate-y-1/2 w-1 rounded-r-full"
-                        style={{ height: '60%', background: '#7EC8F0' }}
-                      />
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-sky-300 rounded-r-full" />
                     )}
 
-                    <span className="text-base shrink-0">{item.icon}</span>
-                    <span className="text-sm font-semibold tracking-wide flex-1">
+                    <span className="text-base">{item.icon}</span>
+
+                    <span className="flex-1 text-sm font-semibold">
                       {item.label}
                     </span>
 
-                    {isActive && (
-                      <div
-                        className="w-2 h-2 rounded-full shrink-0"
-                        style={{ background: '#bae6fd', boxShadow: '0 0 6px #bae6fd' }}
-                      />
-                    )}
-
                     {item.external && !isActive && (
-                      <span
-                        className="text-[11px] font-bold shrink-0"
-                        style={{ color: 'rgba(126,200,240,0.5)' }}
-                      >
-                        ↗
-                      </span>
+                      <span className="text-xs text-sky-400">↗</span>
                     )}
                   </button>
                 );
@@ -149,35 +126,59 @@ export default function Sidebar({ activePage, onNavigate }) {
       </nav>
 
       {/* Footer */}
-      <div
-        className="px-3 pb-4"
-        style={{ borderTop: '1px solid rgba(24,95,165,0.3)' }}
-      >
+      <div className="px-3 pb-4 border-t border-sky-500/20">
         <div className="flex items-center gap-2.5 px-3 pt-4">
-          <div
-            className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold text-white shrink-0"
-            style={{
-              background: 'linear-gradient(135deg, #0ea5e9, #185FA5)',
-              boxShadow: '0 0 12px rgba(14,165,233,0.4)',
-            }}
-          >
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-sky-400 to-blue-700 flex items-center justify-center font-bold shadow-md">
             A
           </div>
+
           <div>
-            <div className="text-sm font-bold text-white leading-tight">Dushani</div>
-            <span
-              className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-              style={{
-                background: 'rgba(14,165,233,0.2)',
-                color: '#7EC8F0',
-                border: '1px solid rgba(14,165,233,0.3)',
-              }}
-            >
+            <div className="text-sm font-bold">Dushani</div>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30">
               Progress Admin
             </span>
           </div>
         </div>
+
+        {/* Logout/Login Button */}
+        <button
+          onClick={handleAuthAction}
+          className="w-full mt-4 py-2 rounded-xl font-semibold text-white bg-sky-500 hover:bg-sky-600 shadow-[0_0_12px_rgba(14,165,233,0.4)] transition-all duration-200"
+        >
+          {isLoggedIn ? "Logout" : "Login"}
+        </button>
       </div>
+
+      {/* Logout Confirmation Modal */}
+      {showConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="w-80 rounded-2xl bg-white p-6 text-center shadow-xl">
+            <h2 className="text-lg font-bold text-gray-800">
+              Confirm Logout
+            </h2>
+
+            <p className="mt-2 text-sm text-gray-500">
+              Are you sure you want to logout?
+            </p>
+
+            <div className="mt-5 flex justify-center gap-3">
+              <button
+                onClick={() => setShowConfirm(false)}
+                className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={confirmLogout}
+                className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

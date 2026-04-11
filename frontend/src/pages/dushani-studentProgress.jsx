@@ -77,19 +77,15 @@ export default function DushaniStudentProgress() {
 
   if (loading) {
     return (
-      <div style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "linear-gradient(135deg,#4FC3F7 0%,#1D9E75 50%,#185FA5 100%)"
-      }}>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
-          <div style={{ position: "relative", width: 72, height: 72 }}>
-            <div style={{ width: 72, height: 72, borderRadius: "50%", border: "5px solid rgba(255,255,255,0.3)", borderTop: "5px solid #fff", animation: "spin 1s linear infinite" }} />
-            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>💧</div>
+      <div className="min-h-screen flex items-center justify-center"
+        style={{ background: "linear-gradient(135deg,#4FC3F7 0%,#1D9E75 50%,#185FA5 100%)" }}>
+        <div className="flex flex-col items-center gap-4 p-4">
+          <div className="relative w-16 h-16 sm:w-20 sm:h-20">
+            <div className="w-full h-full rounded-full border-4 border-white/30 border-t-white animate-spin" />
+            <div className="absolute inset-0 flex items-center justify-center text-2xl sm:text-3xl">💧</div>
           </div>
-          <p style={{ fontFamily: "'Nunito', sans-serif", fontWeight: 900, color: "#fff", fontSize: 18, textShadow: "0 2px 8px rgba(0,0,0,0.2)" }}>
+          <p className="font-nunito font-black text-white text-base sm:text-lg text-center" 
+             style={{ textShadow: "0 2px 8px rgba(0,0,0,0.2)" }}>
             Loading your progress... 📊
           </p>
         </div>
@@ -111,7 +107,7 @@ export default function DushaniStudentProgress() {
       <Bubble size={40} color="#185FA535" style={{ position: "absolute", top: 350, left: "18%", animation: "floatUp 5s ease-in-out infinite", pointerEvents: "none" }} />
       <Bubble size={28} color="#1D9E7535" style={{ position: "absolute", top: "40%", right: "12%", animation: "floatUp 7s ease-in-out infinite 1.5s", pointerEvents: "none" }} />
 
-      {/* ── NAV BAR ── */}
+      {/* ── NAV BAR ──
       <nav style={{
         display: "flex",
         alignItems: "center",
@@ -187,244 +183,148 @@ export default function DushaniStudentProgress() {
             ← Back to Profile
           </button>
         </div>
-      </nav>
+      </nav> */}
 
       {/* ── MAIN CONTENT ── */}
-      <div style={{ maxWidth: 960, margin: "0 auto", padding: "28px 24px 32px" }}>
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         
         {/* Stats Overview Cards */}
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-          gap: 16,
-          marginBottom: 28
-        }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
           {/* Total Points */}
-          <div style={{
-            background: "linear-gradient(135deg,#185FA5,#1D9E75)",
-            borderRadius: 20,
-            padding: "20px",
-            color: "#fff",
-            boxShadow: "0 8px 24px rgba(24,95,165,0.3)"
-          }}>
-            <div style={{ fontSize: 12, fontWeight: 800, opacity: 0.9, marginBottom: 8 }}>💧 Total Points</div>
-            <div style={{ fontSize: 36, fontWeight: 900, lineHeight: 1 }}>
+          <div className="rounded-2xl p-5 text-white"
+               style={{ background: "linear-gradient(135deg,#185FA5,#1D9E75)", boxShadow: "0 8px 24px rgba(24,95,165,0.3)" }}>
+            <div className="text-xs font-extrabold opacity-90 mb-2">💧 Total Points</div>
+            <div className="text-3xl sm:text-4xl font-black leading-tight">
               {progressData.totalPoints.toLocaleString()}
             </div>
-            <div style={{ fontSize: 11, fontWeight: 700, opacity: 0.8, marginTop: 6 }}>
+            <div className="text-xs font-bold opacity-80 mt-1.5">
               Keep earning more!
             </div>
           </div>
 
           {/* Current Level */}
-          <div style={{
-            background: "linear-gradient(135deg,#EF9F27,#F5B85D)",
-            borderRadius: 20,
-            padding: "20px",
-            color: "#fff",
-            boxShadow: "0 8px 24px rgba(239,159,39,0.3)"
-          }}>
-            <div style={{ fontSize: 12, fontWeight: 800, opacity: 0.9, marginBottom: 8 }}>⭐ Current Level</div>
-            <div style={{ fontSize: 32, fontWeight: 900, lineHeight: 1 }}>
+          <div className="rounded-2xl p-5 text-white"
+               style={{ background: "linear-gradient(135deg,#EF9F27,#F5B85D)", boxShadow: "0 8px 24px rgba(239,159,39,0.3)" }}>
+            <div className="text-xs font-extrabold opacity-90 mb-2">⭐ Current Level</div>
+            <div className="text-2xl sm:text-3xl font-black leading-tight">
               {progressData.currentLevel}
             </div>
-            <div style={{ fontSize: 11, fontWeight: 700, opacity: 0.8, marginTop: 6 }}>
+            <div className="text-xs font-bold opacity-80 mt-1.5">
               Level up by earning points!
             </div>
           </div>
 
           {/* Rank */}
-          <div style={{
-            background: "linear-gradient(135deg,#1D9E75,#4FC3F7)",
-            borderRadius: 20,
-            padding: "20px",
-            color: "#fff",
-            boxShadow: "0 8px 24px rgba(29,158,117,0.3)"
-          }}>
-            <div style={{ fontSize: 12, fontWeight: 800, opacity: 0.9, marginBottom: 8 }}>🏆 Your Rank</div>
-            <div style={{ fontSize: 36, fontWeight: 900, lineHeight: 1 }}>
+          <div className="rounded-2xl p-5 text-white"
+               style={{ background: "linear-gradient(135deg,#1D9E75,#4FC3F7)", boxShadow: "0 8px 24px rgba(29,158,117,0.3)" }}>
+            <div className="text-xs font-extrabold opacity-90 mb-2">🏆 Your Rank</div>
+            <div className="text-3xl sm:text-4xl font-black leading-tight">
               {progressData.rank}
             </div>
-            <div style={{ fontSize: 11, fontWeight: 700, opacity: 0.8, marginTop: 6 }}>
+            <div className="text-xs font-bold opacity-80 mt-1.5">
               Among all students
             </div>
           </div>
 
           {/* Badges */}
-          <div style={{
-            background: "linear-gradient(135deg,#8B5CF6,#A78BFA)",
-            borderRadius: 20,
-            padding: "20px",
-            color: "#fff",
-            boxShadow: "0 8px 24px rgba(139,92,246,0.3)"
-          }}>
-            <div style={{ fontSize: 12, fontWeight: 800, opacity: 0.9, marginBottom: 8 }}>🏅 Badges Earned</div>
-            <div style={{ fontSize: 36, fontWeight: 900, lineHeight: 1 }}>
+          <div className="rounded-2xl p-5 text-white"
+               style={{ background: "linear-gradient(135deg,#8B5CF6,#A78BFA)", boxShadow: "0 8px 24px rgba(139,92,246,0.3)" }}>
+            <div className="text-xs font-extrabold opacity-90 mb-2">🏅 Badges Earned</div>
+            <div className="text-3xl sm:text-4xl font-black leading-tight">
               {progressData.badgesCount}
             </div>
-            <div style={{ fontSize: 11, fontWeight: 700, opacity: 0.8, marginTop: 6 }}>
+            <div className="text-xs font-bold opacity-80 mt-1.5">
               Milestone achievements
             </div>
           </div>
         </div>
 
         {/* Points Breakdown Section */}
-        <div style={{
-          background: "rgba(255,255,255,0.88)",
-          borderRadius: 28,
-          border: "3px solid #B8D4EE",
-          boxShadow: "0 8px 36px rgba(24,95,165,0.13)",
-          padding: "24px 28px",
-          position: "relative",
-          overflow: "hidden"
-        }}>
+        <div className="bg-white/88 rounded-3xl border-2 border-[#B8D4EE] shadow-lg p-5 sm:p-7 relative overflow-hidden">
           {/* Rainbow top bar */}
-          <div style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            height: 8,
-            background: "linear-gradient(90deg,#4FC3F7,#185FA5,#1D9E75,#EF9F27,#4FC3F7)",
-            borderRadius: "26px 26px 0 0"
-          }} />
+          <div className="absolute top-0 left-0 right-0 h-2"
+               style={{ background: "linear-gradient(90deg,#4FC3F7,#185FA5,#1D9E75,#EF9F27,#4FC3F7)" }} />
 
           {/* Section header */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20, paddingTop: 6 }}>
-            <div style={{
-              width: 42,
-              height: 42,
-              borderRadius: 14,
-              background: "linear-gradient(135deg,#EF9F27,#F7C46A)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 22,
-              boxShadow: "0 4px 12px rgba(239,159,39,0.3)"
-            }}>📊</div>
+          <div className="flex items-center gap-3 mb-5 pt-2">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-xl sm:text-2xl flex-shrink-0"
+                 style={{ background: "linear-gradient(135deg,#EF9F27,#F7C46A)", boxShadow: "0 4px 12px rgba(239,159,39,0.3)" }}>
+              📊
+            </div>
             <div>
-              <span style={{ fontWeight: 900, color: "#042C53", fontSize: 18 }}>Points Breakdown</span>
-              <p style={{ margin: "2px 0 0", fontSize: 12, fontWeight: 800, color: "#1D9E75" }}>
+              <span className="font-black text-[#042C53] text-base sm:text-lg block">Points Breakdown</span>
+              <p className="text-xs font-extrabold text-[#1D9E75] mt-0.5">
                 See how you earned your points! 🎯
               </p>
             </div>
           </div>
 
           {/* Points Breakdown Grid */}
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-            gap: 16,
-            marginBottom: 20
-          }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-5">
             {/* Game Points */}
-            <div style={{
-              background: "#fff",
-              borderRadius: 16,
-              padding: "18px",
-              border: "2.5px solid #E6F1FB",
-              boxShadow: "0 3px 12px rgba(24,95,165,0.08)"
-            }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                <div style={{
-                  width: 42,
-                  height: 42,
-                  borderRadius: "50%",
-                  background: "linear-gradient(135deg,#E6F1FB,#C8E6FA)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 20
-                }}>🎮</div>
-                <div style={{ fontSize: 12, fontWeight: 800, color: "#7A8CA5" }}>Game Points</div>
+            <div className="bg-white rounded-xl p-4 border-2 border-[#E6F1FB] shadow-sm">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-xl sm:text-2xl flex-shrink-0"
+                     style={{ background: "linear-gradient(135deg,#E6F1FB,#C8E6FA)" }}>
+                  🎮
+                </div>
+                <div className="text-xs font-extrabold text-[#7A8CA5]">Game Points</div>
               </div>
-              <div style={{ fontSize: 28, fontWeight: 900, color: "#185FA5", lineHeight: 1 }}>
+              <div className="text-2xl sm:text-3xl font-black text-[#185FA5] leading-tight">
                 {progressData.pointsBreakdown?.gamePoints || 0}
               </div>
-              <div style={{ fontSize: 11, color: "#7A8CA5", fontWeight: 700, marginTop: 6 }}>
+              <div className="text-xs text-[#7A8CA5] font-bold mt-1.5">
                 From {(progressData.pointsBreakdown?.games || []).length} games played
               </div>
             </div>
 
             {/* Daily Login Points */}
-            <div style={{
-              background: "#fff",
-              borderRadius: 16,
-              padding: "18px",
-              border: "2.5px solid #FEF6E8",
-              boxShadow: "0 3px 12px rgba(239,159,39,0.08)"
-            }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                <div style={{
-                  width: 42,
-                  height: 42,
-                  borderRadius: "50%",
-                  background: "linear-gradient(135deg,#FEF6E8,#FDE9BF)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 20
-                }}>📅</div>
-                <div style={{ fontSize: 12, fontWeight: 800, color: "#7A8CA5" }}>Daily Login Points</div>
+            <div className="bg-white rounded-xl p-4 border-2 border-[#FEF6E8] shadow-sm">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-xl sm:text-2xl flex-shrink-0"
+                     style={{ background: "linear-gradient(135deg,#FEF6E8,#FDE9BF)" }}>
+                  📅
+                </div>
+                <div className="text-xs font-extrabold text-[#7A8CA5]">Daily Login Points</div>
               </div>
-              <div style={{ fontSize: 28, fontWeight: 900, color: "#EF9F27", lineHeight: 1 }}>
+              <div className="text-2xl sm:text-3xl font-black text-[#EF9F27] leading-tight">
                 {progressData.pointsBreakdown?.dailyLoginPoints || 0}
               </div>
-              <div style={{ fontSize: 11, color: "#7A8CA5", fontWeight: 700, marginTop: 6 }}>
+              <div className="text-xs text-[#7A8CA5] font-bold mt-1.5">
                 10 pts per daily login
               </div>
             </div>
 
             {/* User Points */}
-            <div style={{
-              background: "#fff",
-              borderRadius: 16,
-              padding: "18px",
-              border: "2.5px solid #F3E8FF",
-              boxShadow: "0 3px 12px rgba(139,92,246,0.08)"
-            }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                <div style={{
-                  width: 42,
-                  height: 42,
-                  borderRadius: "50%",
-                  background: "linear-gradient(135deg,#F3E8FF,#E9D5FF)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 20
-                }}>⭐</div>
-                <div style={{ fontSize: 12, fontWeight: 800, color: "#7A8CA5" }}>Activity Points</div>
+            <div className="bg-white rounded-xl p-4 border-2 border-[#F3E8FF] shadow-sm sm:col-span-2 lg:col-span-1">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-xl sm:text-2xl flex-shrink-0"
+                     style={{ background: "linear-gradient(135deg,#F3E8FF,#E9D5FF)" }}>
+                  ⭐
+                </div>
+                <div className="text-xs font-extrabold text-[#7A8CA5]">Activity Points</div>
               </div>
-              <div style={{ fontSize: 28, fontWeight: 900, color: "#8B5CF6", lineHeight: 1 }}>
+              <div className="text-2xl sm:text-3xl font-black text-[#8B5CF6] leading-tight">
                 {progressData.pointsBreakdown?.userPoints || 0}
               </div>
-              <div style={{ fontSize: 11, color: "#7A8CA5", fontWeight: 700, marginTop: 6 }}>
+              <div className="text-xs text-[#7A8CA5] font-bold mt-1.5">
                 From other activities
               </div>
             </div>
           </div>
 
           {/* Total Points Summary */}
-          <div style={{
-            background: "linear-gradient(135deg,#185FA5,#1D9E75)",
-            borderRadius: 18,
-            padding: "20px 24px",
-            color: "#fff",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            boxShadow: "0 6px 20px rgba(24,95,165,0.3)"
-          }}>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 800, opacity: 0.9, marginBottom: 4 }}>Total Points Earned</div>
-              <div style={{ fontSize: 36, fontWeight: 900, lineHeight: 1 }}>
+          <div className="rounded-2xl p-5 sm:p-6 text-white flex flex-col sm:flex-row items-center justify-between gap-4"
+               style={{ background: "linear-gradient(135deg,#185FA5,#1D9E75)", boxShadow: "0 6px 20px rgba(24,95,165,0.3)" }}>
+            <div className="text-center sm:text-left">
+              <div className="text-sm font-extrabold opacity-90 mb-1">Total Points Earned</div>
+              <div className="text-3xl sm:text-4xl font-black leading-tight">
                 {progressData.totalPoints.toLocaleString()}
               </div>
             </div>
-            <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: 13, fontWeight: 800, opacity: 0.9, marginBottom: 4 }}>Current Level</div>
-              <div style={{ fontSize: 28, fontWeight: 900, lineHeight: 1 }}>
+            <div className="text-center sm:text-right">
+              <div className="text-sm font-extrabold opacity-90 mb-1">Current Level</div>
+              <div className="text-2xl sm:text-3xl font-black leading-tight">
                 {progressData.currentLevel}
               </div>
             </div>
@@ -433,88 +333,49 @@ export default function DushaniStudentProgress() {
 
         {/* Game History Section */}
         {(progressData.pointsBreakdown?.games || []).length > 0 && (
-          <div style={{
-            marginTop: 24,
-            background: "rgba(255,255,255,0.88)",
-            borderRadius: 28,
-            border: "3px solid #B8D4EE",
-            boxShadow: "0 8px 36px rgba(24,95,165,0.13)",
-            padding: "24px 28px",
-            position: "relative",
-            overflow: "hidden"
-          }}>
+          <div className="mt-6 bg-white/88 rounded-3xl border-2 border-[#B8D4EE] shadow-lg p-5 sm:p-7 relative overflow-hidden">
             {/* Rainbow top bar */}
-            <div style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              height: 8,
-              background: "linear-gradient(90deg,#4FC3F7,#185FA5,#1D9E75,#EF9F27,#4FC3F7)",
-              borderRadius: "26px 26px 0 0"
-            }} />
+            <div className="absolute top-0 left-0 right-0 h-2"
+                 style={{ background: "linear-gradient(90deg,#4FC3F7,#185FA5,#1D9E75,#EF9F27,#4FC3F7)" }} />
 
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20, paddingTop: 6 }}>
-              <div style={{
-                width: 42,
-                height: 42,
-                borderRadius: 14,
-                background: "linear-gradient(135deg,#185FA5,#4FC3F7)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 22,
-                boxShadow: "0 4px 12px rgba(24,95,165,0.3)"
-              }}>🎮</div>
+            <div className="flex items-center gap-3 mb-5 pt-2">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-xl sm:text-2xl flex-shrink-0"
+                   style={{ background: "linear-gradient(135deg,#185FA5,#4FC3F7)", boxShadow: "0 4px 12px rgba(24,95,165,0.3)" }}>
+                🎮
+              </div>
               <div>
-                <span style={{ fontWeight: 900, color: "#042C53", fontSize: 18 }}>Game History</span>
-                <p style={{ margin: "2px 0 0", fontSize: 12, fontWeight: 800, color: "#1D9E75" }}>
+                <span className="font-black text-[#042C53] text-base sm:text-lg block">Game History</span>
+                <p className="text-xs font-extrabold text-[#1D9E75] mt-0.5">
                   Your game performance details 🎯
                 </p>
               </div>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div className="flex flex-col gap-3">
               {progressData.pointsBreakdown.games.map((game, index) => (
                 <div 
                   key={game.gameId || index}
-                  style={{
-                    background: "#fff",
-                    borderRadius: 16,
-                    padding: "16px 18px",
-                    border: "2.5px solid #E6F1FB",
-                    boxShadow: "0 3px 12px rgba(24,95,165,0.08)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between"
-                  }}
+                  className="bg-white rounded-xl p-4 border-2 border-[#E6F1FB] shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: 14, flex: 1 }}>
-                    <div style={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: "50%",
-                      background: "linear-gradient(135deg,#E6F1FB,#C8E6FA)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: 22,
-                      flexShrink: 0
-                    }}>🎮</div>
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 900, color: "#042C53" }}>
+                  <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+                    <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-xl sm:text-2xl flex-shrink-0"
+                         style={{ background: "linear-gradient(135deg,#E6F1FB,#C8E6FA)" }}>
+                      🎮
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm sm:text-base font-black text-[#042C53] truncate">
                         {game.gameName}
                       </div>
-                      <div style={{ fontSize: 11, color: "#7A8CA5", fontWeight: 700, marginTop: 3 }}>
+                      <div className="text-xs text-[#7A8CA5] font-bold mt-0.5">
                         {game.playedAt ? new Date(game.playedAt).toLocaleDateString() : 'N/A'}
                       </div>
                     </div>
                   </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 20, fontWeight: 900, color: "#185FA5" }}>
+                  <div className="text-right flex-shrink-0">
+                    <div className="text-xl sm:text-2xl font-black text-[#185FA5]">
                       {game.score}
                     </div>
-                    <div style={{ fontSize: 11, color: "#7A8CA5", fontWeight: 700 }}>
+                    <div className="text-xs text-[#7A8CA5] font-bold">
                       / {game.maxScore} pts ({game.percentage?.toFixed(1) || 0}%)
                     </div>
                   </div>
@@ -526,84 +387,42 @@ export default function DushaniStudentProgress() {
 
         {/* Badges Section */}
         {progressData.badges && progressData.badges.length > 0 && (
-          <div style={{
-            marginTop: 24,
-            background: "rgba(255,255,255,0.88)",
-            borderRadius: 28,
-            border: "3px solid #A8DCC8",
-            boxShadow: "0 8px 36px rgba(29,158,117,0.13)",
-            padding: "24px 28px",
-            position: "relative",
-            overflow: "hidden"
-          }}>
+          <div className="mt-6 bg-white/88 rounded-3xl border-2 border-[#A8DCC8] shadow-lg p-5 sm:p-7 relative overflow-hidden">
             {/* Rainbow top bar */}
-            <div style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              height: 8,
-              background: "linear-gradient(90deg,#1D9E75,#185FA5,#EF9F27,#4FC3F7,#1D9E75)",
-              borderRadius: "26px 26px 0 0"
-            }} />
+            <div className="absolute top-0 left-0 right-0 h-2"
+                 style={{ background: "linear-gradient(90deg,#1D9E75,#185FA5,#EF9F27,#4FC3F7,#1D9E75)" }} />
 
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20, paddingTop: 6 }}>
-              <div style={{
-                width: 42,
-                height: 42,
-                borderRadius: 14,
-                background: "linear-gradient(135deg,#1D9E75,#4FC3F7)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 22,
-                boxShadow: "0 4px 12px rgba(29,158,117,0.3)"
-              }}>🏅</div>
+            <div className="flex items-center gap-3 mb-5 pt-2">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-xl sm:text-2xl flex-shrink-0"
+                   style={{ background: "linear-gradient(135deg,#1D9E75,#4FC3F7)", boxShadow: "0 4px 12px rgba(29,158,117,0.3)" }}>
+                🏅
+              </div>
               <div>
-                <span style={{ fontWeight: 900, color: "#042C53", fontSize: 18 }}>Earned Badges</span>
-                <p style={{ margin: "2px 0 0", fontSize: 12, fontWeight: 800, color: "#185FA5" }}>
+                <span className="font-black text-[#042C53] text-base sm:text-lg block">Earned Badges</span>
+                <p className="text-xs font-extrabold text-[#185FA5] mt-0.5">
                   Your achievements ({progressData.badgesCount}) 🎉
                 </p>
               </div>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: 14 }}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {progressData.badges.map((badge, index) => (
                 <div
                   key={badge.badgeId || index}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 14,
-                    padding: "14px",
-                    borderRadius: 16,
-                    background: "linear-gradient(135deg,#F4F9FF,#E6F1FB)",
-                    border: "2.5px solid #B8D4EE",
-                    boxShadow: "0 3px 12px rgba(24,95,165,0.08)"
-                  }}
+                  className="flex items-center gap-3 sm:gap-4 p-4 rounded-xl bg-gradient-to-br from-[#F4F9FF] to-[#E6F1FB] border-2 border-[#B8D4EE] shadow-sm"
                 >
-                  <div style={{
-                    width: 52,
-                    height: 52,
-                    borderRadius: "50%",
-                    background: "linear-gradient(135deg,#185FA5,#1D9E75)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 26,
-                    flexShrink: 0,
-                    boxShadow: "0 4px 12px rgba(24,95,165,0.25)"
-                  }}>
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0"
+                       style={{ background: "linear-gradient(135deg,#185FA5,#1D9E75)", boxShadow: "0 4px 12px rgba(24,95,165,0.25)" }}>
                     {badge.badgeIcon}
                   </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 14, fontWeight: 900, color: "#042C53", marginBottom: 4 }}>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-black text-[#042C53] mb-1 truncate">
                       {badge.badgeName}
                     </div>
-                    <div style={{ fontSize: 12, color: "#185FA5", fontWeight: 700, lineHeight: 1.4 }}>
+                    <div className="text-xs text-[#185FA5] font-bold leading-tight line-clamp-2">
                       {badge.description}
                     </div>
-                    <div style={{ fontSize: 11, color: "#7A8CA5", fontWeight: 600, marginTop: 6 }}>
+                    <div className="text-xs text-[#7A8CA5] font-semibold mt-1.5">
                       Earned: {new Date(badge.earnedAt).toLocaleDateString()}
                     </div>
                   </div>
@@ -615,22 +434,14 @@ export default function DushaniStudentProgress() {
       </div>
 
       {/* ── FOOTER ── */}
-      <footer style={{
-        background: "linear-gradient(90deg,#042C53,#185FA5,#1D9E75)",
-        padding: "12px 32px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 12,
-        overflow: "hidden",
-        position: "relative"
-      }}>
+      <footer className="px-6 sm:px-8 py-3 flex items-center justify-center gap-3 overflow-hidden relative"
+              style={{ background: "linear-gradient(90deg,#042C53,#185FA5,#1D9E75)" }}>
         <Wave color="rgba(255,255,255,0.08)" />
-        <span style={{ fontSize: 18, zIndex: 1 }}>🐠</span>
-        <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: "rgba(255,255,255,0.9)", zIndex: 1 }}>
+        <span className="text-lg sm:text-xl z-10">🐠</span>
+        <p className="text-xs sm:text-sm font-extrabold text-white/90 z-10 text-center">
           💧 Keep learning and earning points, AquaChamp! 🌊
         </p>
-        <WaterDrop size={14} color="rgba(255,255,255,0.5)" style={{ zIndex: 1 }} />
+        <WaterDrop size={14} color="rgba(255,255,255,0.5)" className="z-10" />
       </footer>
 
       <style>{`
@@ -639,6 +450,21 @@ export default function DushaniStudentProgress() {
         @keyframes floatUp { 0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-12px) scale(1.1)} }
         @keyframes spin { from{transform:rotate(0deg)}to{transform:rotate(360deg)} }
         * { box-sizing: border-box; }
+        
+        /* Responsive utilities */
+        .line-clamp-2 {
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 640px) {
+          .max-w-5xl {
+            max-width: 100%;
+          }
+        }
       `}</style>
     </div>
   );

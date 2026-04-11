@@ -1207,7 +1207,7 @@ export default function GameAdminDashboard() {
 
   const handleLogout = () => {
     ["superAdminToken","adminRoles","adminUsername"].forEach(k => localStorage.removeItem(k));
-    navigate("/admin-login");
+    navigate("/");
   };
 
   const handleEditGame = (game) => {

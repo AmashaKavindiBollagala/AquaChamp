@@ -7,38 +7,50 @@ export default function PublicLeaderboard() {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(true);
 
   useEffect(() => {
+    // Check if user is logged in
+    const token = localStorage.getItem('aquachamp_token') || 
+                  localStorage.getItem('token') || 
+                  sessionStorage.getItem('aquachamp_token');
+    
+    if (!token) {
+      console.log('⚠️ No authentication token found');
+      setIsAuthenticated(false);
+      setLoading(false);
+      return;
+    }
+
     const fetchLeaderboard = async () => {
       try {
-        const token = localStorage.getItem('token') || localStorage.getItem('superAdminToken');
-
         let res;
         try {
           res = await fetch('http://localhost:4000/api/points/leaderboard', {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
           });
         } catch {
           res = await fetch('http://localhost:4000/api/progress/leaderboard?limit=100', {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
           });
+        }
+
+        // If unauthorized (401), show auth required message
+        if (res.status === 401 || res.status === 403) {
+          console.log('⚠️ Authentication failed');
+          setIsAuthenticated(false);
+          setLoading(false);
+          return;
         }
 
         const data = await res.json();
         if (data.success) {
-          const students = data.students || data.leaderboard || [];
-          const sortedStudents = students.sort((a, b) => b.totalPoints - a.totalPoints);
-          setStudents(sortedStudents);
-
+          const list = data.students || data.leaderboard || [];
+          const sorted = list.sort((a, b) => b.totalPoints - a.totalPoints);
+          setStudents(sorted);
           const userId = localStorage.getItem('userId');
           if (userId) {
-            const user = sortedStudents.find(s => s.userId === userId || s.studentId === userId);
+            const user = sorted.find(s => s.userId === userId || s.studentId === userId);
             setCurrentUser(user);
           }
         }
@@ -48,355 +60,330 @@ export default function PublicLeaderboard() {
         setLoading(false);
       }
     };
-
     fetchLeaderboard();
-  }, []);
+  }, [navigate]);
+
+  const calculateRanks = (list) => {
+    if (!list.length) return [];
+    let currentRank = 1;
+    return list.map((s, i) => {
+      if (i > 0 && s.totalPoints < list[i - 1].totalPoints) currentRank = i + 1;
+      return { ...s, rank: currentRank };
+    });
+  };
 
   const filtered = students.filter(s =>
     s.studentName?.toLowerCase().includes(search.toLowerCase()) ||
     s.username?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const calculateRanks = (studentList) => {
-    if (studentList.length === 0) return [];
-
-    let rankedList = [];
-    let currentRank = 1;
-
-    for (let i = 0; i < studentList.length; i++) {
-      // Only increment rank if current student has LESS points than previous
-      if (i > 0 && studentList[i].totalPoints < studentList[i - 1].totalPoints) {
-        currentRank = i + 1;
-      }
-      // If points are equal, they keep the same rank
-
-      rankedList.push({
-        ...studentList[i],
-        rank: currentRank,
-        displayRank: currentRank
-      });
-    }
-
-    return rankedList;
-  };
-
-  const rankedStudents = calculateRanks(filtered);
-  const rankedAllStudents = calculateRanks(students);
+  const rankedAll = calculateRanks(students);
+  const rankedFiltered = calculateRanks(filtered);
 
   useEffect(() => {
-    if (rankedAllStudents.length > 0 && currentUser) {
-      const userWithRank = rankedAllStudents.find(s =>
-        s.userId === currentUser.userId || s.studentId === currentUser.studentId
-      );
-      if (userWithRank) {
-        setCurrentUser(userWithRank);
-      }
+    if (rankedAll.length > 0 && currentUser) {
+      const found = rankedAll.find(s => s.userId === currentUser.userId || s.studentId === currentUser.studentId);
+      if (found) setCurrentUser(found);
     }
   }, [students]);
 
-  const getRankBadge = (rank) => {
-    if (rank === 1) return 'bg-gradient-to-br from-[#EF9F27] to-[#F7B955] text-white shadow-lg shadow-[#EF9F27]/30';
-    if (rank === 2) return 'bg-gradient-to-br from-[#7DB6F1] to-[#185FA5] text-white shadow-lg shadow-[#185FA5]/20';
-    if (rank === 3) return 'bg-gradient-to-br from-[#46C89A] to-[#1D9E75] text-white shadow-lg shadow-[#1D9E75]/20';
-    return 'bg-[#E6F1FB] text-[#185FA5] border border-[#185FA5]/15';
+  const top3 = rankedAll.filter(s => s.rank <= 3);
+  const rank1 = top3.filter(s => s.rank === 1);
+  const rank2 = top3.filter(s => s.rank === 2);
+  const rank3 = top3.filter(s => s.rank === 3);
+
+  let podium = [];
+  if (rank1.length === 1) {
+    if (rank2.length > 0 && rank3.length > 0) {
+      podium = [
+        { student: rank2[0], medal: '🥈', tier: 'silver' },
+        { student: rank1[0], medal: '🥇', tier: 'gold' },
+        { student: rank3[0], medal: '🥉', tier: 'bronze' },
+      ];
+    } else if (rank2.length > 0) {
+      podium = [
+        { student: rank2[0], medal: '🥈', tier: 'silver' },
+        { student: rank1[0], medal: '🥇', tier: 'gold' },
+      ];
+    } else {
+      podium = [{ student: rank1[0], medal: '🥇', tier: 'gold' }];
+    }
+  } else if (rank1.length === 2) {
+    podium = [
+      { student: rank1[0], medal: '🥇', tier: 'gold' },
+      { student: rank1[1], medal: '🥇', tier: 'gold' },
+    ];
+  } else if (rank1.length >= 3) {
+    podium = rank1.slice(0, 3).map(s => ({ student: s, medal: '🥇', tier: 'gold' }));
+  }
+
+  const tierStyles = {
+    gold: {
+      card: 'bg-amber-50 border-2 border-amber-400 scale-105 shadow-lg shadow-amber-100',
+      circle: 'bg-amber-400 text-amber-900',
+      name: 'text-amber-900',
+      handle: 'text-amber-600',
+      pts: 'text-amber-800',
+      ptsLabel: 'text-amber-500',
+      badge: 'bg-amber-400 text-amber-900',
+    },
+    silver: {
+      card: 'bg-blue-50 border border-blue-300 shadow-md shadow-blue-50',
+      circle: 'bg-blue-500 text-blue-50',
+      name: 'text-blue-900',
+      handle: 'text-blue-500',
+      pts: 'text-blue-800',
+      ptsLabel: 'text-blue-400',
+      badge: 'bg-blue-500 text-blue-50',
+    },
+    bronze: {
+      card: 'bg-teal-50 border border-teal-300 shadow-md shadow-teal-50',
+      circle: 'bg-teal-500 text-teal-50',
+      name: 'text-teal-900',
+      handle: 'text-teal-600',
+      pts: 'text-teal-800',
+      ptsLabel: 'text-teal-400',
+      badge: 'bg-teal-500 text-teal-50',
+    },
   };
 
-  const getPodiumCardClasses = (rank, highlight) => {
-    if (rank === 1) {
-      return 'bg-gradient-to-b from-[#2D1C00] via-[#042C53] to-[#021C34] border-2 border-[#EF9F27]/60 shadow-2xl shadow-[#EF9F27]/20';
-    }
-    if (rank === 2) {
-      return 'bg-gradient-to-b from-[#103B63] via-[#042C53] to-[#021C34] border border-[#7DB6F1]/35 shadow-xl shadow-[#185FA5]/20';
-    }
-    if (rank === 3) {
-      return 'bg-gradient-to-b from-[#0E4D3A] via-[#042C53] to-[#021C34] border border-[#46C89A]/35 shadow-xl shadow-[#1D9E75]/20';
-    }
-    return highlight
-      ? 'bg-gradient-to-b from-[#2D1C00] via-[#042C53] to-[#021C34] border-2 border-[#EF9F27]/60 shadow-2xl shadow-[#EF9F27]/20'
-      : 'bg-gradient-to-b from-[#103B63] via-[#042C53] to-[#021C34] border border-white/10 shadow-xl';
+  const getRankBadgeStyle = (rank) => {
+    if (rank === 1) return 'bg-amber-50 text-amber-800 border border-amber-400';
+    if (rank === 2) return 'bg-blue-50 text-blue-800 border border-blue-300';
+    if (rank === 3) return 'bg-teal-50 text-teal-800 border border-teal-300';
+    return 'bg-gray-100 text-gray-500 border border-gray-200';
   };
 
-  if (loading) {
+  const getPtsStyle = (rank) => {
+    if (rank === 1) return 'text-amber-700';
+    if (rank === 2) return 'text-blue-700';
+    if (rank === 3) return 'text-teal-700';
+    return 'text-green-700';
+  };
+
+  const getRowStyle = (rank, isYou) => {
+    if (isYou) return 'bg-amber-50 border-l-2 border-amber-400';
+    if (rank === 1) return 'bg-amber-50/40';
+    if (rank === 2) return 'bg-blue-50/40';
+    if (rank === 3) return 'bg-teal-50/40';
+    return '';
+  };
+
+  // Show authentication required message
+  if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#E6F1FB] via-[#F8FBFF] to-[#E1F5EE] flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-6xl mb-4 animate-bounce">🏆</div>
-          <div className="text-xl font-bold text-[#042C53]">Loading Leaderboard...</div>
-          <div className="text-sm text-[#185FA5] mt-2">Preparing the rankings</div>
+      <div className="min-h-screen flex items-center justify-center relative overflow-hidden"
+           style={{ background: "linear-gradient(160deg,#C8E6FA 0%,#B2EDD8 35%,#FEE9BF 70%,#C8E6FA 100%)" }}>
+        <div className="text-center space-y-6 max-w-md mx-4">
+          <div className="text-7xl animate-bounce">🔒</div>
+          <div className="space-y-3">
+            <h2 className="text-3xl font-bold text-gray-800">Login Required</h2>
+            <p className="text-lg text-gray-600">
+              You need to be logged in to view the leaderboard
+            </p>
+            <p className="text-sm text-gray-500">
+              Please login as a student or admin to see the rankings
+            </p>
+          </div>
+          <button
+            onClick={() => navigate('/login')}
+            className="px-8 py-3 bg-gradient-to-r from-violet-600 to-sky-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+          >
+            Go to Login →
+          </button>
         </div>
       </div>
     );
   }
 
-  const top3 = rankedAllStudents.filter(s => s.rank <= 3);
-  const allStudentsList = rankedStudents;
-
-  // Get students for each rank position
-  const rank1Students = top3.filter(s => s.rank === 1);
-  const rank2Students = top3.filter(s => s.rank === 2);
-  const rank3Students = top3.filter(s => s.rank === 3);
-
-  let podiumStudents = [];
-
-  // If we have at least one rank 1 student
-  if (rank1Students.length > 0) {
-    // If there's only 1 first place
-    if (rank1Students.length === 1) {
-      // Normal 3-tier podium
-      if (rank2Students.length > 0 && rank3Students.length > 0) {
-        podiumStudents = [
-          { student: rank2Students[0], position: 'left', medal: '🥈', highlight: false },
-          { student: rank1Students[0], position: 'center', medal: '🥇', highlight: true },
-          { student: rank3Students[0], position: 'right', medal: '🥉', highlight: false }
-        ];
-      } else if (rank2Students.length > 0) {
-        // Only 1st and 2nd place
-        podiumStudents = [
-          { student: rank2Students[0], position: 'left', medal: '🥈', highlight: false },
-          { student: rank1Students[0], position: 'center', medal: '🥇', highlight: true }
-        ];
-      } else {
-        // Only 1st place
-        podiumStudents = [
-          { student: rank1Students[0], position: 'center', medal: '🥇', highlight: true }
-        ];
-      }
-    } 
-    // If there are 2 students tied for 1st
-    else if (rank1Students.length === 2) {
-      podiumStudents = [
-        { student: rank1Students[0], position: 'left', medal: '🥇', highlight: true },
-        { student: rank1Students[1], position: 'right', medal: '🥇', highlight: true }
-      ];
-      // Add 3rd place if exists (would actually be rank 3, not rank 2)
-      if (rank3Students.length > 0) {
-        podiumStudents.push({ student: rank3Students[0], position: 'hidden', medal: '🥉', highlight: false });
-      }
-    } 
-    // If there are 3 or more students tied for 1st
-    else if (rank1Students.length >= 3) {
-      podiumStudents = rank1Students.slice(0, 3).map((student, index) => ({
-        student,
-        position: index === 0 ? 'left' : index === 1 ? 'center' : 'right',
-        medal: '🥇',
-        highlight: true
-      }));
-    }
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center relative overflow-hidden"
+           style={{ background: "linear-gradient(160deg,#C8E6FA 0%,#B2EDD8 35%,#FEE9BF 70%,#C8E6FA 100%)" }}>
+        <div className="text-center space-y-3">
+          <div className="text-5xl animate-bounce">🏆</div>
+          <p className="text-lg font-semibold text-gray-700">Loading leaderboard...</p>
+          <p className="text-sm text-gray-400">Preparing the rankings</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#E6F1FB] via-[#F8FBFF] to-[#E1F5EE]">
-      {/* Decorative background blobs */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-16 left-10 w-72 h-72 bg-[#185FA5]/10 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute top-40 right-16 w-96 h-96 bg-[#EF9F27]/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-        <div className="absolute bottom-10 left-1/3 w-80 h-80 bg-[#1D9E75]/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+    <div className="min-h-screen relative overflow-x-hidden"
+         style={{ background: "linear-gradient(160deg,#C8E6FA 0%,#B2EDD8 35%,#FEE9BF 70%,#C8E6FA 100%)" }}>
+
+      {/* Decorative blobs */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        <div className="absolute -top-24 -left-24 w-96 h-96 bg-[#185FA5]/10 rounded-full blur-3xl" />
+        <div className="absolute top-1/3 -right-32 w-[28rem] h-[28rem] bg-[#1D9E75]/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-1/4 w-80 h-80 bg-[#EF9F27]/10 rounded-full blur-3xl" />
+        <div className="absolute top-2/3 left-1/2 w-64 h-64 bg-[#4FC3F7]/15 rounded-full blur-2xl" />
       </div>
 
-      {/* Header */}
-      <div className="relative z-10 bg-white/80 backdrop-blur-xl border-b border-[#185FA5]/10 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      {/* Header
+      <div className="sticky top-0 z-20 bg-white/60 backdrop-blur-md border-b border-white/50 shadow-sm">
+        <div className="max-w-3xl mx-auto px-5 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate(-1)}
-              className="w-10 h-10 rounded-full bg-[#E6F1FB] hover:bg-[#185FA5] hover:text-white border border-[#185FA5]/10 flex items-center justify-center text-[#185FA5] transition-all cursor-pointer shadow-sm"
+              className="w-9 h-9 rounded-full border border-gray-200 bg-white hover:bg-gray-50 flex items-center justify-center text-gray-500 transition-colors cursor-pointer"
             >
               ←
             </button>
             <div>
-              <h1 className="text-2xl font-extrabold text-[#042C53]">🏆 Leaderboard</h1>
-              <p className="text-sm text-[#185FA5]">Top performers</p>
+              <h1 className="text-lg font-semibold text-gray-900 leading-tight">Leaderboard</h1>
+              <p className="text-xs text-gray-400">Top performers</p>
             </div>
           </div>
-
           <button
             onClick={() => navigate('/profile')}
-            className="px-5 py-2.5 bg-gradient-to-r from-[#185FA5] to-[#2578C9] hover:scale-105 rounded-xl text-white text-sm font-semibold transition-all cursor-pointer shadow-lg shadow-[#185FA5]/20"
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition-colors cursor-pointer"
           >
             My Profile
           </button>
         </div>
-      </div>
+      </div> */}
 
-      <div className="relative z-10 max-w-7xl mx-auto px-6 py-8">
+      <div className="relative z-10 max-w-3xl mx-auto px-5 py-6 space-y-6">
 
-        {/* Current User Rank Card */}
+        {/* Current User Card */}
         {currentUser && (
-          <div className="mb-8 bg-white/80 backdrop-blur-xl border border-[#EF9F27]/20 rounded-3xl p-6 shadow-xl shadow-[#042C53]/5">
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#EF9F27] to-[#F7B955] flex items-center justify-center text-2xl font-bold text-white shadow-lg shadow-[#EF9F27]/30">
+          <div className="bg-white/70 backdrop-blur-sm border border-amber-200 rounded-2xl p-4 shadow-sm">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-amber-400 flex items-center justify-center text-amber-900 font-semibold text-base flex-shrink-0">
                   {currentUser.rank}
                 </div>
                 <div>
-                  <div className="text-[#185FA5] text-sm font-medium">Your Rank</div>
-                  <div className="text-[#042C53] text-2xl font-extrabold">{currentUser.studentName}</div>
-                  <div className="text-[#EF9F27] text-sm font-semibold">@{currentUser.username}</div>
+                  <p className="text-xs text-amber-500 font-medium">Your rank</p>
+                  <p className="text-base font-semibold text-gray-900">{currentUser.studentName}</p>
+                  <p className="text-xs text-amber-600">@{currentUser.username}</p>
                 </div>
               </div>
-
               <div className="text-right">
-                <div className="text-[#185FA5] text-sm font-medium">Total Points</div>
-                <div className="text-4xl font-extrabold text-[#EF9F27]">{currentUser.totalPoints?.toLocaleString()}</div>
-                <div className="text-[#1D9E75] text-sm mt-1 font-semibold">Level: {currentUser.currentLevel || 'N/A'}</div>
+                <p className="text-xs text-gray-400">Total points</p>
+                <p className="text-2xl font-bold text-amber-600">{currentUser.totalPoints?.toLocaleString()}</p>
+                <p className="text-xs text-teal-600 font-medium mt-0.5">Level: {currentUser.currentLevel || 'N/A'}</p>
               </div>
             </div>
           </div>
         )}
 
-        {/* Top 3 Podium */}
-        {podiumStudents.length > 0 && (
-          <div className="mb-12">
-            <div className={`grid gap-6 items-end ${
-              podiumStudents.length === 1 ? 'grid-cols-1 max-w-md mx-auto' :
-              podiumStudents.length === 2 ? 'grid-cols-2 max-w-4xl mx-auto' :
+        {/* Podium */}
+        {podium.length > 0 && (
+          <div>
+            <div className={`grid gap-3 items-end ${
+              podium.length === 1 ? 'grid-cols-1 max-w-xs mx-auto' :
+              podium.length === 2 ? 'grid-cols-2 max-w-md mx-auto' :
               'grid-cols-3'
             }`}>
-              {podiumStudents.map((podium) => (
-                <div
-                  key={podium.student.userId || podium.student.studentId}
-                  className={`rounded-3xl text-center transform hover:-translate-y-2 transition-all duration-300 ${
-                    getPodiumCardClasses(podium.student.rank, podium.highlight)
-                  } ${
-                    podium.highlight && podiumStudents.filter(p => p.highlight).length === 1 ? 'p-8 scale-105' : 'p-6'
-                  }`}
-                >
-                  <div className={`text-6xl mb-3 ${podium.highlight ? 'animate-bounce' : ''}`}>
-                    {podium.medal}
+              {podium.map((p, i) => {
+                const t = tierStyles[p.tier];
+                const isCenter = podium.length === 3 && i === 1;
+                return (
+                  <div
+                    key={p.student.userId || p.student.studentId}
+                    className={`rounded-2xl text-center transition-transform hover:-translate-y-1 duration-200 ${t.card} ${isCenter ? 'py-7 px-3' : 'py-5 px-3'}`}
+                  >
+                    <div className={`text-3xl mb-2 ${isCenter ? 'animate-bounce' : ''}`}>{p.medal}</div>
+                    <div className={`w-9 h-9 rounded-full mx-auto flex items-center justify-center text-sm font-semibold mb-3 ${t.circle}`}>
+                      {p.student.rank}
+                    </div>
+                    <p className={`font-semibold text-sm leading-tight mb-0.5 truncate ${t.name}`}>{p.student.studentName}</p>
+                    <p className={`text-xs mb-2 ${t.handle}`}>@{p.student.username}</p>
+                    <p className={`font-bold ${isCenter ? 'text-xl' : 'text-lg'} ${t.pts}`}>{p.student.totalPoints?.toLocaleString()}</p>
+                    <p className={`text-xs mb-2 ${t.ptsLabel}`}>points</p>
+                    <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${t.badge}`}>
+                      {p.student.currentLevel || 'N/A'}
+                    </span>
                   </div>
-
-                  <div className={`w-20 h-20 mx-auto rounded-full flex items-center justify-center text-2xl font-bold text-white mb-4 shadow-xl ${
-                    podium.student.rank === 1
-                      ? 'bg-gradient-to-br from-[#EF9F27] to-[#F7B955] ring-4 ring-[#EF9F27]/20'
-                      : podium.student.rank === 2
-                        ? 'bg-gradient-to-br from-[#7DB6F1] to-[#185FA5]'
-                        : 'bg-gradient-to-br from-[#46C89A] to-[#1D9E75]'
-                  }`}>
-                    {podium.student.rank}
-                  </div>
-
-                  <div className={`font-bold mb-1 ${
-                    podium.highlight ? 'text-white text-2xl' : 'text-white text-lg'
-                  }`}>
-                    {podium.student.studentName}
-                  </div>
-
-                  <div className={`text-sm mb-3 font-medium ${
-                    podium.student.rank === 1 ? 'text-[#F7B955]' :
-                    podium.student.rank === 2 ? 'text-[#9ED0FF]' : 'text-[#7EE2BC]'
-                  }`}>
-                    @{podium.student.username}
-                  </div>
-
-                  <div className={`font-extrabold ${
-                    podium.student.rank === 1 ? 'text-4xl text-[#EF9F27]' :
-                    podium.student.rank === 2 ? 'text-3xl text-[#9ED0FF]' : 'text-3xl text-[#7EE2BC]'
-                  }`}>
-                    {podium.student.totalPoints?.toLocaleString()}
-                  </div>
-                  <div className="text-white/55 text-xs mt-1">points</div>
-
-                  <div className={`mt-4 inline-block px-4 py-1.5 rounded-full text-xs font-bold ${
-                    podium.student.rank === 1
-                      ? 'bg-[#EF9F27]/15 text-[#F7B955] border border-[#EF9F27]/25'
-                      : podium.student.rank === 2
-                        ? 'bg-[#7DB6F1]/10 text-[#9ED0FF] border border-[#7DB6F1]/20'
-                        : 'bg-[#46C89A]/10 text-[#7EE2BC] border border-[#46C89A]/20'
-                  }`}>
-                    {podium.student.currentLevel || 'N/A'}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
-            {/* Tie messages */}
-            {rank1Students.length > 1 && (
-              <div className="mt-6 text-center">
-                <div className="inline-block px-5 py-2.5 bg-[#FFF4DD] border border-[#EF9F27]/30 rounded-xl shadow-sm">
-                  <span className="text-[#C97900] font-bold">🏆 {rank1Students.length} students tied for 1st place!</span>
-                </div>
-              </div>
+            {/* Tie notices */}
+            {rank1.length > 1 && (
+              <p className="mt-4 text-center text-sm text-amber-700 font-medium bg-amber-50 border border-amber-200 rounded-xl py-2">
+                🏆 {rank1.length} students tied for 1st place!
+              </p>
             )}
-            {rank2Students.length > 1 && (
-              <div className="mt-6 text-center">
-                <div className="inline-block px-5 py-2.5 bg-[#E6F1FB] border border-[#185FA5]/30 rounded-xl shadow-sm">
-                  <span className="text-[#185FA5] font-bold">🥈 {rank2Students.length} students tied for 2nd place!</span>
-                </div>
-              </div>
+            {rank2.length > 1 && (
+              <p className="mt-2 text-center text-sm text-blue-700 font-medium bg-blue-50 border border-blue-200 rounded-xl py-2">
+                🥈 {rank2.length} students tied for 2nd place!
+              </p>
             )}
-            {rank3Students.length > 1 && (
-              <div className="mt-6 text-center">
-                <div className="inline-block px-5 py-2.5 bg-[#E1F5EE] border border-[#1D9E75]/30 rounded-xl shadow-sm">
-                  <span className="text-[#1D9E75] font-bold">🥉 {rank3Students.length} students tied for 3rd place!</span>
-                </div>
-              </div>
+            {rank3.length > 1 && (
+              <p className="mt-2 text-center text-sm text-teal-700 font-medium bg-teal-50 border border-teal-200 rounded-xl py-2">
+                🥉 {rank3.length} students tied for 3rd place!
+              </p>
             )}
           </div>
         )}
 
         {/* Search */}
-        <div className="mb-6">
-          <input
-            className="w-full px-6 py-4 bg-white/80 backdrop-blur-md border border-[#185FA5]/10 rounded-2xl text-[#042C53] placeholder-[#7A8CA5] focus:outline-none focus:border-[#185FA5] focus:ring-4 focus:ring-[#185FA5]/10 text-lg shadow-sm"
-            placeholder="🔍 Search students..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
-        </div>
+        <input
+          type="text"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="🔍  Search students..."
+          className="w-full px-4 py-3 rounded-xl border border-white/60 bg-white/70 backdrop-blur-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 text-sm transition-all"
+        />
 
-        {/* Leaderboard List */}
-        <div className="bg-white/80 backdrop-blur-xl border border-[#185FA5]/10 rounded-3xl overflow-hidden shadow-xl shadow-[#042C53]/5">
-          <div className="px-6 py-5 border-b border-[#185FA5]/10 bg-gradient-to-r from-[#F8FBFF] to-[#F4FCF8]">
-            <h2 className="text-lg font-extrabold text-[#042C53]">All Students ({filtered.length})</h2>
+        {/* Student List */}
+        <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-white/60 overflow-hidden shadow-sm">
+          <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-gray-700">All students</h2>
+            <span className="text-xs text-gray-400">{rankedFiltered.length} students</span>
           </div>
 
-          {allStudentsList.length === 0 ? (
-            <div className="p-12 text-center text-[#7A8CA5] font-medium">
-              No students found
-            </div>
+          {rankedFiltered.length === 0 ? (
+            <div className="py-12 text-center text-gray-400 text-sm">No students found</div>
           ) : (
-            <div className="divide-y divide-[#185FA5]/8">
-              {allStudentsList.map((s) => {
-                const isCurrentUser = currentUser && (currentUser.userId === s.userId || currentUser.studentId === s.studentId);
-
+            <div className="divide-y divide-gray-50">
+              {rankedFiltered.map((s) => {
+                const isYou = currentUser && (currentUser.userId === s.userId || currentUser.studentId === s.studentId);
                 return (
                   <div
                     key={s.userId || s.studentId}
-                    className={`px-6 py-4 flex items-center gap-4 transition-all duration-200 hover:bg-[#F8FBFF] ${
-                      isCurrentUser ? 'bg-[#FFF8EA] border-l-4 border-[#EF9F27]' : ''
-                    }`}
+                    className={`flex items-center gap-3 px-5 py-3 transition-colors hover:bg-gray-50 ${getRowStyle(s.rank, isYou)}`}
                   >
-                    {/* Rank */}
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg ${getRankBadge(s.rank)}`}>
-                      {s.rank <= 3 ? (s.rank === 1 ? '🥇' : s.rank === 2 ? '🥈' : '🥉') : s.rank}
+                    {/* Rank badge */}
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 ${getRankBadgeStyle(s.rank)}`}>
+                      {s.rank <= 3
+                        ? (s.rank === 1 ? '🥇' : s.rank === 2 ? '🥈' : '🥉')
+                        : s.rank
+                      }
                     </div>
 
-                    {/* Student Info */}
+                    {/* Info */}
                     <div className="flex-1 min-w-0">
-                      <div className="text-[#042C53] font-bold text-lg truncate">
-                        {s.studentName}
-                        {isCurrentUser && (
-                          <span className="ml-2 text-xs bg-[#FFF0D3] text-[#C97900] px-2 py-0.5 rounded-full font-bold">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-medium text-gray-900 truncate">{s.studentName}</span>
+                        {isYou && (
+                          <span className="text-xs bg-amber-400 text-amber-900 px-2 py-0.5 rounded-full font-medium">
                             You
                           </span>
                         )}
                       </div>
-                      <div className="text-[#185FA5] text-sm">@{s.username}</div>
+                      <p className="text-xs text-gray-400 mt-0.5">@{s.username}</p>
                     </div>
 
                     {/* Stats */}
-                    <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-5 flex-shrink-0">
                       <div className="text-right hidden sm:block">
-                        <div className="text-[#7A8CA5] text-xs">Level</div>
-                        <div className="text-[#1D9E75] font-bold">{s.currentLevel || 'N/A'}</div>
+                        <p className="text-xs text-gray-400">Level</p>
+                        <p className="text-xs font-medium text-teal-600">{s.currentLevel || 'N/A'}</p>
                       </div>
-                      <div className="text-right">
-                        <div className="text-[#7A8CA5] text-xs">Badges</div>
-                        <div className="text-[#185FA5] font-bold">{s.badgesCount || 0}</div>
+                      <div className="text-right hidden sm:block">
+                        <p className="text-xs text-gray-400">Badges</p>
+                        <p className="text-xs font-medium text-blue-600">{s.badgesCount || 0}</p>
                       </div>
-                      <div className="text-right min-w-[100px]">
-                        <div className="text-[#7A8CA5] text-xs">Points</div>
-                        <div className="text-2xl font-extrabold text-[#EF9F27]">{s.totalPoints?.toLocaleString()}</div>
+                      <div className="text-right min-w-[72px]">
+                        <p className="text-xs text-gray-400">Points</p>
+                        <p className={`text-base font-bold ${getPtsStyle(s.rank)}`}>
+                          {s.totalPoints?.toLocaleString()}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -407,9 +394,9 @@ export default function PublicLeaderboard() {
         </div>
 
         {/* Footer */}
-        <div className="mt-8 text-center text-[#7A8CA5] text-sm">
-          <p>Points are calculated from quizzes, true/false questions, daily logins, and activities</p>
-        </div>
+        <p className="text-center text-xs text-gray-400 pb-4">
+          Points are calculated from quizzes, true/false questions, daily logins, and activities
+        </p>
       </div>
     </div>
   );

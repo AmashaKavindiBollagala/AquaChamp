@@ -9,6 +9,24 @@ const getToken = () =>
   localStorage.getItem("aquachamp_token") ||
   sessionStorage.getItem("aquachamp_token");
 
+// ─────────────────────────────────────────────────────────────────────────────
+// 🔒  Auth Guard Hook — redirects to /login if no token found
+// ─────────────────────────────────────────────────────────────────────────────
+function useAuthGuard(redirectTo = "/login") {
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    const token = getToken();
+    if (!token) {
+      window.location.replace(redirectTo);
+    } else {
+      setChecking(false);
+    }
+  }, [redirectTo]);
+
+  return checking;
+}
+
 const api = axios.create({ baseURL: API });
 api.interceptors.request.use((cfg) => {
   const t = getToken();
@@ -417,9 +435,26 @@ function HistoryRow({ day }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// 🔒  Auth Loading Screen
+// ─────────────────────────────────────────────────────────────────────────────
+function AuthCheckScreen() {
+  return (
+    <div className="h-screen bg-[#EAF5FF] flex items-center justify-center">
+      <div className="flex flex-col items-center gap-3 text-slate-400">
+        <div className="w-8 h-8 rounded-full border-4 border-sky-200 border-t-sky-600 animate-spin" />
+        <span className="text-sm font-semibold">Checking session…</span>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // 🏠  Main User View
 // ─────────────────────────────────────────────────────────────────────────────
 export default function UserWaterView() {
+  // 🔒 Auth guard — redirects to /login if no token
+  const authChecking = useAuthGuard("/login");
+
   const [today,    setToday]    = useState(null);
   const [history,  setHistory]  = useState(null);
   const [loading,  setLoading]  = useState(true);
@@ -442,6 +477,13 @@ export default function UserWaterView() {
       const { data } = await api.get("/api/water/today");
       setToday(data);
     } catch (e) {
+      // If 401 Unauthorized, redirect to login
+      if (e.response?.status === 401) {
+        localStorage.removeItem("aquachamp_token");
+        sessionStorage.removeItem("aquachamp_token");
+        window.location.replace("/login");
+        return;
+      }
       showToast(e.response?.data?.message || "Could not load water data", "error");
     }
   }, []);
@@ -459,7 +501,10 @@ export default function UserWaterView() {
     setLoading(false);
   }, [loadToday, loadHistory]);
 
-  useEffect(() => { init(); }, [init]);
+  useEffect(() => {
+    // Only fetch data once auth check passes
+    if (!authChecking) init();
+  }, [authChecking, init]);
 
   // ✅ Auto-refresh when Sri Lanka date changes (midnight rollover)
   useEffect(() => {
@@ -482,6 +527,7 @@ export default function UserWaterView() {
       showToast(data.message || "Cup added! 💧");
       await loadToday(); await loadHistory();
     } catch (e) {
+      if (e.response?.status === 401) { window.location.replace("/login"); return; }
       showToast(e.response?.data?.message || "Error adding cup", "error");
     } finally { setAdding(false); }
   };
@@ -494,6 +540,7 @@ export default function UserWaterView() {
       showToast(data.message || "Cup removed");
       await loadToday(); await loadHistory();
     } catch (e) {
+      if (e.response?.status === 401) { window.location.replace("/login"); return; }
       showToast(e.response?.data?.message || "Error removing cup", "error");
     } finally { setRemoving(false); }
   };
@@ -512,6 +559,7 @@ export default function UserWaterView() {
       showToast(data.message || `Set to ${cups} cups! 💧`);
       await loadToday(); await loadHistory();
     } catch (e) {
+      if (e.response?.status === 401) { window.location.replace("/login"); return; }
       showToast(e.response?.data?.message || "Error setting cups", "error");
     } finally { setSetting(false); setShowEdit(false); }
   };
@@ -525,9 +573,13 @@ export default function UserWaterView() {
       showToast("Today's log deleted");
       await loadToday(); await loadHistory();
     } catch (e) {
+      if (e.response?.status === 401) { window.location.replace("/login"); return; }
       showToast(e.response?.data?.message || "Error deleting log", "error");
     }
   };
+
+  // Show auth-checking spinner while verifying token (prevents flash of content)
+  if (authChecking) return <AuthCheckScreen />;
 
   const data      = today?.data;
   const enc       = today?.encouragement;
@@ -573,7 +625,6 @@ export default function UserWaterView() {
           </div>
           <div>
             <div className="font-black text-[#042C53] text-base leading-tight">Water Tracker</div>
-            {/* ✅ Correct Sri Lanka date via Intl */}
             <div className="text-slate-400 text-[10px] font-semibold">{displayDate}</div>
           </div>
         </div>
@@ -700,7 +751,6 @@ export default function UserWaterView() {
                     <span className="text-2xl">🏆</span>
                     <div>
                       <div className="font-extrabold text-emerald-700 text-xs">Daily goal achieved!</div>
-                      
                     </div>
                   </div>
                 )}

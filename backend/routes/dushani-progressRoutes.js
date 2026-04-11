@@ -13,8 +13,8 @@ import { verifyRoles } from '../middleware/dilshara-verifyRoles.js';
 
 const router = express.Router();
 
-// Public route: leaderboard (students can view without admin role)
-router.get('/leaderboard', getLeaderboard);
+// Protected route: leaderboard (requires authentication - students and admins)
+router.get('/leaderboard', verifyJWT, getLeaderboard);
 
 // Admin routes: require JWT + admin roles
 // Accept only SUPER_ADMIN and custom Progress_ADMIN roles

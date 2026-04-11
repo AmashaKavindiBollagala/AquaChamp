@@ -536,7 +536,7 @@ function VideoPanel({ subtopic, onRefresh }) {
     setSearching(true); setMsg("");
     try {
       const res = await axios.get("https://www.googleapis.com/youtube/v3/search", {
-        params: { part: "snippet", q: youtubeSearch, type: "video", maxResults: 6, key: YOUTUBE_API_KEY },
+        params: { part: "snippet", q: youtubeSearch, type: "video", maxResults: 12, key: YOUTUBE_API_KEY },
       });
       const items = res.data.items || [];
       if (items.length === 0) { setMsg("⚠️ No videos found."); } else { setYoutubeResults(items); setMsg(`✅ Found ${items.length} videos!`); }
@@ -694,21 +694,28 @@ function TextPanel({ subtopic, onRefresh }) {
   const [contentFiles, setContentFiles] = useState(subtopic?.contentFiles || []);
   const [contentType, setContentType] = useState(subtopic?.contentType || "text");
   const [msg, setMsg] = useState("");
-  const [aiPrompt, setAiPrompt] = useState("");
-  const [generating, setGenerating] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [hasSavedContent, setHasSavedContent] = useState(!!subtopic?.content);
 
-  const generateWithAI = async () => {
-    if (!aiPrompt.trim()) return setMsg("❌ Please enter a topic for AI generation");
-    if (!subtopic?.title) return setMsg("❌ Subtopic title not found");
-    setGenerating(true); setMsg("");
+  // Helper function to download file with correct name and type
+  const handleFileDownload = async (fileUrl, fileName) => {
     try {
-      const generatedText = await geminiAPI.generateContent(subtopic.title, aiPrompt);
-      if (generatedText) { setContent(generatedText); setContentType("text"); setMsg("✅ AI content generated successfully!"); }
-      else { setMsg("❌ Failed to generate content. Please try again."); }
-    } catch (err) { setMsg(`❌ AI Error: ${err.response?.data?.error?.message || err.message}`); }
-    finally { setGenerating(false); }
+      const response = await fetch(fileUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Download error:', error);
+      // Fallback: open in new tab
+      window.open(fileUrl, '_blank');
+    }
   };
 
   const saveText = async () => {
@@ -718,16 +725,27 @@ function TextPanel({ subtopic, onRefresh }) {
       await axios.put(`${API}/api/subtopics/text/${subtopic._id}`, { content, contentType, contentFiles }, {
         headers: { Authorization: `Bearer ${token}` }, withCredentials: true,
       });
-      setMsg("✅ Content saved successfully!"); setIsEditing(false); onRefresh?.(); setTimeout(() => setMsg(""), 3000);
+      setMsg("✅ Content saved successfully!"); 
+      setIsEditing(false); 
+      setHasSavedContent(true);
+      onRefresh?.(); 
+      setTimeout(() => setMsg(""), 3000);
     } catch (err) { setMsg("❌ Failed to save content: " + (err.response?.data?.message || "Unknown error")); }
   };
 
   const deleteText = async () => {
-    if (!window.confirm("Remove all content?")) return;
+    if (!window.confirm("Are you sure you want to delete this lesson content?")) return;
     try {
       const token = localStorage.getItem("aquachamp_token") || sessionStorage.getItem("aquachamp_token");
       await axios.delete(`${API}/api/subtopics/text/${subtopic._id}`, { headers: { Authorization: `Bearer ${token}` }, withCredentials: true });
-      setContent(""); setContentFiles([]); setContentType("text"); setMsg("✅ Content removed"); onRefresh?.(); setTimeout(() => setMsg(""), 3000);
+      setContent(""); 
+      setContentFiles([]); 
+      setContentType("text"); 
+      setHasSavedContent(false);
+      setIsEditing(false);
+      setMsg("✅ Lesson content deleted successfully!"); 
+      onRefresh?.(); 
+      setTimeout(() => setMsg(""), 3000);
     } catch (err) { setMsg("❌ Failed to delete: " + (err.response?.data?.message || "Unknown error")); }
   };
 
@@ -745,6 +763,45 @@ function TextPanel({ subtopic, onRefresh }) {
       if (onRefresh) onRefresh();
       setTimeout(() => setMsg(""), 3000);
     } catch (err) { setMsg("❌ Failed to delete file: " + (err.response?.data?.message || "Unknown error")); setTimeout(() => setMsg(""), 5000); }
+  };
+
+  const insertFormat = (format) => {
+    const textarea = document.getElementById('lesson-textarea');
+    if (!textarea) return;
+    
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = content.substring(start, end);
+    
+    let formattedText = '';
+    switch(format) {
+      case 'bold':
+        formattedText = `**${selectedText || 'bold text'}**`;
+        break;
+      case 'italic':
+        formattedText = `_${selectedText || 'italic text'}_`;
+        break;
+      case 'numbered':
+        formattedText = `\n1. First item\n2. Second item\n3. Third item`;
+        break;
+      case 'bullet':
+        formattedText = `\n• First item\n• Second item\n• Third item`;
+        break;
+      case 'heading':
+        formattedText = `\n# ${selectedText || 'Heading'}`;
+        break;
+      default:
+        return;
+    }
+    
+    const newContent = content.substring(0, start) + formattedText + content.substring(end);
+    setContent(newContent);
+    
+    setTimeout(() => {
+      textarea.focus();
+      const newPos = start + formattedText.length;
+      textarea.setSelectionRange(start, newPos);
+    }, 0);
   };
 
   const hasContent = !!content || contentFiles.length > 0;
@@ -769,33 +826,74 @@ function TextPanel({ subtopic, onRefresh }) {
 
       {contentType === "text" && (
         <>
-          {/* AI Generator */}
-          <div className="rounded-2xl p-5 space-y-4" style={{ background: "linear-gradient(135deg,#faf5ff,#eff6ff)", border: "2px solid #c4b5fd" }}>
-            <SectionLabel color="#7c3aed">🤖 AI Content Generator</SectionLabel>
-            <div className="flex gap-3">
-              <input value={aiPrompt} onChange={(e) => setAiPrompt(e.target.value)}
-                placeholder="e.g. arm movements for backstroke, breathing techniques…"
-                style={{ ...inputStyle, background: "#fff", border: "2px solid #c4b5fd", fontSize: 15 }}
-                onFocus={(e) => { e.target.style.borderColor = "#7c3aed"; }} onBlur={(e) => { e.target.style.borderColor = "#c4b5fd"; }} />
-              <button onClick={generateWithAI} disabled={generating}
-                className="px-5 py-3 text-white rounded-xl font-bold transition-all disabled:opacity-50 hover:-translate-y-0.5 shrink-0"
-                style={{ background: "linear-gradient(135deg,#7c3aed,#6366f1)", boxShadow: "0 4px 16px rgba(124,58,237,0.4)", fontSize: 15 }}>
-                {generating ? "Generating…" : "✨ Generate"}
-              </button>
-            </div>
-          </div>
-
           {/* Text Editor */}
           <div>
             <div className="flex items-center justify-between mb-3">
               <SectionLabel color="#6366f1">Lesson Content</SectionLabel>
               <span style={{ fontSize: 13, color: "#94a3b8", fontWeight: 600 }}>{content.length} characters</span>
             </div>
-            <textarea value={content} onChange={(e) => setContent(e.target.value)} rows={14}
-              placeholder="Write lesson content here… or use AI generator above."
-              style={{ ...inputStyle, resize: "none", fontFamily: "monospace", lineHeight: 1.8, fontSize: 15 }}
-              onFocus={(e) => { e.target.style.borderColor = "#6366f1"; e.target.style.boxShadow = "0 0 0 3px rgba(99,102,241,0.1)"; }}
-              onBlur={(e) => { e.target.style.borderColor = "#e0e7ff"; e.target.style.boxShadow = "none"; }} />
+            
+            {/* Formatting Toolbar - only show when editing */}
+            {isEditing && (
+              <div className="flex gap-2 mb-3 p-3 rounded-xl" style={{ background: "#f8faff", border: "2px solid #e0e7ff" }}>
+                <button onClick={() => insertFormat('bold')} className="px-3 py-2 rounded-lg font-bold text-sm transition-all hover:scale-105" style={{ background: "#fff", border: "1.5px solid #c4b5fd", color: "#6366f1" }} title="Bold">
+                  𝐁 Bold
+                </button>
+                <button onClick={() => insertFormat('italic')} className="px-3 py-2 rounded-lg text-sm transition-all hover:scale-105" style={{ background: "#fff", border: "1.5px solid #c4b5fd", color: "#6366f1", fontStyle: "italic" }} title="Italic">
+                  𝐼 Italic
+                </button>
+                <button onClick={() => insertFormat('heading')} className="px-3 py-2 rounded-lg font-bold text-sm transition-all hover:scale-105" style={{ background: "#fff", border: "1.5px solid #c4b5fd", color: "#6366f1" }} title="Heading">
+                  H Heading
+                </button>
+                <button onClick={() => insertFormat('numbered')} className="px-3 py-2 rounded-lg text-sm transition-all hover:scale-105" style={{ background: "#fff", border: "1.5px solid #c4b5fd", color: "#6366f1" }} title="Numbered List">
+                  1. List
+                </button>
+                <button onClick={() => insertFormat('bullet')} className="px-3 py-2 rounded-lg text-sm transition-all hover:scale-105" style={{ background: "#fff", border: "1.5px solid #c4b5fd", color: "#6366f1" }} title="Bullet List">
+                  • List
+                </button>
+              </div>
+            )}
+            
+            <textarea 
+              id="lesson-textarea"
+              value={content} 
+              onChange={(e) => setContent(e.target.value)} 
+              rows={14}
+              readOnly={!isEditing && hasSavedContent}
+              placeholder={hasSavedContent ? (isEditing ? "Edit your lesson content here…" : "Content saved. Click 'Edit Text' to make changes.") : "Write your lesson content here…"}
+              style={{ 
+                ...inputStyle, 
+                resize: "none", 
+                fontFamily: "monospace", 
+                lineHeight: 1.8, 
+                fontSize: 15,
+                opacity: (!isEditing && hasSavedContent) ? 0.8 : 1,
+                cursor: (!isEditing && hasSavedContent) ? "default" : "text"
+              }}
+              onFocus={(e) => { if (isEditing || !hasSavedContent) { e.target.style.borderColor = "#6366f1"; e.target.style.boxShadow = "0 0 0 3px rgba(99,102,241,0.1)"; } }}
+              onBlur={(e) => { e.target.style.borderColor = "#e0e7ff"; e.target.style.boxShadow = "none"; }} 
+            />
+          </div>
+          
+          <Alert msg={msg} />
+          <div className="flex gap-3 flex-wrap pt-2">
+            {/* If no saved content yet, show Save button */}
+            {!hasSavedContent && (
+              <SaveBtn onClick={saveText} label="💾 Save Text" />
+            )}
+            
+            {/* If content is saved, show Edit and Delete buttons */}
+            {hasSavedContent && !isEditing && (
+              <>
+                <EditBtn onClick={() => setIsEditing(true)} label="✏️ Edit Text" />
+                <DangerBtn onClick={deleteText} label="🗑️ Delete Text" />
+              </>
+            )}
+            
+            {/* If editing saved content, show Save button */}
+            {hasSavedContent && isEditing && (
+              <SaveBtn onClick={saveText} label="💾 Save Changes" />
+            )}
           </div>
         </>
       )}
@@ -848,8 +946,11 @@ function TextPanel({ subtopic, onRefresh }) {
                       </div>
                     </div>
                     <div className="flex gap-2 ml-3">
-                      <a href={file.url.startsWith("/") ? `${API}${file.url}` : file.url} target="_blank" rel="noopener noreferrer"
-                        className="px-3 py-2 rounded-xl text-sm font-bold" style={{ background: "#7c3aed", color: "#fff", fontSize: 13 }}>👁️ View</a>
+                      <button onClick={() => {
+                        const fileUrl = file.url.startsWith("/") ? `${API}${file.url}` : file.url;
+                        handleFileDownload(fileUrl, file.name);
+                      }}
+                        className="px-3 py-2 rounded-xl text-sm font-bold transition-all hover:scale-105" style={{ background: "#7c3aed", color: "#fff", fontSize: 13 }}>👁️ View</button>
                       <label className="px-3 py-2 rounded-xl text-sm font-bold cursor-pointer transition-all hover:scale-105" style={{ background: "#dbeafe", border: "1.5px solid #93c5fd", color: "#1e40af", fontSize: 13 }}>
                         🔄 Update
                         <input type="file" accept=".pdf,.ppt,.pptx" className="hidden" onChange={async (e) => {
@@ -881,12 +982,6 @@ function TextPanel({ subtopic, onRefresh }) {
           )}
         </div>
       )}
-
-      <Alert msg={msg} />
-      <div className="flex gap-3 flex-wrap pt-2">
-        <EditBtn onClick={() => setIsEditing(true)} label="Edit Content" />
-        <SaveBtn onClick={saveText} label="Save Content" />
-      </div>
     </div>
   );
 }

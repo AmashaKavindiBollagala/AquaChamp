@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const API = "http://localhost:4000";
 
@@ -23,11 +24,26 @@ const todayStr = () => {
   return `${yyyy}-${mm}-${dd}`;
 };
 
-// ─────────────────────────────────────────────
-// 🔔 SMART REMINDERS (ADD THIS)
-// ─────────────────────────────────────────────
 
-const REMINDER_HOUR = 20; // 8 PM
+//  AUTH GUARD HOOK
+
+function useAuthGuard() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const token = getToken();
+    if (!token) {
+      navigate("/login", { replace: true });
+    }
+  }, [navigate]);
+
+  return !!getToken();
+}
+
+
+// SMART REMINDERS
+
+const REMINDER_HOUR = 20;
 
 function requestNotificationPermission() {
   if ("Notification" in window && Notification.permission === "default") {
@@ -44,18 +60,12 @@ function sendNotification(title, body) {
 function useSmartReminders(activities, logs) {
   useEffect(() => {
     requestNotificationPermission();
-    console.log("🔔 Reminder running");
 
     const interval = setInterval(() => {
       const now = new Date();
-
-      const loggedIds = new Set(
-        logs.map((l) => l.activityId?._id || l.activityId)
-      );
-
+      const loggedIds = new Set(logs.map((l) => l.activityId?._id || l.activityId));
       const incomplete = activities.filter((a) => !loggedIds.has(a._id));
 
-      // 🕐 1PM reminder
       if (now.getHours() === 13 && now.getMinutes() === 0) {
         if (incomplete.length > 0) {
           sendNotification(
@@ -65,7 +75,6 @@ function useSmartReminders(activities, logs) {
         }
       }
 
-      // 🌙 8PM reminder
       if (now.getHours() === REMINDER_HOUR && now.getMinutes() === 0) {
         if (incomplete.length > 0) {
           sendNotification(
@@ -82,7 +91,7 @@ function useSmartReminders(activities, logs) {
   }, [activities, logs]);
 }
 
-// ── Streak helpers ────────────────────────────────────────────────────────────
+//  Streak helpers
 const MILESTONES = [3, 7, 14, 30, 60, 100];
 
 function getMotivationMessage(streak) {
@@ -117,24 +126,24 @@ const MILESTONE_META = {
   100: { label: "Century Club",   icon: "🌟" },
 };
 
-// ── Toast ─────────────────────────────────────────────────────────────────────
+// Toast
 function Toast({ msg, type, onClose }) {
   useEffect(() => {
     if (msg) { const t = setTimeout(onClose, 3000); return () => clearTimeout(t); }
   }, [msg]);
   if (!msg) return null;
   return (
-    <div className={`fixed top-5 left-1/2 -translate-x-1/2 z-9999 flex items-center gap-2.5 px-6 py-3.5 rounded-2xl font-extrabold text-sm shadow-2xl
+    <div className={`fixed top-5 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-2.5 px-6 py-3.5 rounded-2xl font-extrabold text-sm shadow-2xl
       ${type === "error"
         ? "bg-red-50 border border-red-200 text-red-600"
-        : "bg-linear-to-r from-sky-700 to-emerald-500 text-white"}`}
+        : "bg-gradient-to-r from-sky-700 to-emerald-500 text-white"}`}
     >
       {type === "error" ? "❌" : "🎉"} {msg}
     </div>
   );
 }
 
-// ── Streak Banner (enhanced) ──────────────────────────────────────────────────
+//  Streak Banner 
 function StreakBanner({ streak }) {
   if (!streak) return null;
   const { currentStreak, longestStreak } = streak;
@@ -144,25 +153,19 @@ function StreakBanner({ streak }) {
   const progressPct    = nextMilestone
     ? Math.round(((currentStreak - prevMilestone) / (nextMilestone - prevMilestone)) * 100)
     : 100;
-
-  // Which milestone badges has the user earned?
   const earned = MILESTONES.filter((m) => currentStreak >= m);
 
   return (
     <div className="relative overflow-hidden rounded-3xl p-5 mb-5
-      bg-linear-to-br from-[#042C53] via-[#185FA5] to-[#1D9E75]
+      bg-gradient-to-br from-[#042C53] via-[#185FA5] to-[#1D9E75]
       shadow-[0_8px_32px_rgba(4,44,83,0.22)]">
-
-      {/* Decorative circles */}
       <div className="absolute -right-5 -top-5 w-24 h-24 rounded-full bg-white/5" />
       <div className="absolute right-10 -bottom-8 w-20 h-20 rounded-full bg-emerald-300/10" />
 
-      {/* ── Top row: emoji / streak count / best ── */}
       <div className="relative flex items-center gap-4 flex-wrap">
         <div className="w-14 h-14 rounded-2xl bg-white/15 border-2 border-amber-300/30 flex items-center justify-center text-3xl shrink-0">
           {getStreakEmoji(currentStreak)}
         </div>
-
         <div className="flex-1">
           <div className="text-emerald-300 text-[10px] font-extrabold uppercase tracking-[0.2em] mb-1">Your Streak</div>
           <div className="text-white font-black text-2xl leading-tight">
@@ -170,7 +173,6 @@ function StreakBanner({ streak }) {
           </div>
           <div className={`text-xs mt-1 font-semibold ${color}`}>{msg}</div>
         </div>
-
         <div className="text-center shrink-0">
           <div className="text-white/50 text-[10px] font-bold uppercase tracking-wider">Best</div>
           <div className="text-amber-300 font-black text-2xl">{longestStreak}</div>
@@ -178,7 +180,6 @@ function StreakBanner({ streak }) {
         </div>
       </div>
 
-      {/* ── Progress to next milestone ── */}
       {nextMilestone && (
         <div className="relative mt-4">
           <div className="flex justify-between items-center mb-1.5">
@@ -191,7 +192,7 @@ function StreakBanner({ streak }) {
           </div>
           <div className="w-full h-2 rounded-full bg-white/15 overflow-hidden">
             <div
-              className="h-full rounded-full bg-linear-to-r from-amber-300 to-emerald-300 transition-all duration-700"
+              className="h-full rounded-full bg-gradient-to-r from-amber-300 to-emerald-300 transition-all duration-700"
               style={{ width: `${progressPct}%` }}
             />
           </div>
@@ -201,7 +202,6 @@ function StreakBanner({ streak }) {
         </div>
       )}
 
-      {/* ── Earned milestone badges ── */}
       {earned.length > 0 && (
         <div className="relative mt-4 pt-4 border-t border-white/15">
           <div className="text-white/50 text-[10px] font-extrabold uppercase tracking-[0.15em] mb-2">
@@ -209,10 +209,7 @@ function StreakBanner({ streak }) {
           </div>
           <div className="flex gap-2 flex-wrap">
             {earned.map((m) => (
-              <div
-                key={m}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/15 border border-amber-300/30"
-              >
+              <div key={m} className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/15 border border-amber-300/30">
                 <span className="text-base leading-none">{MILESTONE_META[m]?.icon}</span>
                 <span className="text-white text-[10px] font-extrabold">{MILESTONE_META[m]?.label}</span>
               </div>
@@ -221,7 +218,6 @@ function StreakBanner({ streak }) {
         </div>
       )}
 
-      {/* ── No streak yet nudge ── */}
       {currentStreak === 0 && (
         <div className="relative mt-4 pt-4 border-t border-white/15 flex items-center gap-2">
           <span className="text-2xl">💧</span>
@@ -234,10 +230,10 @@ function StreakBanner({ streak }) {
   );
 }
 
-// ── Points Card ───────────────────────────────────────────────────────────────
+//  Points Card 
 function PointsCard({ points }) {
   return (
-    <div className="bg-linear-to-br from-amber-50 to-yellow-100 border border-amber-200 rounded-2xl p-4 flex items-center gap-3 shadow-sm">
+    <div className="bg-gradient-to-br from-amber-50 to-yellow-100 border border-amber-200 rounded-2xl p-4 flex items-center gap-3 shadow-sm">
       <div className="text-4xl">⭐</div>
       <div>
         <div className="text-amber-800 text-[10px] font-extrabold uppercase tracking-widest">Total Points</div>
@@ -247,7 +243,7 @@ function PointsCard({ points }) {
   );
 }
 
-// ── Progress Ring ─────────────────────────────────────────────────────────────
+//  Progress Ring
 function ProgressRing({ done, total }) {
   const r = 38;
   const c = 2 * Math.PI * r;
@@ -280,7 +276,7 @@ function ProgressRing({ done, total }) {
   );
 }
 
-// ── User Activity Card ────────────────────────────────────────────────────────
+//  User Activity Card 
 function UserActivityCard({ activity, isLogged, onLog, logging, onEdit, onDelete }) {
   return (
     <div className={`bg-white rounded-2xl p-4 border-2 transition-all shadow-sm
@@ -290,7 +286,7 @@ function UserActivityCard({ activity, isLogged, onLog, logging, onEdit, onDelete
     >
       {isLogged && (
         <div className="flex justify-end mb-1">
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-linear-to-r from-emerald-500 to-sky-600 text-white text-[10px] font-extrabold tracking-wide">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-gradient-to-r from-emerald-500 to-sky-600 text-white text-[10px] font-extrabold tracking-wide">
             ✓ DONE
           </span>
         </div>
@@ -299,8 +295,8 @@ function UserActivityCard({ activity, isLogged, onLog, logging, onEdit, onDelete
       <div className="flex items-start gap-3">
         <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shrink-0 border transition-all
           ${isLogged
-            ? "bg-linear-to-br from-emerald-100 to-green-100 border-emerald-200"
-            : "bg-linear-to-br from-sky-50 to-blue-100 border-sky-200"}`}
+            ? "bg-gradient-to-br from-emerald-100 to-green-100 border-emerald-200"
+            : "bg-gradient-to-br from-sky-50 to-blue-100 border-sky-200"}`}
         >{activity.icon}</div>
 
         <div className="flex-1 min-w-0">
@@ -339,10 +335,10 @@ function UserActivityCard({ activity, isLogged, onLog, logging, onEdit, onDelete
         disabled={isLogged || logging === activity._id}
         className={`mt-3 w-full py-2.5 rounded-2xl border-none font-extrabold text-sm cursor-pointer transition-all
           ${isLogged
-            ? "bg-linear-to-r from-emerald-100 to-green-100 text-emerald-700 cursor-default"
+            ? "bg-gradient-to-r from-emerald-100 to-green-100 text-emerald-700 cursor-default"
             : logging === activity._id
               ? "bg-sky-200 text-white cursor-not-allowed"
-              : "bg-linear-to-r from-sky-700 to-emerald-500 text-white shadow-md hover:-translate-y-0.5"}`}
+              : "bg-gradient-to-r from-sky-700 to-emerald-500 text-white shadow-md hover:-translate-y-0.5"}`}
       >
         {isLogged
           ? "✅ Completed Today!"
@@ -354,7 +350,131 @@ function UserActivityCard({ activity, isLogged, onLog, logging, onEdit, onDelete
   );
 }
 
-// ── Custom Activity Modal ─────────────────────────────────────────────────────
+//  Validation helpers 
+const NAME_MIN = 3;
+const NAME_MAX = 50;
+const DESC_MAX = 200;
+
+// Returns true if the string contains at least one real Unicode letter or digit
+const hasAlphanumeric = (str) => /[\p{L}\p{N}]/u.test(str);
+
+// Returns true only if every code point in the string is an emoji-related character.
+// Rejects plain letters (a-z, A-Z), digits (0-9), punctuation, whitespace, and symbols
+// that are not part of Unicode's emoji set.
+const isEmojiChar = (cp) => {
+  // Reject ASCII letters, digits, basic punctuation and whitespace outright
+  if (cp <= 0x007E) return false;
+  // Allow combining/modifier ranges used by emoji sequences
+  if (cp === 0x200D) return true;  // ZWJ
+  if (cp === 0xFE0F) return true;  // variation selector-16 (emoji presentation)
+  if (cp >= 0x1F3FB && cp <= 0x1F3FF) return true; // skin tone modifiers
+  if (cp >= 0x1F1E0 && cp <= 0x1F1FF) return true; // regional indicator letters (flags)
+  // Core emoji blocks
+  if (cp >= 0x2194 && cp <= 0x2199) return true;
+  if (cp >= 0x2300 && cp <= 0x23FF) return true;
+  if (cp >= 0x2600 && cp <= 0x26FF) return true;
+  if (cp >= 0x2700 && cp <= 0x27BF) return true;
+  if (cp >= 0x2B00 && cp <= 0x2BFF) return true;
+  if (cp >= 0xFE00 && cp <= 0xFE0F) return true; // variation selectors
+  if (cp >= 0x1F000 && cp <= 0x1F02F) return true; // Mahjong
+  if (cp >= 0x1F0A0 && cp <= 0x1F0FF) return true; // Playing cards
+  if (cp >= 0x1F100 && cp <= 0x1F1FF) return true; // Enclosed alphanumeric supplement
+  if (cp >= 0x1F200 && cp <= 0x1F2FF) return true; // Enclosed ideographic supplement
+  if (cp >= 0x1F300 && cp <= 0x1F5FF) return true; // Misc symbols & pictographs
+  if (cp >= 0x1F600 && cp <= 0x1F64F) return true; // Emoticons
+  if (cp >= 0x1F680 && cp <= 0x1F6FF) return true; // Transport & map
+  if (cp >= 0x1F700 && cp <= 0x1F77F) return true; // Alchemical
+  if (cp >= 0x1F780 && cp <= 0x1F7FF) return true; // Geometric shapes extended
+  if (cp >= 0x1F800 && cp <= 0x1F8FF) return true; // Supplemental arrows
+  if (cp >= 0x1F900 && cp <= 0x1F9FF) return true; // Supplemental symbols & pictographs
+  if (cp >= 0x1FA00 && cp <= 0x1FA6F) return true; // Chess symbols
+  if (cp >= 0x1FA70 && cp <= 0x1FAFF) return true; // Symbols & pictographs extended-A
+  if (cp >= 0x231A && cp <= 0x231B) return true;   // Watch, hourglass
+  if (cp >= 0x23E9 && cp <= 0x23F3) return true;   // Various clock/arrow emoji
+  if (cp >= 0x25AA && cp <= 0x25AB) return true;
+  if (cp >= 0x25FB && cp <= 0x25FE) return true;
+  if (cp >= 0x2614 && cp <= 0x2615) return true;
+  if (cp >= 0x2648 && cp <= 0x2653) return true;   // Zodiac signs
+  return false;
+};
+
+// Returns true if the trimmed string is a single grapheme cluster made entirely
+// of emoji code points (emoji + ZWJ sequences, skin tones, flags, etc.)
+const isSingleEmoji = (str) => {
+  const trimmed = str.trim();
+  if (!trimmed) return false;
+  // All code points must be emoji-related
+  const codePoints = [...trimmed].map((ch) => ch.codePointAt(0));
+  if (!codePoints.every(isEmojiChar)) return false;
+  // Must be exactly one grapheme cluster (one "visual" emoji)
+  if (typeof Intl !== "undefined" && Intl.Segmenter) {
+    const segments = [...new Intl.Segmenter().segment(trimmed)];
+    return segments.length === 1;
+  }
+  return codePoints.length <= 8; // conservative fallback for ZWJ sequences
+};
+
+// Strips any non-emoji characters from a raw input string and returns
+// the last valid single emoji found, or a fallback.
+const extractEmoji = (raw, fallback = "") => {
+  const trimmed = raw.trim();
+  if (!trimmed) return fallback;
+  // Split into grapheme clusters, keep only those that are pure emoji
+  if (typeof Intl !== "undefined" && Intl.Segmenter) {
+    const clusters = [...new Intl.Segmenter().segment(trimmed)].map((s) => s.segment);
+    const emojiOnly = clusters.filter((c) => isSingleEmoji(c));
+    // Return only the last emoji typed (so user can replace by typing a new one)
+    return emojiOnly.length > 0 ? emojiOnly[emojiOnly.length - 1] : fallback;
+  }
+  // Fallback: check each code point
+  const cps = [...trimmed];
+  const valid = cps.filter((ch) => isEmojiChar(ch.codePointAt(0)));
+  return valid.length > 0 ? valid[valid.length - 1] : fallback;
+};
+
+function validateActivityForm(form) {
+  const errors = {};
+
+  //  Icon 
+  const iconTrimmed = form.icon.trim();
+  if (!iconTrimmed) {
+    errors.icon = "Please choose an icon.";
+  } else if (!isSingleEmoji(iconTrimmed)) {
+    errors.icon = "Only a single emoji is allowed — no letters, numbers, or symbols.";
+  }
+
+  //  Name 
+  const nameTrimmed = form.name.trim();
+  if (!nameTrimmed) {
+    errors.name = "Activity name is required.";
+  } else if (!hasAlphanumeric(nameTrimmed)) {
+    errors.name = "Name must contain at least one letter or number.";
+  } else if (nameTrimmed.length < NAME_MIN) {
+    errors.name = `Name must be at least ${NAME_MIN} characters.`;
+  } else if (nameTrimmed.length > NAME_MAX) {
+    errors.name = `Name must not exceed ${NAME_MAX} characters.`;
+  }
+
+  //  Description (optional but bounded) 
+  const descTrimmed = form.description.trim();
+  if (descTrimmed.length > DESC_MAX) {
+    errors.description = `Description must not exceed ${DESC_MAX} characters.`;
+  }
+
+  return errors; 
+}
+
+//  Field-level error label 
+function FieldError({ msg }) {
+  if (!msg) return null;
+  return (
+    <p className="text-red-500 text-[11px] font-semibold mt-1 flex items-center gap-1">
+      <span>⚠️</span> {msg}
+    </p>
+  );
+}
+
+//  Custom Activity Modal 
 const ICONS = ["⭐", "🏃", "🥦", "😴", "📖", "🎵", "🧘", "🌳", "🎨", "🐾", "🧩", "💪"];
 
 function CustomActivityModal({ onSave, onClose, loading, initial }) {
@@ -363,17 +483,53 @@ function CustomActivityModal({ onSave, onClose, loading, initial }) {
     description: initial?.description || "",
     icon: initial?.icon || "⭐",
   });
-  const f = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
+  const [errors, setErrors]   = useState({});
+  const [touched, setTouched] = useState({});
+
+  const f = (k) => (e) => {
+    setForm((p) => ({ ...p, [k]: e.target.value }));
+    // Re-validate the changed field on every keystroke so feedback is instant
+    setErrors((prev) => {
+      const next = validateActivityForm({ ...form, [k]: e.target.value });
+      return { ...prev, [k]: next[k] };
+    });
+  };
+
+  const markTouched = (k) => setTouched((p) => ({ ...p, [k]: true }));
+
+  const handleIconPick = (ic) => {
+    setForm((p) => ({ ...p, icon: ic }));
+    setErrors((prev) => {
+      const next = validateActivityForm({ ...form, icon: ic });
+      return { ...prev, icon: next.icon };
+    });
+    setTouched((p) => ({ ...p, icon: true }));
+  };
+
+  const handleSubmit = () => {
+    // Mark all fields touched so every error shows at once
+    setTouched({ icon: true, name: true, description: true });
+    const errs = validateActivityForm(form);
+    setErrors(errs);
+    if (Object.keys(errs).length > 0) return;
+    onSave({
+      ...form,
+      name: form.name.trim(),
+      description: form.description.trim(),
+      icon: form.icon.trim(),
+    });
+  };
+
+  const isFormValid = Object.keys(validateActivityForm(form)).length === 0;
 
   return (
     <div
-      className="fixed inset-0 z-500 bg-[#042C53]/50 backdrop-blur-sm flex items-center justify-center p-4"
+      className="fixed inset-0 z-[500] bg-[#042C53]/50 backdrop-blur-sm flex items-center justify-center p-4"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="bg-white rounded-3xl p-7 w-full max-w-sm shadow-2xl">
-        {/* Header */}
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-11 h-11 rounded-2xl bg-linear-to-br from-sky-700 to-emerald-500 flex items-center justify-center text-xl text-white shadow-md">
+          <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-sky-700 to-emerald-500 flex items-center justify-center text-xl text-white shadow-md">
             ✨
           </div>
           <div>
@@ -386,11 +542,14 @@ function CustomActivityModal({ onSave, onClose, loading, initial }) {
           >✕</button>
         </div>
 
-        {/* Icon Picker */}
+        {/*  Icon field */}
         <div className="mb-4">
-          <label className="block text-[10px] font-extrabold uppercase tracking-[0.12em] text-sky-700 mb-2">Pick an Icon</label>
+          <label className="block text-[10px] font-extrabold uppercase tracking-[0.12em] text-sky-700 mb-2">
+            Pick an Icon <span className="text-red-400">*</span>
+          </label>
           <div className="flex items-center gap-2 mb-3">
-            <div className="w-12 h-12 rounded-xl border-2 border-sky-200 bg-sky-50 flex items-center justify-center text-2xl shrink-0">
+            <div className={`w-12 h-12 rounded-xl border-2 flex items-center justify-center text-2xl shrink-0 transition-all
+              ${touched.icon && errors.icon ? "border-red-400 bg-red-50" : "border-sky-200 bg-sky-50"}`}>
               {form.icon}
             </div>
             <div className="flex-1">
@@ -398,20 +557,26 @@ function CustomActivityModal({ onSave, onClose, loading, initial }) {
                 type="text"
                 value={form.icon}
                 onChange={(e) => {
-                  const val = [...e.target.value].slice(-1).join("") || "⭐";
-                  setForm((p) => ({ ...p, icon: val }));
+                  // Only accept emoji characters — letters, digits, and punctuation are silently blocked
+                  const extracted = extractEmoji(e.target.value, form.icon);
+                  handleIconPick(extracted);
                 }}
-                placeholder="Type any emoji…"
-                className="w-full rounded-xl border-2 border-sky-100 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100 transition"
+                onBlur={() => markTouched("icon")}
+                placeholder="Paste an emoji here…"
+                className={`w-full rounded-xl border-2 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition
+                  ${touched.icon && errors.icon
+                    ? "border-red-400 focus:border-red-500 focus:ring-4 focus:ring-red-100"
+                    : "border-sky-100 focus:border-sky-600 focus:ring-4 focus:ring-sky-100"}`}
               />
-              <p className="text-[10px] text-slate-400 mt-1">Type or paste any emoji, or pick below</p>
+              <p className="text-[10px] text-slate-400 mt-1">Only emoji accepted — letters &amp; numbers are blocked</p>
             </div>
           </div>
+          {touched.icon && <FieldError msg={errors.icon} />}
           <div className="flex flex-wrap gap-1.5">
             {ICONS.map((ic) => (
               <button
                 key={ic} type="button"
-                onClick={() => setForm((p) => ({ ...p, icon: ic }))}
+                onClick={() => handleIconPick(ic)}
                 className={`w-10 h-10 rounded-xl text-xl cursor-pointer transition-all border-2
                   ${form.icon === ic
                     ? "border-sky-600 bg-sky-50 scale-110 shadow-sm"
@@ -421,24 +586,55 @@ function CustomActivityModal({ onSave, onClose, loading, initial }) {
           </div>
         </div>
 
+        {/*  Name field  */}
         <div className="mb-4">
-          <label className="block text-[10px] font-extrabold uppercase tracking-[0.12em] text-sky-700 mb-1.5">Activity Name *</label>
+          <div className="flex justify-between items-center mb-1.5">
+            <label className="block text-[10px] font-extrabold uppercase tracking-[0.12em] text-sky-700">
+              Activity Name <span className="text-red-400">*</span>
+            </label>
+            <span className={`text-[10px] font-semibold ${form.name.trim().length > NAME_MAX ? "text-red-500" : "text-slate-400"}`}>
+              {form.name.trim().length}/{NAME_MAX}
+            </span>
+          </div>
           <input
-            value={form.name} onChange={f("name")}
+            value={form.name}
+            onChange={f("name")}
+            onBlur={() => markTouched("name")}
             placeholder="e.g. Evening Stretches"
-            className="w-full rounded-xl border-2 border-sky-100 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100 transition"
+            maxLength={NAME_MAX + 10} // allow typing over to show the error naturally
+            className={`w-full rounded-xl border-2 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition
+              ${touched.name && errors.name
+                ? "border-red-400 focus:border-red-500 focus:ring-4 focus:ring-red-100"
+                : "border-sky-100 focus:border-sky-600 focus:ring-4 focus:ring-sky-100"}`}
           />
+          {touched.name && <FieldError msg={errors.name} />}
         </div>
 
+        {/*  Description field  */}
         <div className="mb-6">
-          <label className="block text-[10px] font-extrabold uppercase tracking-[0.12em] text-sky-700 mb-1.5">Description (optional)</label>
+          <div className="flex justify-between items-center mb-1.5">
+            <label className="block text-[10px] font-extrabold uppercase tracking-[0.12em] text-sky-700">
+              Description <span className="text-slate-400 normal-case font-normal">(optional)</span>
+            </label>
+            <span className={`text-[10px] font-semibold ${form.description.trim().length > DESC_MAX ? "text-red-500" : "text-slate-400"}`}>
+              {form.description.trim().length}/{DESC_MAX}
+            </span>
+          </div>
           <textarea
-            value={form.description} onChange={f("description")} rows={2}
+            value={form.description}
+            onChange={f("description")}
+            onBlur={() => markTouched("description")}
+            rows={2}
             placeholder="What does this activity involve?"
-            className="w-full rounded-xl border-2 border-sky-100 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100 transition resize-none"
+            className={`w-full rounded-xl border-2 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition resize-none
+              ${touched.description && errors.description
+                ? "border-red-400 focus:border-red-500 focus:ring-4 focus:ring-red-100"
+                : "border-sky-100 focus:border-sky-600 focus:ring-4 focus:ring-sky-100"}`}
           />
+          {touched.description && <FieldError msg={errors.description} />}
         </div>
 
+        {/*  Actions  */}
         <div className="flex gap-3">
           <button
             type="button" onClick={onClose}
@@ -446,9 +642,12 @@ function CustomActivityModal({ onSave, onClose, loading, initial }) {
           >Cancel</button>
           <button
             type="button"
-            onClick={() => form.name.trim() && onSave(form)}
-            disabled={loading || !form.name.trim()}
-            className="flex-2 py-2.5 rounded-2xl border-none bg-linear-to-r from-sky-700 to-emerald-500 text-white font-extrabold text-sm cursor-pointer shadow-lg hover:-translate-y-0.5 transition disabled:opacity-60 disabled:cursor-not-allowed"
+            onClick={handleSubmit}
+            disabled={loading}
+            className={`flex-1 py-2.5 rounded-2xl border-none font-extrabold text-sm cursor-pointer shadow-lg transition
+              ${!isFormValid
+                ? "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none"
+                : "bg-gradient-to-r from-sky-700 to-emerald-500 text-white hover:-translate-y-0.5"}`}
           >{loading ? "Adding…" : "✨ Add Activity"}</button>
         </div>
       </div>
@@ -456,8 +655,41 @@ function CustomActivityModal({ onSave, onClose, loading, initial }) {
   );
 }
 
-// ── Main User View ────────────────────────────────────────────────────────────
+
+//  NOT LOGGED IN SCREEN
+
+function NotLoggedIn() {
+  const navigate = useNavigate();
+  return (
+    <div className="min-h-screen bg-[#EAF5FF] flex items-center justify-center p-6">
+      <div className="bg-white rounded-3xl p-10 max-w-sm w-full text-center shadow-xl border border-sky-100">
+        <div className="text-6xl mb-4">🔒</div>
+        <h2 className="text-[#042C53] font-black text-2xl mb-2">Login Required</h2>
+        <p className="text-slate-400 text-sm mb-6 leading-relaxed">
+          You need to be logged in to view and track your activities.
+        </p>
+        <button
+          onClick={() => navigate("/login")}
+          className="w-full py-3 rounded-2xl bg-gradient-to-r from-sky-700 to-emerald-500 text-white font-extrabold text-base shadow-lg hover:-translate-y-0.5 transition border-none cursor-pointer"
+        >
+          🚀 Go to Login
+        </button>
+        <button
+          onClick={() => navigate("/")}
+          className="mt-3 w-full py-3 rounded-2xl border-2 border-sky-100 bg-white text-sky-700 font-extrabold text-sm cursor-pointer hover:bg-sky-50 transition"
+        >
+          🏠 Back to Home
+        </button>
+      </div>
+    </div>
+  );
+}
+
+//  Main User View 
 export default function UserActivityView() {
+  //  AUTH GUARD — must be first 
+  const isAuthenticated = useAuthGuard();
+
   const [activities,   setActivities]   = useState([]);
   const [logs,         setLogs]         = useState([]);
   const [streak,       setStreak]       = useState(null);
@@ -486,12 +718,22 @@ export default function UserActivityView() {
       if (logRes.status    === "fulfilled") setLogs(logRes.value.data.data || []);
       if (streakRes.status === "fulfilled") setStreak(streakRes.value.data);
       if (ptsRes.status    === "fulfilled") setPoints(ptsRes.value.data.data);
-    } catch { showToast("Failed to load data", "error"); }
-    finally { setLoading(false); }
+    } catch {
+      showToast("Failed to load data", "error");
+    } finally {
+      setLoading(false);
+    }
   }, [today]);
 
-  useEffect(() => { loadAll(); }, [loadAll]);
+  useEffect(() => {
+    // Only fetch data if authenticated
+    if (isAuthenticated) loadAll();
+  }, [loadAll, isAuthenticated]);
+
   useSmartReminders(activities, logs);
+
+  // ── If not authenticated, show the lock screen (useAuthGuard also redirects) ──
+  if (!isAuthenticated) return <NotLoggedIn />;
 
   const loggedIds = new Set(logs.map((l) => l.activityId?._id || l.activityId));
 
@@ -505,7 +747,9 @@ export default function UserActivityView() {
       const msg = e.response?.data?.message;
       if (msg?.includes("already logged")) showToast("Already logged today!", "error");
       else showToast(msg || "Error logging activity", "error");
-    } finally { setLogging(null); }
+    } finally {
+      setLogging(null);
+    }
   };
 
   const handleCreateCustom = async (form) => {
@@ -515,8 +759,11 @@ export default function UserActivityView() {
       showToast("Custom activity added! ✨");
       setShowCustom(false);
       await loadAll();
-    } catch (e) { showToast(e.response?.data?.message || "Error", "error"); }
-    finally { setSavingCustom(false); }
+    } catch (e) {
+      showToast(e.response?.data?.message || "Error", "error");
+    } finally {
+      setSavingCustom(false);
+    }
   };
 
   const handleEditCustom = async (form) => {
@@ -526,8 +773,11 @@ export default function UserActivityView() {
       showToast("Activity updated ✅");
       setEditActivity(null);
       await loadAll();
-    } catch (e) { showToast(e.response?.data?.message || "Error", "error"); }
-    finally { setSavingCustom(false); }
+    } catch (e) {
+      showToast(e.response?.data?.message || "Error", "error");
+    } finally {
+      setSavingCustom(false);
+    }
   };
 
   const handleDeleteCustom = async (activity) => {
@@ -536,7 +786,9 @@ export default function UserActivityView() {
       await api.delete(`/api/activities/${activity._id}`);
       showToast("Activity deleted 🗑️");
       await loadAll();
-    } catch { showToast("Error deleting activity", "error"); }
+    } catch {
+      showToast("Error deleting activity", "error");
+    }
   };
 
   const customActivities = activities.filter((a) => a.source === "custom");
@@ -577,7 +829,7 @@ export default function UserActivityView() {
       )}
 
       {/* Header */}
-      <div className="relative overflow-hidden bg-linear-to-br from-[#042C53] via-[#185FA5] to-[#1D9E75] px-5 pt-5 pb-20">
+      <div className="relative overflow-hidden bg-gradient-to-br from-[#042C53] via-[#185FA5] to-[#1D9E75] px-5 pt-5 pb-20">
         <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-white/5" />
         <div className="absolute -left-5 bottom-0 w-24 h-24 rounded-full bg-emerald-300/10" />
         <div className="relative flex items-center gap-3">
@@ -616,7 +868,7 @@ export default function UserActivityView() {
           <PointsCard points={points} />
         </div>
 
-        {/* Enhanced Streak banner */}
+        {/* Streak banner */}
         <StreakBanner streak={streak?.data} />
 
         {/* Tabs */}
@@ -626,7 +878,7 @@ export default function UserActivityView() {
               key={t.id} onClick={() => setTab(t.id)}
               className={`flex-1 py-2.5 rounded-xl border-none font-extrabold text-xs cursor-pointer transition-all
                 ${tab === t.id
-                  ? "bg-linear-to-r from-sky-700 to-emerald-500 text-white shadow-md"
+                  ? "bg-gradient-to-r from-sky-700 to-emerald-500 text-white shadow-md"
                   : "bg-transparent text-slate-500 hover:text-sky-700"}`}
             >{t.label}</button>
           ))}
@@ -660,7 +912,7 @@ export default function UserActivityView() {
             {tab === "custom" && (
               <button
                 onClick={() => setShowCustom(true)}
-                className="mt-5 px-6 py-2.5 rounded-2xl border-none bg-linear-to-r from-sky-700 to-emerald-500 text-white font-extrabold text-sm cursor-pointer shadow-lg hover:-translate-y-0.5 transition"
+                className="mt-5 px-6 py-2.5 rounded-2xl border-none bg-gradient-to-r from-sky-700 to-emerald-500 text-white font-extrabold text-sm cursor-pointer shadow-lg hover:-translate-y-0.5 transition"
               >✨ Add My First Activity</button>
             )}
           </div>
@@ -681,7 +933,7 @@ export default function UserActivityView() {
         )}
 
         {/* Daily tip */}
-        <div className="bg-linear-to-br from-sky-50 to-blue-100 rounded-2xl p-4 border border-sky-200 flex gap-3 items-start">
+        <div className="bg-gradient-to-br from-sky-50 to-blue-100 rounded-2xl p-4 border border-sky-200 flex gap-3 items-start">
           <div className="text-3xl shrink-0">💡</div>
           <div>
             <div className="font-extrabold text-sky-800 text-sm">Daily Hygiene Tip</div>

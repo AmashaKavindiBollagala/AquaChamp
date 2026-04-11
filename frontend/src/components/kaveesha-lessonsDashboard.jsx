@@ -31,7 +31,7 @@ export default function KaveeshaLessonsDashboard() {
     localStorage.removeItem("aquachamp_token");
     sessionStorage.removeItem("aquachamp_token");
     // Redirect to admin login
-    navigate("/admin-login");
+    navigate("/");
   };
 
   const handleLogoutCancel = () => {
