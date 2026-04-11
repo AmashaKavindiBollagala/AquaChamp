@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
-// ─────────────────────────────────────────────────────────────────────────────
+
 //  TOPIC WORD-BANK
-// ─────────────────────────────────────────────────────────────────────────────
+
 const TOPIC_QUESTIONS = {
   "safe-drinking-water": [
     { q: "What should you do to water before drinking it if unsure?", a: "Boil it",      wrong: ["Freeze it",     "Colour it",   "Shake it"] },
@@ -64,7 +64,7 @@ function buildRound(topicId, count) {
   }));
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+
 const AVATAR_URL = (seed) =>
   `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(seed)}&backgroundColor=b6e3f4`;
 
@@ -76,7 +76,7 @@ const OPTION_BORDER = ["#f59e0b","#ec4899","#0ea5e9","#10b981"];
 const OPTION_TEXT   = ["#92400e","#9d174d","#075985","#065f46"];
 const OPTION_DROPS  = ["💧","🌊","⛲","🏞️"];
 
-// ─────────────────────────────────────────────────────────────────────────────
+
 export default function WaterDropAdventure({ game, username, onFinish, onNavigateBack }) {
   const navigate = useNavigate();
   
@@ -162,7 +162,7 @@ export default function WaterDropAdventure({ game, username, onFinish, onNavigat
   const percentage = Math.round((score / maxScore) * 100);
   const passed     = percentage >= (game.passMark || 60);
 
-  // ── INTRO ─────────────────────────────────────────────────────────────────
+  //
   if (phase === "intro") return (
     <div style={fullScreen}>
       <link rel="stylesheet" href={FONT_LINK} />
@@ -200,7 +200,7 @@ export default function WaterDropAdventure({ game, username, onFinish, onNavigat
     </div>
   );
 
-  // ── RESULT ────────────────────────────────────────────────────────────────
+  // ── RESULT 
   if (phase === "result") return (
     <div style={fullScreen}>
       <link rel="stylesheet" href={FONT_LINK} />
@@ -235,7 +235,7 @@ export default function WaterDropAdventure({ game, username, onFinish, onNavigat
     </div>
   );
 
-  // ── PLAYING ───────────────────────────────────────────────────────────────
+  // ── PLAYING 
   return (
     <div style={fullScreen}>
       <link rel="stylesheet" href={FONT_LINK} />

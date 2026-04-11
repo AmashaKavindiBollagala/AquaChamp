@@ -1,48 +1,11 @@
-/**
- * dilshara-CleanOrDirty.jsx
- *
- * GAME: "Clean or Dirty?" — Drag & Drop sorting game
- * ─────────────────────────────────────────────────────
- * Place this file alongside the other dilshara-*.jsx game files.
- *
- * HOW IT WORKS:
- *  • Cards with water/hygiene items float on screen.
- *  • The child drags (or taps on mobile) each card into
- *    the "CLEAN ✅" or "DIRTY ❌" bin.
- *  • Correct drops earn points and trigger a happy animation.
- *  • Wrong drops shake the bin and cost no points.
- *  • After all cards are sorted the result screen appears
- *    and calls onFinish() — same signature as the other games.
- *
- * INTEGRATION:
- *  1. Import it in dilshara-GamePlayScreen.jsx:
- *       import CleanOrDirty from "./dilshara-CleanOrDirty";
- *
- *  2. Add a route in the subType switch block:
- *       if (subType === "cleanordirty")
- *         return <CleanOrDirty game={game} username={username} onFinish={handleFinish} />;
- *
- *  3. In dilshara-GameAdminDashboard.jsx add to the game-type picker:
- *       { id: "cleanordirty", label: "🫧 Clean or Dirty?", desc: "Ages 5–10",
- *         note: "Auto-content · No questions needed", noteColor: "#1D9E75" }
- *
- *  4. Add "cleanordirty" to the NON_QUIZ_TYPES array in GameAdminDashboard:
- *       const NON_QUIZ_TYPES = ["germcatcher","waterdrop","memory","cleanordirty"];
- *
- *  5. Add info to GAME_TYPE_INFO in GameAdminDashboard:
- *       cleanordirty: {
- *         emoji: "🫧", label: "Clean or Dirty?",
- *         howItWorks: "Kids drag items into Clean or Dirty bins...",
- *         contentSource: "Card library (auto)", color: "#0EA5E9",
- *       }
- */
+
 
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-// ─────────────────────────────────────────────────────────────────────────────
+
 //  ITEM LIBRARY  — keyed by topicId
-// ─────────────────────────────────────────────────────────────────────────────
+
 const ITEM_LIBRARY = {
   "safe-drinking-water": [
     { id: 1,  label: "Boiled water",      icon: "♨️",  correct: "clean"  },
@@ -114,7 +77,7 @@ function getItems(topicId, difficulty) {
   return [...pool].sort(() => Math.random() - 0.5).slice(0, count);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 const AVATAR_URL = (seed) =>
   `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(seed)}&backgroundColor=b6e3f4`;
 
@@ -145,13 +108,13 @@ const CSS = `
   .bin-zone.dragover { transform: scale(1.04); }
 `;
 
-// ─────────────────────────────────────────────────────────────────────────────
+//
 //  DRAGGABLE ITEM CARD
-// ─────────────────────────────────────────────────────────────────────────────
+
 function ItemCard({ item, onDrop, sorted, animIdx }) {
   const cardRef = useRef(null);
 
-  // ── Touch drag state ──
+  //  Touch drag state 
   const touchStartRef = useRef(null);
   const cloneRef      = useRef(null);
 
@@ -200,7 +163,7 @@ function ItemCard({ item, onDrop, sorted, animIdx }) {
     if (bin) onDrop(item.id, bin.dataset.bin);
   };
 
-  // ── Mouse drag ──
+  // ── Mouse drag 
   const handleDragStart = (e) => {
     e.dataTransfer.setData("itemId", String(item.id));
   };
@@ -240,9 +203,9 @@ function ItemCard({ item, onDrop, sorted, animIdx }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+
 //  BIN (drop zone)
-// ─────────────────────────────────────────────────────────────────────────────
+
 function Bin({ type, shaking, accepted, onDragOver, onDrop }) {
   const isClean = type === "clean";
   const color   = isClean ? "#16a34a" : "#dc2626";
@@ -289,9 +252,9 @@ function Bin({ type, shaking, accepted, onDragOver, onDrop }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+
 //  MAIN COMPONENT
-// ─────────────────────────────────────────────────────────────────────────────
+
 export default function CleanOrDirty({ game, username, onFinish, onNavigateBack }) {
   const navigate = useNavigate();
   
@@ -357,7 +320,7 @@ export default function CleanOrDirty({ game, username, onFinish, onNavigateBack 
   const passed    = pct >= (game.passMark || 60);
   const correct   = results.filter(Boolean).length;
 
-  // ── INTRO ──────────────────────────────────────────────────────────────────
+  // ── INTRO 
   if (phase === "intro") return (
     <div style={screen}>
       <link rel="stylesheet" href={FONT_LINK} />
@@ -403,7 +366,7 @@ export default function CleanOrDirty({ game, username, onFinish, onNavigateBack 
     </div>
   );
 
-  // ── RESULT ─────────────────────────────────────────────────────────────────
+  // RESULT 
   if (phase === "result") {
     const confettiItems = passed
       ? ["🎊","🎉","⭐","🌟","✨","💫","🏆","🎈","🫧","🌈"]
@@ -615,7 +578,7 @@ export default function CleanOrDirty({ game, username, onFinish, onNavigateBack 
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+
 const screen = {
   minHeight: "100vh",
   background: "linear-gradient(135deg,#fef9c3 0%,#fce7f3 30%,#e0f2fe 60%,#d1fae5 100%)",

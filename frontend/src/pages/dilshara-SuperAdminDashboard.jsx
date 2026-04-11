@@ -31,7 +31,7 @@ const EMPTY_FORM = {
   email: "", username: "", password: "", roles: "",
 };
 
-// ── Validation ──────────────────────────────────────────────
+// ── Validation
 const validateForm = (form) => {
   const errors = {};
 

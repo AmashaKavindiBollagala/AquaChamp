@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
-// ─────────────────────────────────────────────────────────────────────────────
+
 //  TOPIC WORD-BANK
-// ─────────────────────────────────────────────────────────────────────────────
+
 const TOPIC_QUESTIONS = {
   "safe-drinking-water": [
     { q: "What should you do to water before drinking it if unsure?", a: "Boil it", wrong: ["Freeze it", "Colour it", "Shake it"] },
@@ -68,9 +68,9 @@ function buildRound(topicId, count) {
   });
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+
 //  VISUAL CONSTANTS
-// ─────────────────────────────────────────────────────────────────────────────
+
 const AVATAR_URL = (seed) =>
   `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(seed)}&backgroundColor=b6e3f4`;
 
@@ -84,9 +84,8 @@ const POSITIONS = [
   { x: 22, y: 72 }, { x: 78, y: 72 },
 ];
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  FLOATING GERM BUBBLE
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 function FloatingGerm({ option, index, onClick, state, position }) {
   const color = GERM_COLORS[index % GERM_COLORS.length];
   const emoji = GERM_EMOJIS[index % GERM_EMOJIS.length];
@@ -128,9 +127,9 @@ function FloatingGerm({ option, index, onClick, state, position }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+//
 //  MAIN COMPONENT
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 export default function GermCatcher({ game, username, onFinish, onNavigateBack }) {
   const navigate = useNavigate();
   
@@ -215,7 +214,7 @@ export default function GermCatcher({ game, username, onFinish, onNavigateBack }
   const percentage = Math.round((score / maxScore) * 100);
   const passed     = percentage >= (game.passMark || 60);
 
-  // ── INTRO ─────────────────────────────────────────────────────────────────
+  // ── INTRO 
   if (phase === "intro") return (
     <div style={styles.screen}>
       <link rel="stylesheet" href={FONT_LINK} />
@@ -256,7 +255,7 @@ export default function GermCatcher({ game, username, onFinish, onNavigateBack }
     </div>
   );
 
-  // ── RESULT ────────────────────────────────────────────────────────────────
+  // ── RESULT 
   if (phase === "result") return (
     <div style={styles.screen}>
       <link rel="stylesheet" href={FONT_LINK} />
@@ -283,7 +282,7 @@ export default function GermCatcher({ game, username, onFinish, onNavigateBack }
     </div>
   );
 
-  // ── PLAYING ───────────────────────────────────────────────────────────────
+  // ── PLAYING
   return (
     <div style={{ ...styles.screen, minHeight: "100vh" }}>
       <link rel="stylesheet" href={FONT_LINK} />
@@ -386,9 +385,9 @@ export default function GermCatcher({ game, username, onFinish, onNavigateBack }
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+
 //  SHARED STYLES
-// ─────────────────────────────────────────────────────────────────────────────
+
 const styles = {
   screen: {
     minHeight: "100vh",
