@@ -8,7 +8,7 @@
  */
 
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import GermCatcher        from "./dilshara-GermCatcher";
 import WaterDropAdventure from "./dilshara-WaterDropAdventure";
 import MemoryMatch        from "./dilshara-MemoryMatch";
@@ -40,10 +40,10 @@ const GLOBAL_CSS = `
   .result-btn:hover { transform: scale(1.06) translateY(-2px) !important; }
   .result-btn { transition: all 0.18s ease; }
 `;
-
 export default function GamePlayScreen() {
   const { gameId } = useParams();
   const navigate   = useNavigate();
+  const location   = useLocation();
 
   const [game,        setGame]        = useState(null);
   const [loading,     setLoading]     = useState(true);
@@ -51,9 +51,42 @@ export default function GamePlayScreen() {
   const [submitting,  setSubmitting]  = useState(false);
   const [finalResult, setFinalResult] = useState(null);
 
-  const token    = localStorage.getItem("userToken") || localStorage.getItem("superAdminToken");
-  const username = localStorage.getItem("username")  || localStorage.getItem("adminUsername") || "Player";
+  // Get navigation state for ageGroup and userId
+  const navAgeGroup = location.state?.ageGroup;
+  const navUserId   = location.state?.userId;
+  const navTopicId  = location.state?.topicId;
 
+  // ── CORRECT token + username (reads aquachamp_ keys for student login) ──
+  const token =
+    localStorage.getItem("aquachamp_token") ||
+    localStorage.getItem("userToken") ||
+    localStorage.getItem("superAdminToken");
+
+  // Get username from multiple possible localStorage keys (student login uses different keys)
+  // IMPORTANT: Use username (not firstName) as userId for game scores
+  const getUsername = () => {
+    // Try to get user object first (student login stores user object)
+    const userStr = localStorage.getItem("aquachamp_user") || localStorage.getItem("user");
+    if (userStr) {
+      try {
+        const userObj = JSON.parse(userStr);
+        // IMPORTANT: Use username first for game scores database
+        if (userObj.username) return userObj.username;
+        if (userObj.firstName) return userObj.firstName;
+        if (userObj.name) return userObj.name;
+      } catch {}
+    }
+    // Try individual keys - prioritize username
+    return (
+      localStorage.getItem("aquachamp_username") ||
+      localStorage.getItem("username") ||
+      localStorage.getItem("aquachamp_firstName") ||
+      localStorage.getItem("firstName") ||
+      localStorage.getItem("adminUsername") ||
+      "Player"
+    );
+  };
+  const username = getUsername();
   useEffect(() => { fetchGame(); }, [gameId]);
 
   const fetchGame = async () => {
@@ -70,10 +103,20 @@ export default function GamePlayScreen() {
   const handleFinish = async (score, maxScore, percentage, passed) => {
     setSubmitting(true);
     try {
+      // Use navUserId (from navigation state) or username (from localStorage) for userId
+      const effectiveUserId = navUserId || username;
+      const effectiveTopicId = navTopicId || game?.topicId || "";
+      const effectiveAgeGroup = navAgeGroup || game?.ageGroup || "5-10";
+      
       const res = await fetch(`${API_BASE}/api/games/${gameId}/scores`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ score, userId: username, topicId: game?.topicId || "", difficulty: game?.difficulty || "easy" }),
+        body: JSON.stringify({ 
+          score, 
+          userId: effectiveUserId, 
+          topicId: effectiveTopicId, 
+          difficulty: game?.difficulty || "easy" 
+        }),
       });
       const saved = res.ok;
       setFinalResult({ score, maxScore, percentage, passed, saved });
@@ -83,17 +126,34 @@ export default function GamePlayScreen() {
   };
 
   const handleNextDifficulty = async (nextDiff) => {
-    if (!game?.topicId || !game?.ageGroup) { navigate(`/games/topic/${game?.topicId || ""}`); return; }
+    // Use game's topicId and ageGroup from API response
+    const effectiveTopicId = game?.topicId || navTopicId || "";
+    const effectiveAgeGroup = game?.ageGroup || navAgeGroup || "5-10";
+    
+    if (!effectiveTopicId) { 
+      navigate(`/games/topic/${effectiveTopicId}`); 
+      return; 
+    }
     try {
       // ── FIX: removed &active=true — that was causing "no game found" (Bug #1) ──
       const res  = await fetch(
-        `${API_BASE}/api/games?topicId=${game.topicId}&ageGroup=${game.ageGroup}&difficulty=${nextDiff}`,
+        `${API_BASE}/api/games?topicId=${effectiveTopicId}&ageGroup=${effectiveAgeGroup}&difficulty=${nextDiff}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const data = await res.json();
       const nextGame = data.games?.[0];
-      navigate(nextGame ? `/games/play/${nextGame._id}` : `/games/topic/${game.topicId}`);
-    } catch { navigate(`/games/topic/${game?.topicId || ""}`); }
+      if (nextGame) {
+        navigate(`/games/play/${nextGame._id}`, {
+          state: {
+            ageGroup: effectiveAgeGroup,
+            topicId: effectiveTopicId,
+            userId: navUserId || username,
+          },
+        });
+      } else {
+        navigate(`/games/topic/${effectiveTopicId}`);
+      }
+    } catch { navigate(`/games/topic/${effectiveTopicId}`); }
   };
 
   if (loading)    return <SplashScreen msg="Loading your game..." emoji="🎮" />;
@@ -227,17 +287,26 @@ export default function GamePlayScreen() {
             )}
 
             {passed && !nextDiff && (
-              <div style={{
-                background: "linear-gradient(135deg,#dcfce7,#bbf7d0)",
-                border: "4px solid #16a34a", borderRadius: 20,
-                padding: "18px 24px", color: "#15803d",
-                fontFamily: "'Bubblegum Sans',cursive", fontSize: 18,
-                textAlign: "center", animation: "pop 0.6s ease 0.2s both",
-                boxShadow: "0 8px 32px #16a34a33",
-              }}>
-                🎉 ALL 3 LEVELS COMPLETE!<br />
-                <span style={{ fontSize: 14, fontFamily: "'Nunito',sans-serif", color: "#166534" }}>You're an absolute legend! 🏆</span>
-              </div>
+              <>
+                <div style={{
+                  background: "linear-gradient(135deg,#dcfce7,#bbf7d0)",
+                  border: "4px solid #16a34a", borderRadius: 20,
+                  padding: "18px 24px", color: "#15803d",
+                  fontFamily: "'Bubblegum Sans',cursive", fontSize: 18,
+                  textAlign: "center", animation: "pop 0.6s ease 0.2s both",
+                  boxShadow: "0 8px 32px #16a34a33",
+                }}>
+                  🎉 ALL 3 LEVELS COMPLETE!<br />
+                  <span style={{ fontSize: 14, fontFamily: "'Nunito',sans-serif", color: "#166534" }}>You're an absolute legend! 🏆</span>
+                </div>
+                <button className="result-btn" onClick={() => navigate("/profile")} style={{
+                  ...makBtn("#16a34a"),
+                  fontSize: 16, padding: "16px 36px",
+                  boxShadow: "0 6px 24px #16a34a55",
+                }}>
+                  🏆 Go to My Profile! →
+                </button>
+              </>
             )}
 
             {!passed && (
@@ -249,7 +318,15 @@ export default function GamePlayScreen() {
               </button>
             )}
 
-            <button className="result-btn" onClick={() => navigate(`/games/topic/${game?.topicId || ""}`)} style={{
+            <button className="result-btn" onClick={() => {
+              const effectiveTopicId = game?.topicId || navTopicId || "";
+              navigate(`/games/topic/${effectiveTopicId}`, {
+                state: {
+                  ageGroup: navAgeGroup || game?.ageGroup,
+                  userId: navUserId || username,
+                },
+              });
+            }} style={{
               ...makBtn("#fff"),
               border: "3px solid #d1d5db", color: "#374151",
               fontFamily: "'Nunito',sans-serif",

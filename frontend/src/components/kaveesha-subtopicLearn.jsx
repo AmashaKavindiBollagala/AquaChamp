@@ -44,7 +44,7 @@ export default function KaveeshaSubtopicLearn() {
     { from: "#8b5cf6", to: "#7c3aed", accent: "#7c3aed", hover: "#ede9fe", light: "#faf5ff" },
     { from: "#06b6d4", to: "#0891b2", accent: "#0891b2", hover: "#cffafe", light: "#ecfeff" },
   ];
-  
+
   const topicColor = CARD_COLORS[(colorIndex ?? 0) % CARD_COLORS.length];
   const accentFrom = topicColor.from;
   const accentTo = topicColor.to;
@@ -62,12 +62,32 @@ export default function KaveeshaSubtopicLearn() {
   const [celebrationMsg, setCelebrationMsg] = useState("");
   const [loading, setLoading] = useState(true);
   const [quiz, setQuiz] = useState(null);
+
   const effectiveUserIdRaw = userId || user?.id || user?._id;
   const effectiveUserId =
     effectiveUserIdRaw != null ? String(effectiveUserIdRaw) : undefined;
+  
+  // FIX: Get ageGroup from multiple sources - localStorage (set on login), location.state, or user object
+  const getStoredAgeGroup = () => {
+    // From localStorage (set by login/student dashboard)
+    const stored = localStorage.getItem("aquachamp_ageGroup");
+    if (stored) return stored;
+    // From user object in localStorage
+    const userStr = localStorage.getItem("aquachamp_user");
+    if (userStr) {
+      try {
+        const userObj = JSON.parse(userStr);
+        if (userObj?.age >= 5 && userObj?.age <= 10) return "5-10";
+        if (userObj?.age >= 11 && userObj?.age <= 15) return "11-15";
+      } catch {}
+    }
+    return null;
+  };
+  
   const resolvedAgeGroup =
-    ageGroup || (user?.age >= 5 && user?.age <= 10 ? "6-10" : "11-15");
-  const isYoung = resolvedAgeGroup === "6-10";
+    ageGroup || getStoredAgeGroup() || (user?.age >= 5 && user?.age <= 10 ? "5-10" : "11-15");
+  // FIX: Handle both "5-10" and "6-10" as young age group
+  const isYoung = resolvedAgeGroup === "5-10" || resolvedAgeGroup === "6-10";
 
   const sections = useMemo(
     () => computeLessonSections(subtopic, quiz),
@@ -127,10 +147,25 @@ export default function KaveeshaSubtopicLearn() {
 
   const fetchQuiz = async () => {
     try {
-      const res = await axios.get(`${API}/api/kaveesha-miniquiz`, {
-        params: { subtopicId, ageGroup: resolvedAgeGroup },
-      });
-      setQuiz(res.data);
+      // FIX: Try both "5-10" and "6-10" age groups since database might have either
+      const ageGroupsToTry = ["5-10", "6-10"];
+      let quizData = null;
+      
+      for (const ag of ageGroupsToTry) {
+        try {
+          const res = await axios.get(`${API}/api/kaveesha-miniquiz`, {
+            params: { subtopicId, ageGroup: ag },
+          });
+          if (res.data) {
+            quizData = res.data;
+            break;
+          }
+        } catch {
+          // Continue to try next age group
+        }
+      }
+      
+      setQuiz(quizData);
     } catch {
       setQuiz(null);
     }
@@ -154,7 +189,6 @@ export default function KaveeshaSubtopicLearn() {
       setBackendRequirements(req);
       setBackendPct(pct);
 
-      // Prefer backend truth for the done flags (so % matches tables)
       const fromBackend = {
         video: !!p?.videoCompleted,
         text: !!p?.textCompleted,
@@ -185,6 +219,109 @@ export default function KaveeshaSubtopicLearn() {
     }
   };
 
+  // Check if ALL subtopics of this topic are 100% done → navigate to games
+  const checkIfTopicComplete = async () => {
+    if (!topicId || !effectiveUserId || !resolvedAgeGroup) return;
+    try {
+      // 1. Get all subtopics for this topic (try both age groups)
+      // FIX: Query for both "5-10" AND "6-10" since database might have either
+      const [res5to10, res6to10] = await Promise.all([
+        axios.get(`${API}/api/subtopics`, {
+          params: { topicId, ageGroup: "5-10" },
+        }),
+        axios.get(`${API}/api/subtopics`, {
+          params: { topicId, ageGroup: "6-10" },
+        }),
+      ]);
+      
+      const subs5to10 = Array.isArray(res5to10.data) ? res5to10.data : res5to10.data?.subtopics || [];
+      const subs6to10 = Array.isArray(res6to10.data) ? res6to10.data : res6to10.data?.subtopics || [];
+      
+      // Combine and deduplicate by _id
+      const subsMap = new Map();
+      [...subs5to10, ...subs6to10].forEach(s => {
+        if (s._id) subsMap.set(String(s._id), s);
+      });
+      const allSubs = Array.from(subsMap.values());
+      
+      console.log('📊 checkIfTopicComplete - subtopics found:', { '5-10': subs5to10.length, '6-10': subs6to10.length, total: allSubs.length });
+      
+      if (allSubs.length === 0) return;
+
+      // 2. Check progress for every subtopic
+      const token =
+        localStorage.getItem("aquachamp_token") ||
+        sessionStorage.getItem("aquachamp_token");
+
+      const progressResults = await Promise.all(
+        allSubs.map((sub) =>
+          axios
+            .get(`${API}/api/subtopics/progress/subtopic`, {
+              params: { userId: String(effectiveUserId), subtopicId: sub._id },
+              headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+              withCredentials: true,
+            })
+            .then((r) => r.data?.percentage || 0)
+            .catch(() => 0)
+        )
+      );
+      
+      console.log('📊 checkIfTopicComplete - progress results:', progressResults);
+
+      // 3. Only proceed if every single subtopic is 100%
+      const allDone = progressResults.every((pct) => pct >= 100);
+      console.log('📊 checkIfTopicComplete - allDone:', allDone);
+      
+      if (!allDone) return;
+
+      // 4. Build the game slug from the topic title
+      //    Fetch topic directly from backend — never rely on location.state
+      let gameTopicSlug = null;
+      try {
+        const topicRes = await axios.get(`${API}/api/topics/${topicId}`);
+        const fetchedTitle = topicRes.data?.title || "";
+        // e.g. "💧 1. Safe Drinking Water" → "safe-drinking-water"
+        gameTopicSlug = fetchedTitle
+          .replace(/[^a-zA-Z0-9\s]/g, "") // strip emoji & punctuation
+          .trim()
+          .toLowerCase()
+          .replace(/^\d+\s*/, "")
+          .replace(/\s+/g, "-");           // spaces → hyphens
+      } catch {
+        // fallback to topic from location.state if API call fails
+        const fallbackTitle = topic?.title || "";
+        gameTopicSlug = fallbackTitle
+          .replace(/[^a-zA-Z0-9\s]/g, "")
+          .trim()
+          .toLowerCase()
+          .replace(/^\d+\s*/, "")
+          .replace(/\s+/g, "-");
+      }
+
+      if (!gameTopicSlug) {
+        console.error("Could not determine game topic slug");
+        return;
+      }
+
+      console.log("All subtopics done! Navigating to game slug:", gameTopicSlug);
+      console.log("   resolvedAgeGroup:", resolvedAgeGroup);
+      console.log("   effectiveUserId:", effectiveUserId);
+
+      // 5. Wait 3s so the celebration screen shows first, then navigate
+      // Navigate WITHOUT ageGroup so user sees age selection first
+      setTimeout(() => {
+        navigate(`/games/topic/${gameTopicSlug}`, {
+          state: {
+            userId: effectiveUserId,
+            fromLessons: true, // Flag to show welcome message
+          },
+        });
+      }, 3000);
+    } catch (err) {
+      console.error("Topic completion check failed:", err);
+    }
+  };
+
   const saveProgress = (newDone, section) => {
     localStorage.setItem(`kaveesha_done_${subtopicId}`, JSON.stringify(newDone));
     localStorage.setItem(`kaveesha_section_${subtopicId}`, section);
@@ -195,7 +332,6 @@ export default function KaveeshaSubtopicLearn() {
     setSectionDone(newDone);
     saveProgress(newDone, section);
 
-    // Show celebration
     const msgs = {
       video: ["🎬 Amazing! You watched the video!", "⭐ Great job watching!"],
       text: ["📝 Brilliant! You read the lesson!", "🌟 Reading superstar!"],
@@ -236,15 +372,32 @@ export default function KaveeshaSubtopicLearn() {
     return sectionDone[sections[idx - 1]];
   };
 
+  // Guard: redirect back if previous subtopic not completed
   useEffect(() => {
     if (!subtopicId || !topicId || !effectiveUserId || !resolvedAgeGroup || !subtopic) return;
     let cancelled = false;
     (async () => {
       try {
-        const res = await axios.get(`${API}/api/subtopics`, {
-          params: { topicId, ageGroup: resolvedAgeGroup },
+        // FIX: Query for both "5-10" AND "6-10" since database might have either
+        const [res5to10, res6to10] = await Promise.all([
+          axios.get(`${API}/api/subtopics`, {
+            params: { topicId, ageGroup: "5-10" },
+          }),
+          axios.get(`${API}/api/subtopics`, {
+            params: { topicId, ageGroup: "6-10" },
+          }),
+        ]);
+        
+        const raw5to10 = Array.isArray(res5to10.data) ? res5to10.data : res5to10.data?.subtopics || [];
+        const raw6to10 = Array.isArray(res6to10.data) ? res6to10.data : res6to10.data?.subtopics || [];
+        
+        // Combine and deduplicate by _id
+        const subsMap = new Map();
+        [...raw5to10, ...raw6to10].forEach(s => {
+          if (s._id) subsMap.set(String(s._id), s);
         });
-        const raw = Array.isArray(res.data) ? res.data : res.data?.subtopics || [];
+        const raw = Array.from(subsMap.values());
+        
         const sorted = [...raw].sort((a, b) => (a.order || 0) - (b.order || 0));
         const idx = sorted.findIndex((s) => String(s._id) === String(subtopicId));
         if (idx <= 0) return;
@@ -260,12 +413,10 @@ export default function KaveeshaSubtopicLearn() {
           });
         }
       } catch {
-        /* keep student on page if check fails (e.g. network) */
+        /* keep student on page if check fails */
       }
     })();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [subtopicId, topicId, effectiveUserId, resolvedAgeGroup, subtopic?._id]);
 
   if (loading) {
@@ -286,9 +437,7 @@ export default function KaveeshaSubtopicLearn() {
         body { font-family: 'Inter', sans-serif; }
         .display-font { font-family: 'Nunito', sans-serif; }
         @keyframes pop { 0%{transform:scale(0.5);opacity:0} 70%{transform:scale(1.1)} 100%{transform:scale(1);opacity:1} }
-        @keyframes star-burst { 0%{transform:scale(0) rotate(0deg);opacity:1} 100%{transform:scale(2) rotate(180deg);opacity:0} }
         @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
-        @keyframes confetti { 0%{transform:translateY(-20px) rotate(0deg);opacity:1} 100%{transform:translateY(100vh) rotate(720deg);opacity:0} }
         .pop { animation: pop 0.5s cubic-bezier(0.175,0.885,0.32,1.275) forwards; }
         .float { animation: float 3s ease-in-out infinite; }
         .progress-bar { transition: width 1s cubic-bezier(0.4,0,0.2,1); }
@@ -399,7 +548,8 @@ export default function KaveeshaSubtopicLearn() {
                       <span className="text-sm font-extrabold text-white/95">
                         {x.done ? "✅" : x.icon} {x.label}
                       </span>
-                      <span className="text-[11px] font-extrabold px-2 py-0.5 rounded-full"
+                      <span
+                        className="text-[11px] font-extrabold px-2 py-0.5 rounded-full"
                         style={{
                           background: x.done ? "rgba(16,185,129,0.25)" : "rgba(15,23,42,0.15)",
                           border: x.done ? "1px solid rgba(16,185,129,0.35)" : "1px solid rgba(255,255,255,0.25)",
@@ -411,7 +561,7 @@ export default function KaveeshaSubtopicLearn() {
                   ))}
               </div>
             )}
-        </div>
+          </div>
         </div>
 
         {/* Section Progress Steps */}
@@ -443,7 +593,8 @@ export default function KaveeshaSubtopicLearn() {
                       className={`flex items-center justify-center w-11 h-11 rounded-full text-xl transition-all ${
                         done
                           ? "bg-emerald-500 text-white border-2 border-emerald-600 shadow-md"
-                          : active ? "bg-white text-teal-900 border-2 border-white/90"
+                          : active
+                          ? "bg-white text-teal-900 border-2 border-white/90"
                           : accessible
                           ? "bg-white border-2 border-sky-200"
                           : "bg-slate-100 border-2 border-slate-200"
@@ -454,7 +605,11 @@ export default function KaveeshaSubtopicLearn() {
                     <span className="text-[10px] font-extrabold">{labels[sec]}</span>
                   </button>
                   {i < sections.length - 1 && (
-                    <div className={`w-6 h-0.5 shrink-0 mx-1 rounded-full ${done ? "bg-emerald-500" : "bg-slate-300"}`} />
+                    <div
+                      className={`w-6 h-0.5 shrink-0 mx-1 rounded-full ${
+                        done ? "bg-emerald-500" : "bg-slate-300"
+                      }`}
+                    />
                   )}
                 </div>
               );
@@ -502,7 +657,6 @@ export default function KaveeshaSubtopicLearn() {
               ageGroup={resolvedAgeGroup}
               done={sectionDone.quiz}
               onComplete={async ({ miniQuizAnswers, score, total }) => {
-                // Backend must confirm correctness before we mark complete
                 const token =
                   localStorage.getItem("aquachamp_token") ||
                   sessionStorage.getItem("aquachamp_token");
@@ -522,7 +676,8 @@ export default function KaveeshaSubtopicLearn() {
                   const newDone = { ...sectionDone, quiz: true };
                   setSectionDone(newDone);
                   saveProgress(newDone, "quiz");
-                  fetchBackendProgress();
+                  await fetchBackendProgress();
+                  await checkIfTopicComplete(); // navigate to games if all subtopics done
                   return { ok: true };
                 }
                 fetchBackendProgress();
@@ -553,7 +708,6 @@ export default function KaveeshaSubtopicLearn() {
 /* ─── VIDEO SECTION ─── */
 function KaveeshaVideoSection({ subtopic, done, onComplete, accentFrom, accentTo, isYoung }) {
   const [watched, setWatched] = useState(false);
-  const [playerReady, setPlayerReady] = useState(false);
   const iframeRef = useRef(null);
 
   useEffect(() => {
@@ -568,20 +722,16 @@ function KaveeshaVideoSection({ subtopic, done, onComplete, accentFrom, accentTo
 
   const videoId = getYouTubeId(subtopic?.videoUrl);
 
-  // YouTube IFrame API for detecting video end
   useEffect(() => {
     if (!videoId) return;
     const tag = document.createElement("script");
     tag.src = "https://www.youtube.com/iframe_api";
     document.body.appendChild(tag);
-
     window.onYouTubeIframeAPIReady = () => {
       new window.YT.Player("yt-player", {
         events: {
           onStateChange: (e) => {
-            if (e.data === window.YT.PlayerState.ENDED) {
-              setWatched(true);
-            }
+            if (e.data === window.YT.PlayerState.ENDED) setWatched(true);
           },
         },
       });
@@ -594,8 +744,11 @@ function KaveeshaVideoSection({ subtopic, done, onComplete, accentFrom, accentTo
         <div className="text-5xl mb-3">🎬</div>
         <p className="text-gray-400 font-bold">No video for this lesson yet</p>
         {!done && (
-          <button onClick={onComplete} className="mt-4 px-6 py-3 rounded-2xl font-extrabold text-white shadow-md"
-            style={{ background: `linear-gradient(135deg, ${accentFrom}, ${accentTo})` }}>
+          <button
+            onClick={onComplete}
+            className="mt-4 px-6 py-3 rounded-2xl font-extrabold text-white shadow-md"
+            style={{ background: `linear-gradient(135deg, ${accentFrom}, ${accentTo})` }}
+          >
             Skip & Continue →
           </button>
         )}
@@ -606,37 +759,37 @@ function KaveeshaVideoSection({ subtopic, done, onComplete, accentFrom, accentTo
   return (
     <div className="p-6">
       <div className="flex items-center gap-3 mb-5">
-        <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-md"
-          style={{ background: `linear-gradient(135deg, ${accentFrom}, ${accentTo})` }}>
+        <div
+          className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-md"
+          style={{ background: `linear-gradient(135deg, ${accentFrom}, ${accentTo})` }}
+        >
           🎬
         </div>
         <div>
           <h2 className="display-font text-xl font-extrabold text-gray-800">Watch the Video</h2>
           <p className="text-sm text-gray-500 font-semibold">
-            {isYoung ? "Watch carefully — learn how water & hygiene keep us healthy! 💧" : "Watch the full clip to unlock the next step"}
+            {isYoung
+              ? "Watch carefully — learn how water & hygiene keep us healthy! 💧"
+              : "Watch the full clip to unlock the next step"}
           </p>
         </div>
       </div>
 
-      {/* Video */}
       <div className="rounded-2xl overflow-hidden shadow-lg mb-5 relative">
         {!watched && (
           <div className="absolute top-3 right-3 z-10 bg-black/70 text-white text-xs font-extrabold px-3 py-1.5 rounded-full">
             👀 Watch fully to continue
           </div>
         )}
-        <div id="yt-player-wrapper">
-          <iframe
-            id="yt-player"
-            src={`https://www.youtube.com/embed/${videoId}?enablejsapi=1&rel=0`}
-            className="w-full h-64 md:h-80"
-            allowFullScreen
-            title="Lesson Video"
-          />
-        </div>
+        <iframe
+          id="yt-player"
+          src={`https://www.youtube.com/embed/${videoId}?enablejsapi=1&rel=0`}
+          className="w-full h-64 md:h-80"
+          allowFullScreen
+          title="Lesson Video"
+        />
       </div>
 
-      {/* Manual watched button (fallback) */}
       {!done && (
         <div className="space-y-3">
           {!watched && (
@@ -711,23 +864,16 @@ function KaveeshaTextSection({ subtopic, done, onComplete, accentFrom, accentTo,
     utterance.rate = isYoung ? 0.85 : 0.95;
     utterance.pitch = isYoung ? 1.2 : 1.0;
     utterance.lang = "en-US";
-
-    // Pick a nice voice
     const voices = window.speechSynthesis.getVoices();
     const preferred = voices.find(
       (v) => v.name.includes("Google") || v.name.includes("Samantha")
     );
     if (preferred) utterance.voice = preferred;
-
-    utterance.onend = () => {
-      setSpeaking(false);
-      setSpeechProgress(100);
-    };
+    utterance.onend = () => { setSpeaking(false); setSpeechProgress(100); };
     utterance.onboundary = (e) => {
       const pct = Math.round((e.charIndex / subtopic.content.length) * 100);
       setSpeechProgress(pct);
     };
-
     utteranceRef.current = utterance;
     window.speechSynthesis.speak(utterance);
     setSpeaking(true);
@@ -748,14 +894,18 @@ function KaveeshaTextSection({ subtopic, done, onComplete, accentFrom, accentTo,
 
   const hasTextBody = !!(subtopic?.content && String(subtopic.content).trim());
   const hasFiles = !!(subtopic?.contentFiles && subtopic.contentFiles.length > 0);
+
   if (!hasTextBody && !hasFiles) {
     return (
       <div className="p-8 text-center">
         <div className="text-5xl mb-3">📝</div>
         <p className="text-gray-400 font-bold">No reading content for this lesson yet</p>
         {!done && (
-          <button onClick={onComplete} className="mt-4 px-6 py-3 rounded-2xl font-extrabold text-white shadow-md"
-            style={{ background: `linear-gradient(135deg, ${accentFrom}, ${accentTo})` }}>
+          <button
+            onClick={onComplete}
+            className="mt-4 px-6 py-3 rounded-2xl font-extrabold text-white shadow-md"
+            style={{ background: `linear-gradient(135deg, ${accentFrom}, ${accentTo})` }}
+          >
             Skip & Continue →
           </button>
         )}
@@ -766,33 +916,36 @@ function KaveeshaTextSection({ subtopic, done, onComplete, accentFrom, accentTo,
   return (
     <div className="p-6">
       <div className="flex items-center gap-3 mb-5">
-        <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-md"
-          style={{ background: `linear-gradient(135deg, ${accentFrom}, ${accentTo})` }}>
+        <div
+          className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-md"
+          style={{ background: `linear-gradient(135deg, ${accentFrom}, ${accentTo})` }}
+        >
           📝
         </div>
         <div>
           <h2 className="display-font text-xl font-extrabold text-gray-800">Read & learn</h2>
           <p className="text-sm text-sky-900 font-semibold">
-            {isYoung ? "Read, listen, or open teacher files — clean water tips! 💧" : "Work through the text and any PDFs or slides below"}
+            {isYoung
+              ? "Read, listen, or open teacher files — clean water tips! 💧"
+              : "Work through the text and any PDFs or slides below"}
           </p>
         </div>
       </div>
 
-      {/* TTS Controls */}
       <div className="flex gap-3 mb-5 flex-wrap">
         {hasTextBody && (
-        <button
-          onClick={handleTextToSpeech}
-          className="flex items-center gap-2 px-5 py-3 rounded-2xl font-extrabold text-white shadow-md transition-all hover:shadow-lg active:scale-95"
-          style={{
-            background: speaking
-              ? "linear-gradient(135deg, #EF4444, #F97316)"
-              : "linear-gradient(135deg, #7c3aed, #0d9488)",
-          }}
-        >
-          <span className="text-xl">{speaking ? "⏹️" : "🔊"}</span>
-          {speaking ? "Stop Reading" : "Read to Me!"}
-        </button>
+          <button
+            onClick={handleTextToSpeech}
+            className="flex items-center gap-2 px-5 py-3 rounded-2xl font-extrabold text-white shadow-md transition-all hover:shadow-lg active:scale-95"
+            style={{
+              background: speaking
+                ? "linear-gradient(135deg, #EF4444, #F97316)"
+                : "linear-gradient(135deg, #7c3aed, #0d9488)",
+            }}
+          >
+            <span className="text-xl">{speaking ? "⏹️" : "🔊"}</span>
+            {speaking ? "Stop Reading" : "Read to Me!"}
+          </button>
         )}
         {hasFiles && (() => {
           const pdfFile = (subtopic.contentFiles || []).find(f => f.type === "pdf" || f.name?.toLowerCase().endsWith(".pdf"));
@@ -811,7 +964,6 @@ function KaveeshaTextSection({ subtopic, done, onComplete, accentFrom, accentTo,
         })()}
       </div>
 
-      {/* Speech progress */}
       {speaking && (
         <div className="mb-4">
           <div className="flex justify-between text-xs font-bold text-gray-500 mb-1">
@@ -820,16 +972,15 @@ function KaveeshaTextSection({ subtopic, done, onComplete, accentFrom, accentTo,
           </div>
           <div className="h-2 bg-purple-100 rounded-full overflow-hidden">
             <div
-              className="h-full bg-linear-to-r from-purple-500 to-violet-500 rounded-full transition-all duration-300"
+              className="h-full bg-purple-500 rounded-full transition-all duration-300"
               style={{ width: `${speechProgress}%` }}
             />
           </div>
         </div>
       )}
 
-      {/* Text body */}
       {hasTextBody && (
-        <div className="bg-linear-to-br from-sky-100 to-teal-100 rounded-2xl p-6 mb-5 border-2 border-sky-300">
+        <div className="bg-sky-50 rounded-2xl p-6 mb-5 border-2 border-sky-300">
           <p
             className="text-slate-800 leading-relaxed font-semibold whitespace-pre-wrap"
             style={{ fontSize: isYoung ? "18px" : "16px", lineHeight: isYoung ? "1.95" : "1.85" }}
@@ -839,7 +990,6 @@ function KaveeshaTextSection({ subtopic, done, onComplete, accentFrom, accentTo,
         </div>
       )}
 
-      {/* Teacher-uploaded files (PDF / presentations) */}
       {hasFiles && (
         <div className="rounded-2xl p-5 mb-5 border-2 border-amber-400 bg-amber-50">
           <p className="font-extrabold text-amber-900 mb-3 flex items-center gap-2">
@@ -904,8 +1054,7 @@ function KaveeshaImagesSection({ subtopic, done, onComplete, accentFrom, accentT
     }
   };
 
-  const getImgSrc = (img) =>
-    img.startsWith("/uploads") ? `${API}${img}` : img;
+  const getImgSrc = (img) => (img.startsWith("/uploads") ? `${API}${img}` : img);
 
   if (!images.length) {
     return (
@@ -913,8 +1062,11 @@ function KaveeshaImagesSection({ subtopic, done, onComplete, accentFrom, accentT
         <div className="text-5xl mb-3">🖼️</div>
         <p className="text-gray-400 font-bold">No images for this lesson yet</p>
         {!done && (
-          <button onClick={onComplete} className="mt-4 px-6 py-3 rounded-2xl font-extrabold text-white shadow-md"
-            style={{ background: `linear-gradient(135deg, ${accentFrom}, ${accentTo})` }}>
+          <button
+            onClick={onComplete}
+            className="mt-4 px-6 py-3 rounded-2xl font-extrabold text-white shadow-md"
+            style={{ background: `linear-gradient(135deg, ${accentFrom}, ${accentTo})` }}
+          >
             Skip & Continue →
           </button>
         )}
@@ -925,8 +1077,10 @@ function KaveeshaImagesSection({ subtopic, done, onComplete, accentFrom, accentT
   return (
     <div className="p-6">
       <div className="flex items-center gap-3 mb-5">
-        <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-md"
-          style={{ background: `linear-gradient(135deg, ${accentFrom}, ${accentTo})` }}>
+        <div
+          className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-md"
+          style={{ background: `linear-gradient(135deg, ${accentFrom}, ${accentTo})` }}
+        >
           🖼️
         </div>
         <div>
@@ -937,7 +1091,6 @@ function KaveeshaImagesSection({ subtopic, done, onComplete, accentFrom, accentT
         </div>
       </div>
 
-      {/* Image Viewer */}
       <div className="rounded-2xl overflow-hidden shadow-lg mb-4 bg-gray-50">
         <img
           src={getImgSrc(images[currentImg])}
@@ -947,7 +1100,6 @@ function KaveeshaImagesSection({ subtopic, done, onComplete, accentFrom, accentT
         />
       </div>
 
-      {/* Dots */}
       <div className="flex justify-center gap-2 mb-5">
         {images.map((_, i) => (
           <button
@@ -965,7 +1117,6 @@ function KaveeshaImagesSection({ subtopic, done, onComplete, accentFrom, accentT
         ))}
       </div>
 
-      {/* Navigation */}
       <div className="flex gap-3 mb-5">
         <button
           onClick={() => setCurrentImg(Math.max(0, currentImg - 1))}
@@ -1003,7 +1154,10 @@ function KaveeshaImagesSection({ subtopic, done, onComplete, accentFrom, accentT
 }
 
 /* ─── QUIZ SECTION ─── */
-function KaveeshaQuizSection({ subtopic, quiz, userId, ageGroup, done, onComplete, onNavigateBack, accentFrom, accentTo, isYoung }) {
+function KaveeshaQuizSection({
+  subtopic, quiz, userId, ageGroup, done,
+  onComplete, onNavigateBack, accentFrom, accentTo, isYoung,
+}) {
   const [answers, setAnswers] = useState({});
   const [submitted, setSubmitted] = useState(false);
   const [results, setResults] = useState(null);
@@ -1030,10 +1184,8 @@ function KaveeshaQuizSection({ subtopic, quiz, userId, ageGroup, done, onComplet
     setResults(res);
     setScore(correct);
     setSubmitted(true);
-
     if (correct !== total) return;
 
-    // Build backend payload (so backend tables decide unlock)
     const miniQuizAnswers = quiz.questions.map((q, i) => ({
       questionId: q._id,
       selectedOption: answers[i],
@@ -1050,9 +1202,7 @@ function KaveeshaQuizSection({ subtopic, quiz, userId, ageGroup, done, onComplet
         setServerMsg(r?.message || "Some answers are incorrect. Retry the quiz.");
       }
     } catch (e) {
-      setServerMsg(
-        e?.response?.data?.message || "Could not save quiz completion. Try again."
-      );
+      setServerMsg(e?.response?.data?.message || "Could not save quiz completion. Try again.");
     } finally {
       setSaving(false);
     }
@@ -1072,8 +1222,11 @@ function KaveeshaQuizSection({ subtopic, quiz, userId, ageGroup, done, onComplet
         <div className="text-5xl mb-3">❓</div>
         <p className="text-gray-400 font-bold">No quiz for this lesson yet</p>
         {!done && (
-          <button onClick={onComplete} className="mt-4 px-6 py-3 rounded-2xl font-extrabold text-white shadow-md"
-            style={{ background: `linear-gradient(135deg, ${accentFrom}, ${accentTo})` }}>
+          <button
+            onClick={onComplete}
+            className="mt-4 px-6 py-3 rounded-2xl font-extrabold text-white shadow-md"
+            style={{ background: `linear-gradient(135deg, ${accentFrom}, ${accentTo})` }}
+          >
             Complete Lesson →
           </button>
         )}
@@ -1094,11 +1247,15 @@ function KaveeshaQuizSection({ subtopic, quiz, userId, ageGroup, done, onComplet
           🎉 Subtopic Complete!
         </h2>
         <p className="text-gray-600 font-bold text-lg mb-2">
-          You completed <span className="font-extrabold" style={{ color: accentFrom }}>{subtopic?.title}</span>!
+          You completed{" "}
+          <span className="font-extrabold" style={{ color: accentFrom }}>
+            {subtopic?.title}
+          </span>
+          !
         </p>
         <p className="text-gray-500 font-semibold mb-6">
           {isYoung
-            ? "Amazing work! You’re a clean-water champion! 🌟"
+            ? "Amazing work! You're a clean-water champion! 🌟"
             : "Excellent! The next lesson step is ready for you! 🔓"}
         </p>
         <div className="bg-green-50 rounded-2xl p-4 mb-6 border-2 border-green-200">
@@ -1120,8 +1277,10 @@ function KaveeshaQuizSection({ subtopic, quiz, userId, ageGroup, done, onComplet
   return (
     <div className="p-6">
       <div className="flex items-center gap-3 mb-5">
-        <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-md"
-          style={{ background: `linear-gradient(135deg, ${accentFrom}, ${accentTo})` }}>
+        <div
+          className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-md"
+          style={{ background: `linear-gradient(135deg, ${accentFrom}, ${accentTo})` }}
+        >
           ❓
         </div>
         <div>
@@ -1135,20 +1294,24 @@ function KaveeshaQuizSection({ subtopic, quiz, userId, ageGroup, done, onComplet
       </div>
 
       {submitted && (
-        <div className={`rounded-2xl p-4 mb-5 text-center border-2 ${
-          score === quiz.questions.length
-            ? "bg-green-50 border-green-200"
-            : "bg-amber-50 border-amber-200"
-        }`}>
-          <p className={`font-extrabold text-lg ${score === quiz.questions.length ? "text-green-600" : "text-amber-600"}`}>
+        <div
+          className={`rounded-2xl p-4 mb-5 text-center border-2 ${
+            score === quiz.questions.length
+              ? "bg-green-50 border-green-200"
+              : "bg-amber-50 border-amber-200"
+          }`}
+        >
+          <p
+            className={`font-extrabold text-lg ${
+              score === quiz.questions.length ? "text-green-600" : "text-amber-600"
+            }`}
+          >
             {score === quiz.questions.length
               ? "🎉 Perfect Score! All correct!"
               : `You got ${score}/${quiz.questions.length} correct. Try again! 💪`}
           </p>
           {!!serverMsg && (
-            <p className="mt-2 text-sm font-extrabold text-amber-700">
-              {serverMsg}
-            </p>
+            <p className="mt-2 text-sm font-extrabold text-amber-700">{serverMsg}</p>
           )}
         </div>
       )}
@@ -1157,8 +1320,10 @@ function KaveeshaQuizSection({ subtopic, quiz, userId, ageGroup, done, onComplet
         {quiz.questions.map((q, qi) => (
           <div key={qi} className="bg-gray-50 rounded-2xl p-5 border-2 border-gray-100">
             <p className="font-extrabold text-gray-800 mb-4 text-base">
-              <span className="inline-block w-7 h-7 rounded-full text-white text-center text-sm leading-7 mr-2 shrink-0"
-                style={{ background: accentFrom }}>
+              <span
+                className="inline-block w-7 h-7 rounded-full text-white text-center text-sm leading-7 mr-2 shrink-0"
+                style={{ background: accentFrom }}
+              >
                 {qi + 1}
               </span>
               {q.question}
@@ -1168,7 +1333,6 @@ function KaveeshaQuizSection({ subtopic, quiz, userId, ageGroup, done, onComplet
                 const isSelected = answers[qi] === opt;
                 const isCorrect = results && results[qi]?.correctAnswer === opt;
                 const isWrong = submitted && isSelected && !isCorrect;
-
                 return (
                   <button
                     key={oi}
@@ -1183,7 +1347,11 @@ function KaveeshaQuizSection({ subtopic, quiz, userId, ageGroup, done, onComplet
                         ? "border-2 text-white shadow-md"
                         : "bg-white border-gray-200 text-gray-700 hover:border-gray-300"
                     }`}
-                    style={isSelected && !submitted ? { background: accentFrom, borderColor: accentFrom } : {}}
+                    style={
+                      isSelected && !submitted
+                        ? { background: accentFrom, borderColor: accentFrom }
+                        : {}
+                    }
                   >
                     {isCorrect && submitted ? "✅ " : isWrong ? "❌ " : isSelected ? "→ " : "○ "}
                     {opt}

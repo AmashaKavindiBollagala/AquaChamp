@@ -14,7 +14,8 @@ export default function KaveeshaStudentDashboard() {
   const [loading, setLoading] = useState(true);
   const [showBasic, setShowBasic] = useState(false);
   const isYoung = user?.age >= 5 && user?.age <= 10;
-  const ageGroup = isYoung ? "6-10" : "11-15";
+  // FIX: Changed from "6-10" to "5-10" to match game database ageGroup
+  const ageGroup = isYoung ? "5-10" : "11-15";
 
   useEffect(() => {
     const token =
@@ -27,7 +28,18 @@ export default function KaveeshaStudentDashboard() {
         headers: { Authorization: `Bearer ${token}` },
         withCredentials: true,
       })
-      .then((r) => setUser(r.data.user))
+      .then((r) => {
+        const userData = r.data.user;
+        setUser(userData);
+        // FIX: Store user data in localStorage for other components to access
+        // IMPORTANT: Store username (not firstName) for game scores database
+        // Calculate ageGroup from userData directly (not from user state which isn't set yet)
+        const userIsYoung = userData?.age >= 5 && userData?.age <= 10;
+        const userAgeGroup = userIsYoung ? "5-10" : "11-15";
+        localStorage.setItem("aquachamp_user", JSON.stringify(userData));
+        localStorage.setItem("aquachamp_username", userData.username || userData.firstName || "Player");
+        localStorage.setItem("aquachamp_ageGroup", userAgeGroup);
+      })
       .catch(() => navigate("/login"));
   }, []);
 
@@ -38,14 +50,30 @@ export default function KaveeshaStudentDashboard() {
 
   const fetchData = async () => {
     try {
-      const [topicsRes, subsRes] = await Promise.all([
+      // FIX: Query for both "5-10" AND "6-10" since database might have either
+      // The model was recently changed from "6-10" to "5-10" but existing data uses "6-10"
+      const [topicsRes, subsRes5to10, subsRes6to10] = await Promise.all([
         axios.get(`${API}/api/topics`),
-        axios.get(`${API}/api/subtopics`, { params: { ageGroup } }),
+        axios.get(`${API}/api/subtopics`, { params: { ageGroup: "5-10" } }),
+        axios.get(`${API}/api/subtopics`, { params: { ageGroup: "6-10" } }),
       ]);
       const allTopics = topicsRes.data || [];
-      const subs = Array.isArray(subsRes.data)
-        ? subsRes.data
-        : subsRes.data?.subtopics || [];
+      
+      // Merge subtopics from both age group values
+      const subs5to10 = Array.isArray(subsRes5to10.data)
+        ? subsRes5to10.data
+        : subsRes5to10.data?.subtopics || [];
+      const subs6to10 = Array.isArray(subsRes6to10.data)
+        ? subsRes6to10.data
+        : subsRes6to10.data?.subtopics || [];
+      
+      // Combine and deduplicate by _id
+      const subsMap = new Map();
+      [...subs5to10, ...subs6to10].forEach(s => {
+        if (s._id) subsMap.set(String(s._id), s);
+      });
+      const subs = Array.from(subsMap.values());
+      
       setSubtopics(subs);
       const topicIdsWithLessons = new Set(
         subs.map((s) => String(s.topicId?._id || s.topicId))
@@ -54,6 +82,13 @@ export default function KaveeshaStudentDashboard() {
         topicIdsWithLessons.has(String(t._id))
       );
       setTopics(filteredTopics);
+      
+      // Debug logs after filtering
+      console.log('📊 Fetched subtopics:', { '5-10': subs5to10.length, '6-10': subs6to10.length, total: subs.length });
+      console.log('📊 Sample subtopic:', subs[0]);
+      console.log('📊 Topics found:', filteredTopics.length);
+      console.log('📊 Topic IDs with lessons:', Array.from(topicIdsWithLessons));
+      console.log('📊 Subtopic topicIds:', subs.map(s => String(s.topicId?._id || s.topicId)));
 
       // Build progress map
       const token =
@@ -87,10 +122,15 @@ export default function KaveeshaStudentDashboard() {
     }
   };
 
-  const getSubtopicsForTopic = (topicId) =>
-    subtopics.filter(
-      (s) => s.topicId === topicId || s.topicId?._id === topicId
-    );
+  // FIX: Get subtopics for a topic by comparing IDs as strings
+  // Handles both ObjectId strings and populated ObjectId objects
+  const getSubtopicsForTopic = (topicId) => {
+    const topicIdStr = String(topicId);
+    return subtopics.filter((s) => {
+      const subTopicId = s.topicId?._id ? String(s.topicId._id) : String(s.topicId);
+      return subTopicId === topicIdStr;
+    });
+  };
 
   const bgGradient = isYoung
     ? "from-slate-50 via-white to-blue-50"
@@ -278,6 +318,9 @@ export default function KaveeshaStudentDashboard() {
 
 /* ─── Topic Card ─── */
 function TopicCard({ topic, subtopics, progress, index, onClick }) {
+  // Debug log to see what subtopics are passed
+  console.log(`📋 TopicCard "${topic?.title}":`, { subtopicsCount: subtopics?.length, subtopics });
+  
   const API = "http://localhost:4000";
   const CARD_COLORS = [
     { from: "#ec4899", to: "#db2777", accent: "#db2777", hover: "#fce7f3", emoji: "💧" },
@@ -409,6 +452,34 @@ function TopicCard({ topic, subtopics, progress, index, onClick }) {
           )}
         </div>
 
+        {/* Subtopics List - Show lessons under each topic */}
+        {subtopics.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-slate-100">
+            <p className="text-xs font-bold text-slate-500 mb-2">📖 Lessons in this topic:</p>
+            <div className="space-y-1.5 max-h-32 overflow-y-auto">
+              {subtopics.slice(0, 5).map((sub, idx) => (
+                <div 
+                  key={sub._id || idx}
+                  className="flex items-center gap-2 text-xs text-slate-600 font-medium"
+                >
+                  <span 
+                    className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold"
+                    style={{ background: color.hover, color: color.accent }}
+                  >
+                    {idx + 1}
+                  </span>
+                  <span className="truncate">{sub.title || `Lesson ${idx + 1}`}</span>
+                </div>
+              ))}
+              {subtopics.length > 5 && (
+                <p className="text-xs text-slate-400 font-medium pl-7">
+                  +{subtopics.length - 5} more lessons...
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
         <button
           className="w-full mt-4 py-3 rounded-2xl font-bold text-white shadow-md transition-all duration-300 hover:shadow-lg active:scale-95"
           style={{
@@ -448,14 +519,28 @@ function KaveeshaBasicLessonsPanel({ userId, navigate }) {
       localStorage.getItem("aquachamp_token") ||
       sessionStorage.getItem("aquachamp_token");
     
+    // FIX: Query for both "5-10" AND "6-10" since database might have either
     Promise.all([
       axios.get(`${API}/api/topics`),
+      axios.get(`${API}/api/subtopics`, { params: { ageGroup: "5-10" } }),
       axios.get(`${API}/api/subtopics`, { params: { ageGroup: "6-10" } }),
     ])
-      .then(async ([topicsRes, subsRes]) => {
-        const basicSubs = Array.isArray(subsRes.data)
-          ? subsRes.data
-          : subsRes.data?.subtopics || [];
+      .then(async ([topicsRes, subsRes5to10, subsRes6to10]) => {
+        // Merge subtopics from both age group values
+        const basicSubs5to10 = Array.isArray(subsRes5to10.data)
+          ? subsRes5to10.data
+          : subsRes5to10.data?.subtopics || [];
+        const basicSubs6to10 = Array.isArray(subsRes6to10.data)
+          ? subsRes6to10.data
+          : subsRes6to10.data?.subtopics || [];
+        
+        // Combine and deduplicate by _id
+        const subsMap = new Map();
+        [...basicSubs5to10, ...basicSubs6to10].forEach(s => {
+          if (s._id) subsMap.set(String(s._id), s);
+        });
+        const basicSubs = Array.from(subsMap.values());
+        
         const ids = new Set(
           basicSubs.map((s) => String(s.topicId?._id || s.topicId))
         );
@@ -472,7 +557,8 @@ function KaveeshaBasicLessonsPanel({ userId, navigate }) {
                 {
                   userId: String(userId),
                   topicId: topic._id,
-                  ageGroup: "6-10",
+                  // FIX: Changed from "6-10" to "5-10" to match game database
+                  ageGroup: "5-10",
                 },
                 { headers: { Authorization: `Bearer ${token}` } }
               );
@@ -512,7 +598,7 @@ function KaveeshaBasicLessonsPanel({ userId, navigate }) {
               key={topic._id}
               onClick={() =>
                 navigate(`/student/topic/${topic._id}`, {
-                  state: { topic, ageGroup: "6-10", userId, isBasic: true },
+                  state: { topic, ageGroup: "5-10", userId, isBasic: true },
                 })
               }
               className="card-hover bg-white rounded-2xl p-4 text-left shadow-md border-2 border-slate-200 hover:border-blue-400"

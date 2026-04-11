@@ -1,4 +1,4 @@
-import express from 'express';
+import express from 'express';  // ← ADD THIS
 import {
   createGame,
   getAllGames,
@@ -11,7 +11,9 @@ import {
   getMyGameScores,
   getScoresByUserId,
   deleteGameScore,
-  getTopicProgress,   // ← NEW
+  getTopicProgress,
+  getTopicCompletions,
+  markBadgeIssued,
 } from '../controllers/dilshara-gameController.js';
 import verifyJWT       from '../middleware/amasha-verifyJWT.js';
 import { verifyRoles } from '../middleware/dilshara-verifyRoles.js';
@@ -43,4 +45,8 @@ router.get('/:id/scores',          verifyRoles('Game_ADMIN', 'SUPER_ADMIN'), get
 router.get('/user/:userId/scores', verifyRoles('Game_ADMIN', 'SUPER_ADMIN', 'Progress_ADMIN'), getScoresByUserId);
 router.delete('/scores/:scoreId',  verifyRoles('Game_ADMIN', 'SUPER_ADMIN'), deleteGameScore);
 
+
+// Progress Manager endpoints — add BEFORE the /:id routes to avoid conflicts
+router.get('/completions', verifyRoles('SUPER_ADMIN', 'Progress_ADMIN'), getTopicCompletions);
+router.patch('/completions/:id/badge', verifyRoles('SUPER_ADMIN', 'Progress_ADMIN'), markBadgeIssued);
 export default router;

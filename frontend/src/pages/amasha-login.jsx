@@ -255,8 +255,17 @@ export default function UserLogin() {
           sessionStorage.setItem("aquachamp_token", token);
         }
 
-        setUserData(response.data.user);
-        setLoginSuccess(true);
+        // FIX: Store user data in localStorage for other components to access
+        // IMPORTANT: Store username (not firstName) for game scores database
+        const user = response.data.user;
+        const userAgeGroup = (user?.age >= 5 && user?.age <= 10) ? "5-10" : "11-15";
+        localStorage.setItem("aquachamp_user", JSON.stringify(user));
+        localStorage.setItem("aquachamp_username", user.username || user.firstName || "Player");
+        localStorage.setItem("aquachamp_ageGroup", userAgeGroup);
+        console.log("   ✅ User data stored in localStorage, username:", user.username || user.firstName, "ageGroup:", userAgeGroup);
+
+        setUserData(user);
+      setLoginSuccess(true);
 
         // 🎯 CLAIM DAILY LOGIN POINTS AUTOMATICALLY
         try {

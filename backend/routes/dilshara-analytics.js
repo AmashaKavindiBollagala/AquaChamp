@@ -1,6 +1,6 @@
 // routes/analytics.js
 import express from 'express';
-import Score from '../models/dilshara-GameScore.js';
+import { GameScore as Score } from '../models/dilshara-GameScore.js';
 import Game from '../models/dilshara-Game.js';
 import authMiddleware from '../middleware/amasha-verifyJWT.js';
 
