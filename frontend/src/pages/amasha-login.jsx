@@ -191,7 +191,6 @@ export default function UserLogin() {
   const [userData, setUserData] = useState(null);
   const navigate = useNavigate();
 
-  // ✅ FIX 1: Corrected URL — matches server.js: app.use('/auth', authRoutes)
   const API_URL = "http://localhost:4000/auth/login";
 
   const validate = () => {
@@ -232,7 +231,6 @@ export default function UserLogin() {
       console.log("   Email:", form.email.trim().toLowerCase());
       console.log("   API URL:", API_URL);
       
-      // ✅ FIX 2: Added withCredentials so the httpOnly refresh cookie gets stored
       const response = await axios.post(
         API_URL,
         {
@@ -241,7 +239,7 @@ export default function UserLogin() {
         },
         { 
           withCredentials: true,
-          timeout: 10000 // 10 second timeout
+          timeout: 10000
         }
       );
 
@@ -250,29 +248,16 @@ export default function UserLogin() {
       if (response.data.success || response.data.accessToken) {
         const token = response.data.accessToken || response.data.token;
         console.log("✅ [Login] Login successful!");
-        console.log("   Token received:", token ? `${token.substring(0, 30)}...` : "NONE");
-        console.log("   User data:", response.data.user);
-        console.log("   Remember me:", rememberMe);
         
-        // Store JWT based on remember me preference
         if (rememberMe) {
           localStorage.setItem("aquachamp_token", token);
-          console.log("   ✅ Token stored in localStorage");
-          // Verify it was stored
-          const verifyToken = localStorage.getItem("aquachamp_token");
-          console.log("   ✅ Verification - Token in localStorage:", !!verifyToken);
         } else {
           sessionStorage.setItem("aquachamp_token", token);
-          console.log("   ✅ Token stored in sessionStorage");
-          // Verify it was stored
-          const verifyToken = sessionStorage.getItem("aquachamp_token");
-          console.log("   ✅ Verification - Token in sessionStorage:", !!verifyToken);
         }
 
         setUserData(response.data.user);
-      setLoginSuccess(true);
+        setLoginSuccess(true);
 
-        console.log("   🚀 Navigating to /student/dashboard...");
         // 🎯 CLAIM DAILY LOGIN POINTS AUTOMATICALLY
         try {
           console.log("🎁 Attempting to claim daily login reward...");
@@ -287,7 +272,6 @@ export default function UserLogin() {
           );
           console.log("✅ Daily login response:", dailyLoginRes.data);
         } catch (dailyLoginError) {
-          // If already claimed today, it will return 400 - that's OK
           if (dailyLoginError.response?.status === 400) {
             console.log("ℹ️  Daily login already claimed today");
           } else {
@@ -295,38 +279,29 @@ export default function UserLogin() {
           }
         }
 
-        console.log("   🚀 Navigating to /profile...");
-        // Small delay to ensure storage is complete
+        // ✅ Navigate to default path "/"
         setTimeout(() => {
-          navigate("/student/dashboard");
+          navigate("/");
         }, 100);
       }
     } catch (error) {
-      console.error("❌ [Login] Login error:");
-      console.error("   Error message:", error.message);
-      console.error("   Error code:", error.code);
+      console.error("❌ [Login] Login error:", error.message);
       
       if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
-        console.error("   ⏰ Request timed out after 10 seconds");
         setServerError("Request timed out. Please check your connection and try again.");
       } else if (error.response?.data) {
         const data = error.response.data;
-        console.error("   Response status:", error.response.status);
-        console.error("   Response data:", data);
         
         if (error.response.status === 401) {
           setServerError("Invalid email or password. Please try again.");
         } else if (error.response.status === 403) {
-          setServerError(
-            data.message || "Account not verified. Please check your email."
-          );
+          setServerError(data.message || "Account not verified. Please check your email.");
         } else if (error.response.status === 429) {
           setServerError("Too many login attempts. Please wait a moment.");
         } else {
           setServerError(data.message || "Login failed. Please try again.");
         }
       } else {
-        console.error("   Full error:", error);
         setServerError(`Unable to connect to server (${error.message})`);
       }
     } finally {
@@ -460,11 +435,12 @@ export default function UserLogin() {
                       </span>
                     ))}
                   </div>
-                    <button onClick={() => navigate("/student/dashboard")}
-                  className="mt-6 rounded-2xl bg-linear-to-r from-sky-700 to-emerald-500 px-8 py-3 text-sm font-extrabold text-white shadow-lg transition hover:-translate-y-1"
-                >
-                  Continue to Dashboard →
-                </button>
+                  <button
+                    onClick={() => navigate("/")}
+                    className="mt-6 rounded-2xl bg-linear-to-r from-sky-700 to-emerald-500 px-8 py-3 text-sm font-extrabold text-white shadow-lg transition hover:-translate-y-1"
+                  >
+                    Continue to Dashboard →
+                  </button>
                 </div>
               ) : (
                 /* ── Login Form ── */
@@ -559,12 +535,12 @@ export default function UserLogin() {
                     <p className="text-center text-sm font-semibold text-slate-500">
                       New to AquaChamp?{" "}
                       <button
-                          type="button"
-                          onClick={() => navigate("/register")}
-                          className="font-extrabold text-sky-700 hover:underline"
+                        type="button"
+                        onClick={() => navigate("/register")}
+                        className="font-extrabold text-sky-700 hover:underline"
                       >
-                       Create Account
-                     </button>
+                        Create Account
+                      </button>
                     </p>
 
                     <div className="flex justify-center gap-5 text-[11px] font-bold text-slate-400">
