@@ -1,12 +1,15 @@
 import Badge from '../models/dushani-Badge.js';
 import StudentProgress from '../models/dushani-StudentProgress.js';
 import User from '../models/dushani-User.js';
+import { GameScore } from '../models/dilshara-GameScore.js';
+import UserPoints from '../models/amasha-userPoints.js';
+import DailyLogin from '../models/dushani-points.js';
+import BadgeNotification from '../models/dushani-BadgeNotification.js';
 
 // Helper: get current admin user id from username in JWT
 const getCurrentUserId = async (req) => {
   const username = req.user;
   if (!username) return null;
-
   const user = await User.findOne({ username });
   return user ? user._id : null;
 };
@@ -15,8 +18,7 @@ const getCurrentUserId = async (req) => {
 export const createBadge = async (req, res) => {
   try {
     const { badgeName, badgeType, pointsRequired, sectionName, badgeIcon, description } = req.body;
-    
-    // Check if badge name already exists
+
     const existingBadge = await Badge.findOne({ badgeName });
     if (existingBadge) {
       return res.status(400).json({
@@ -34,7 +36,7 @@ export const createBadge = async (req, res) => {
       sectionName: badgeType === 'Section Completion' ? sectionName : null,
       badgeIcon: badgeIcon || '⭐',
       description,
-      createdBy: createdBy || undefined // Only set if found
+      createdBy: createdBy || undefined
     });
 
     await badge.save();
@@ -46,135 +48,100 @@ export const createBadge = async (req, res) => {
     });
   } catch (error) {
     console.error('Create badge error:', error);
-    
     if (error.name === 'ValidationError') {
       const errors = Object.values(error.errors).map(err => err.message);
-      return res.status(400).json({
-        success: false,
-        message: 'Validation failed',
-        errors
-      });
+      return res.status(400).json({ success: false, message: 'Validation failed', errors });
     }
-
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error'
-    });
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 
 // Admin: Get all badges with statistics
 export const getAllBadges = async (req, res) => {
   try {
-    // DYNAMICALLY check and award badges to all students
-    const StudentProgress = (await import('../models/dushani-StudentProgress.js')).default;
-    const GameScore = (await import('../models/dilshara-GameScore.js')).default;
-    const UserPoints = (await import('../models/amasha-userPoints.js')).default;
-    const DailyLogin = (await import('../models/dushani-points.js')).default;
-    const BadgeNotification = (await import('../models/dushani-BadgeNotification.js')).default;
-    const User = (await import('../models/dushani-User.js')).default;
-    
     console.log('\n🔄 STARTING BADGE STATUS CHECK...\n');
-    
-    // DON'T clear badges - just check and award new ones
+
     const allStudents = await StudentProgress.find();
     console.log(`📊 Found ${allStudents.length} students in database`);
-    
-    // DON'T reset earnedCount - keep historical data
-    // Get active badges and check for new awards
-    
-    // STEP 3: Get active badges and recalculate for each student
+
     const activeMilestoneBadges = await Badge.find({
       badgeType: 'Milestone',
       status: 'Active'
     }).sort({ pointsRequired: 1 });
-    
+
     console.log(`🏆 Checking ${activeMilestoneBadges.length} active badges for all students...\n`);
-    
+
     let totalBadgesAwarded = 0;
     let studentsWithBadges = 0;
-    
+
     for (const student of allStudents) {
-      // Dynamically calculate total points from all sources
       const user = await User.findById(student.userId);
       if (!user) {
         console.log(`⚠️  Skipping student with missing user record: ${student.userId}`);
         continue;
       }
-      
+
       const gameScores = await GameScore.find({ userId: user.username });
       const totalGamePoints = gameScores.reduce((sum, result) => sum + result.score, 0);
-      
+
       const userPointsRecord = await UserPoints.findOne({ userId: student.userId });
       const userPoints = userPointsRecord ? userPointsRecord.totalPoints : 0;
-      
+
       const dailyLoginRecords = await DailyLogin.find({ userId: student.userId });
       const totalDailyLoginPoints = dailyLoginRecords.reduce((sum, record) => sum + (record.pointsAwarded || 10), 0);
-      
+
       const dynamicTotalPoints = totalGamePoints + userPoints + totalDailyLoginPoints;
-      
-      // Update student's total points
+
       student.totalPoints = dynamicTotalPoints;
-      
-      // Recalculate level
+
       const newLevel = await student.calculateLevel();
       student.currentLevel = newLevel;
-      
-      // Check and award eligible badges
+
       let badgesAwarded = 0;
       for (const badge of activeMilestoneBadges) {
         if (dynamicTotalPoints >= badge.pointsRequired && !student.hasBadge(badge._id)) {
           student.addBadge(badge);
           await Badge.findByIdAndUpdate(badge._id, { $inc: { earnedCount: 1 } });
-          
-          // CREATE notification ONLY if it doesn't already exist (PREVENT DUPLICATES)
+
           const existingNotification = await BadgeNotification.findOne({
             userId: student.userId,
             badgeId: badge._id
           });
-          
+
           if (!existingNotification) {
             await BadgeNotification.createNotification(student.userId, badge);
             console.log(`  🎬 Created notification for "${badge.badgeName}"`);
           } else {
             console.log(`  ⏭️  Notification already exists for "${badge.badgeName}" - skipping duplicate`);
           }
-          
+
           badgesAwarded++;
           totalBadgesAwarded++;
           console.log(`  🏅 ${user.username}: Earned "${badge.badgeName}" (${dynamicTotalPoints} pts >= ${badge.pointsRequired} pts)`);
         }
       }
-      
-      if (badgesAwarded > 0) {
-        studentsWithBadges++;
-      }
-      
-      // Save student progress
+
+      if (badgesAwarded > 0) studentsWithBadges++;
+
       await student.save();
-      
+
       if (dynamicTotalPoints > 0 || badgesAwarded > 0) {
         console.log(`  ✅ ${user.username}: ${dynamicTotalPoints} pts, Level ${newLevel}, ${student.badgesEarned.length} badges`);
       }
     }
-    
+
     console.log(`\n📊 BADGE RECALCULATION COMPLETE:`);
     console.log(`   Total students checked: ${allStudents.length}`);
     console.log(`   Students with badges: ${studentsWithBadges}`);
     console.log(`   Total badges awarded: ${totalBadgesAwarded}\n`);
-    
-    // STEP 4: Get final badge statistics
+
     const badges = await Badge.find({ status: 'Active' }).sort({ createdAt: -1 });
-    
+
     const badgesWithStats = await Promise.all(badges.map(async (badge) => {
       const earnedCount = await StudentProgress.countDocuments({
         'badgesEarned.badgeId': badge._id
       });
-      
-      return {
-        ...badge.toObject(),
-        earnedCount
-      };
+      return { ...badge.toObject(), earnedCount };
     }));
 
     res.status(200).json({
@@ -187,10 +154,7 @@ export const getAllBadges = async (req, res) => {
     });
   } catch (error) {
     console.error('Get all badges error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error'
-    });
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 
@@ -198,25 +162,18 @@ export const getAllBadges = async (req, res) => {
 export const getBadgeById = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const badge = await Badge.findById(id);
     if (!badge) {
-      return res.status(404).json({
-        success: false,
-        message: 'Badge not found'
-      });
+      return res.status(404).json({ success: false, message: 'Badge not found' });
     }
 
-    // Get students who earned this badge
     const studentProgressRecords = await StudentProgress.find({
       'badgesEarned.badgeId': badge._id
     }).populate('userId', 'firstName lastName username email');
 
     const studentsWithBadge = studentProgressRecords.map(record => {
-      const badgeInfo = record.badgesEarned.find(b => 
-        b.badgeId.toString() === id
-      );
-      
+      const badgeInfo = record.badgesEarned.find(b => b.badgeId.toString() === id);
       return {
         studentId: record.userId._id,
         studentName: `${record.userId.firstName} ${record.userId.lastName}`,
@@ -237,10 +194,7 @@ export const getBadgeById = async (req, res) => {
     });
   } catch (error) {
     console.error('Get badge by ID error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error'
-    });
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 
@@ -249,117 +203,84 @@ export const updateBadge = async (req, res) => {
   try {
     const { id } = req.params;
     const { badgeName, badgeType, pointsRequired, sectionName, badgeIcon, description, status } = req.body;
-    
+
     const badge = await Badge.findById(id);
     if (!badge) {
-      return res.status(404).json({
-        success: false,
-        message: 'Badge not found'
-      });
+      return res.status(404).json({ success: false, message: 'Badge not found' });
     }
 
-    // Check if new badge name already exists (excluding current badge)
     if (badgeName && badgeName !== badge.badgeName) {
-      const existingBadge = await Badge.findOne({ 
-        badgeName,
-        _id: { $ne: id }
-      });
+      const existingBadge = await Badge.findOne({ badgeName, _id: { $ne: id } });
       if (existingBadge) {
-        return res.status(400).json({
-          success: false,
-          message: 'Badge with this name already exists'
-        });
+        return res.status(400).json({ success: false, message: 'Badge with this name already exists' });
       }
     }
 
-    // Update badge fields
     if (badgeName) badge.badgeName = badgeName;
     if (badgeType) badge.badgeType = badgeType;
-    if (badgeType === 'Milestone') {
-      badge.pointsRequired = pointsRequired || 0;
-    } else {
-      badge.pointsRequired = 0;
-    }
-    if (badgeType === 'Section Completion') {
-      badge.sectionName = sectionName || null;
-    } else {
-      badge.sectionName = null;
-    }
+    badge.pointsRequired = badgeType === 'Milestone' ? (pointsRequired || 0) : 0;
+    badge.sectionName = badgeType === 'Section Completion' ? (sectionName || null) : null;
     if (badgeIcon) badge.badgeIcon = badgeIcon;
     if (description) badge.description = description;
     if (status) badge.status = status;
 
     await badge.save();
 
-    // 🔄 RECALCULATE ALL STUDENTS' BADGES after badge requirements changed
-    const StudentProgress = (await import('../models/dushani-StudentProgress.js')).default;
-    const GameScore = (await import('../models/dilshara-GameScore.js')).default;
-    const UserPoints = (await import('../models/amasha-userPoints.js')).default;
-    const DailyLogin = (await import('../models/dushani-points.js')).default;
-    
+    // Recalculate all students after badge update
     const allStudents = await StudentProgress.find();
     console.log(`🔄 Recalculating badges for ${allStudents.length} students after badge update...`);
-    
+
     let updatedCount = 0;
     for (const student of allStudents) {
-      // Dynamically calculate total points from all sources
-      const user = await (await import('../models/dushani-User.js')).default.findById(student.userId);
+      const user = await User.findById(student.userId);
       if (!user) continue;
-      
+
       const gameScores = await GameScore.find({ userId: user.username });
       const totalGamePoints = gameScores.reduce((sum, result) => sum + result.score, 0);
-      
+
       const userPointsRecord = await UserPoints.findOne({ userId: student.userId });
       const userPoints = userPointsRecord ? userPointsRecord.totalPoints : 0;
-      
+
       const dailyLoginRecords = await DailyLogin.find({ userId: student.userId });
       const totalDailyLoginPoints = dailyLoginRecords.reduce((sum, record) => sum + (record.pointsAwarded || 10), 0);
-      
+
       const dynamicTotalPoints = totalGamePoints + userPoints + totalDailyLoginPoints;
-      
-      // Update student's total points
+
       const pointsChanged = student.totalPoints !== dynamicTotalPoints;
       student.totalPoints = dynamicTotalPoints;
-      
-      // Recalculate level
+
       const newLevel = await student.calculateLevel();
       const levelChanged = student.currentLevel !== newLevel;
       student.currentLevel = newLevel;
-      
-      // Get all active milestone badges
+
       const activeMilestoneBadges = await Badge.find({
         badgeType: 'Milestone',
         status: 'Active'
       }).sort({ pointsRequired: 1 });
-      
-      // Award eligible badges that student doesn't have
+
       let badgesAwarded = 0;
       for (const b of activeMilestoneBadges) {
         if (dynamicTotalPoints >= b.pointsRequired && !student.hasBadge(b._id)) {
           student.addBadge(b);
           await Badge.findByIdAndUpdate(b._id, { $inc: { earnedCount: 1 } });
-          
-          // DO NOT create notification during badge update - only during real-time point earning
           badgesAwarded++;
         }
       }
-      
-      // Remove badges that are now inactive or student no longer qualifies
+
       const badgesRemoved = student.badgesEarned.length;
       student.badgesEarned = student.badgesEarned.filter(badgeEntry => {
         const b = activeMilestoneBadges.find(bd => bd._id.toString() === badgeEntry.badgeId.toString());
         return b && dynamicTotalPoints >= b.pointsRequired;
       });
       const actualBadgesRemoved = badgesRemoved - student.badgesEarned.length;
-      
-      // Save if anything changed
+
       if (pointsChanged || levelChanged || badgesAwarded > 0 || actualBadgesRemoved > 0) {
         await student.save();
         updatedCount++;
         console.log(`✅ Updated ${user.username}: Points=${dynamicTotalPoints}, Level=${newLevel}, Awarded=${badgesAwarded}, Removed=${actualBadgesRemoved}`);
       }
     }
-    
+
     console.log(`✅ Total students updated: ${updatedCount}`);
 
     res.status(200).json({
@@ -371,48 +292,29 @@ export const updateBadge = async (req, res) => {
     });
   } catch (error) {
     console.error('Update badge error:', error);
-    
     if (error.name === 'ValidationError') {
       const errors = Object.values(error.errors).map(err => err.message);
-      return res.status(400).json({
-        success: false,
-        message: 'Validation failed',
-        errors
-      });
+      return res.status(400).json({ success: false, message: 'Validation failed', errors });
     }
-
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error'
-    });
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 
-// Admin: Delete badge (Permanent - removes from DB and updates all students)
+// Admin: Delete badge
 export const deleteBadge = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const badge = await Badge.findById(id);
     if (!badge) {
-      return res.status(404).json({
-        success: false,
-        message: 'Badge not found'
-      });
+      return res.status(404).json({ success: false, message: 'Badge not found' });
     }
 
-    // Permanently delete the badge from database
     await Badge.findByIdAndDelete(id);
 
-    // Remove this badge from ALL student progress records
-    const StudentProgress = (await import('../models/dushani-StudentProgress.js')).default;
     const allStudents = await StudentProgress.find();
-    
     for (const student of allStudents) {
-      // Filter out the deleted badge from badgesEarned array
-      student.badgesEarned = student.badgesEarned.filter(
-        b => b.badgeId.toString() !== id.toString()
-      );
+      student.badgesEarned = student.badgesEarned.filter(b => b.badgeId.toString() !== id.toString());
       await student.save();
     }
 
@@ -423,10 +325,7 @@ export const deleteBadge = async (req, res) => {
     });
   } catch (error) {
     console.error('Delete badge error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error'
-    });
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 
@@ -434,102 +333,78 @@ export const deleteBadge = async (req, res) => {
 export const getActiveBadges = async (req, res) => {
   try {
     const badges = await Badge.find({ status: 'Active' }).sort({ pointsRequired: 1 });
-    
-    res.status(200).json({
-      success: true,
-      count: badges.length,
-      badges
-    });
+    res.status(200).json({ success: true, count: badges.length, badges });
   } catch (error) {
     console.error('Get active badges error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error'
-    });
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 
-// Diagnostic: Manually check and award all badges to all students - POST /api/badges/diagnostic-and-award
+// Diagnostic: Manually check and award all badges
 export const diagnosticAndAwardBadges = async (req, res) => {
   try {
     console.log('🔍 Starting diagnostic badge check for all students...');
-    
-    const StudentProgress = (await import('../models/dushani-StudentProgress.js')).default;
-    const TrueFalseResult = (await import('../models/dilshara-TrueFalseResult.js')).default;
-    const QuizResult = (await import('../models/dilshara-QuizResult.js')).default;
-    const UserPoints = (await import('../models/amasha-userPoints.js')).default;
-    const DailyLogin = (await import('../models/dushani-points.js')).default;
-    const BadgeNotification = (await import('../models/dushani-BadgeNotification.js')).default;
-    const User = (await import('../models/dushani-User.js')).default;
-    
+
     const allStudents = await StudentProgress.find();
     const activeMilestoneBadges = await Badge.find({
       badgeType: 'Milestone',
       status: 'Active'
     }).sort({ pointsRequired: 1 });
-    
+
     console.log(`📊 Found ${allStudents.length} students and ${activeMilestoneBadges.length} active badges`);
-    
-    // Show current state BEFORE changes
+
     console.log('\n📋 CURRENT STATE:');
     for (const student of allStudents) {
       const user = await User.findById(student.userId);
       if (!user) continue;
       console.log(`   ${user.username}: ${student.badgesEarned.length} badges, ${student.totalPoints} points`);
     }
-    console.log('');
-    
+
     let totalBadgesAwarded = 0;
     let totalStudentsUpdated = 0;
     const details = [];
-    
+
     for (const student of allStudents) {
       const user = await User.findById(student.userId);
       if (!user) continue;
-      
-      // Calculate points from all sources
+
       const gameScores = await GameScore.find({ userId: user.username });
       const totalGamePoints = gameScores.reduce((sum, result) => sum + result.score, 0);
-      
+
       const userPointsRecord = await UserPoints.findOne({ userId: student.userId });
       const userPoints = userPointsRecord ? userPointsRecord.totalPoints : 0;
-      
+
       const dailyLoginRecords = await DailyLogin.find({ userId: student.userId });
       const totalDailyLoginPoints = dailyLoginRecords.reduce((sum, record) => sum + (record.pointsAwarded || 10), 0);
-      
+
       const dynamicTotalPoints = totalGamePoints + userPoints + totalDailyLoginPoints;
-      
-      // Update points
+
       const pointsChanged = student.totalPoints !== dynamicTotalPoints;
       student.totalPoints = dynamicTotalPoints;
-      
-      // Update level
+
       const newLevel = await student.calculateLevel();
       const levelChanged = student.currentLevel !== newLevel;
       student.currentLevel = newLevel;
-      
-      // Check badges
+
       let badgesAwarded = 0;
       const awardedBadges = [];
       for (const badge of activeMilestoneBadges) {
         if (dynamicTotalPoints >= badge.pointsRequired && !student.hasBadge(badge._id)) {
           student.addBadge(badge);
           await Badge.findByIdAndUpdate(badge._id, { $inc: { earnedCount: 1 } });
-          // DO NOT create notification during diagnostic - only during real-time point earning
           badgesAwarded++;
           totalBadgesAwarded++;
           awardedBadges.push(badge.badgeName);
         }
       }
-      
-      // Remove invalid badges
+
       const oldBadgeCount = student.badgesEarned.length;
       student.badgesEarned = student.badgesEarned.filter(badgeEntry => {
         const b = activeMilestoneBadges.find(bd => bd._id.toString() === badgeEntry.badgeId.toString());
         return b && dynamicTotalPoints >= b.pointsRequired;
       });
       const badgesRemoved = oldBadgeCount - student.badgesEarned.length;
-      
+
       if (pointsChanged || levelChanged || badgesAwarded > 0 || badgesRemoved > 0) {
         await student.save();
         totalStudentsUpdated++;
@@ -545,11 +420,11 @@ export const diagnosticAndAwardBadges = async (req, res) => {
         console.log(`✅ ${user.username}: ${dynamicTotalPoints} pts, Level ${newLevel}, Badges: ${oldBadgeCount} → ${student.badgesEarned.length}`);
       }
     }
-    
+
     console.log(`\n🎉 Diagnostic Complete:`);
     console.log(`   Students updated: ${totalStudentsUpdated}/${allStudents.length}`);
     console.log(`   Total badges awarded: ${totalBadgesAwarded}`);
-    
+
     res.status(200).json({
       success: true,
       message: `Diagnostic complete. Awarded ${totalBadgesAwarded} badges to ${totalStudentsUpdated} students`,
@@ -558,7 +433,6 @@ export const diagnosticAndAwardBadges = async (req, res) => {
       totalBadgesAwarded,
       details
     });
-    
   } catch (error) {
     console.error('Diagnostic badge award error:', error);
     res.status(500).json({
@@ -569,17 +443,14 @@ export const diagnosticAndAwardBadges = async (req, res) => {
   }
 };
 
-// Clear ALL badges from all students - POST /api/badges/clear-all-badges
+// Clear ALL badges from all students
 export const clearAllBadges = async (req, res) => {
   try {
     console.log('🗑️ Clearing ALL badges from all students...');
-    
-    const StudentProgress = (await import('../models/dushani-StudentProgress.js')).default;
-    const Badge = (await import('../models/dushani-Badge.js')).default;
-    
+
     const allStudents = await StudentProgress.find();
     let clearedCount = 0;
-    
+
     for (const student of allStudents) {
       if (student.badgesEarned.length > 0) {
         student.badgesEarned = [];
@@ -587,65 +458,50 @@ export const clearAllBadges = async (req, res) => {
         clearedCount++;
       }
     }
-    
-    // Reset all badge earnedCount to 0
+
     await Badge.updateMany({}, { earnedCount: 0 });
-    
+
     console.log(`✅ Cleared badges from ${clearedCount} students`);
-    
+
     res.status(200).json({
       success: true,
       message: `Cleared all badges from ${clearedCount} students`,
       studentsCleared: clearedCount
     });
-    
   } catch (error) {
     console.error('Clear all badges error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: 'Internal server error', error: error.message });
   }
 };
 
-// RECALCULATE ALL BADGES for all students - POST /api/badges/recalculate-all
+// RECALCULATE ALL BADGES for all students
 export const recalculateAllBadges = async (req, res) => {
   try {
     console.log('\n🔄 STARTING COMPLETE BADGE RECALCULATION...\n');
-    
-    const StudentProgress = (await import('../models/dushani-StudentProgress.js')).default;
-    const GameScore = (await import('../models/dilshara-GameScore.js')).default;
-    const UserPoints = (await import('../models/amasha-userPoints.js')).default;
-    const DailyLogin = (await import('../models/dushani-points.js')).default;
-    const BadgeNotification = (await import('../models/dushani-BadgeNotification.js')).default;
-    const User = (await import('../models/dushani-User.js')).default;
-    
-    // Get all students
+
     const allStudents = await StudentProgress.find();
     console.log(`📊 Found ${allStudents.length} students\n`);
-    
-    // Get all active milestone badges
+
     const activeMilestoneBadges = await Badge.find({
       badgeType: 'Milestone',
       status: 'Active'
     }).sort({ pointsRequired: 1 });
-    
+
     console.log(`🏆 Found ${activeMilestoneBadges.length} active milestone badges\n`);
-    
+
     let totalBadgesAwarded = 0;
     let totalBadgesRemoved = 0;
     let totalDuplicatesRemoved = 0;
     let studentsUpdated = 0;
     const details = [];
-    
+
     for (const student of allStudents) {
       const user = await User.findById(student.userId);
       if (!user) {
         console.log(`⚠️  Skipping student with missing user: ${student.userId}`);
         continue;
       }
-      
+
       // CLEANUP: Remove duplicate badges FIRST
       const uniqueBadgeIds = new Set();
       const badgesBeforeCleanup = student.badgesEarned.length;
@@ -653,67 +509,61 @@ export const recalculateAllBadges = async (req, res) => {
         const badgeIdStr = badgeEntry.badgeId.toString();
         if (uniqueBadgeIds.has(badgeIdStr)) {
           console.log(`  🗑️  ${user.username}: Removing DUPLICATE badge ${badgeEntry.badgeDetails?.badgeName || badgeIdStr}`);
-          return false; // Remove duplicate
+          return false;
         }
         uniqueBadgeIds.add(badgeIdStr);
-        return true; // Keep first occurrence
+        return true;
       });
       const duplicatesRemoved = badgesBeforeCleanup - student.badgesEarned.length;
       totalDuplicatesRemoved += duplicatesRemoved;
-      
+
       if (duplicatesRemoved > 0) {
         await student.save();
         console.log(`  ✅ ${user.username}: Removed ${duplicatesRemoved} duplicate badge(s)`);
       }
-      
-      // Calculate total points from ALL sources
+
       const gameScores = await GameScore.find({ userId: user.username });
       const totalGamePoints = gameScores.reduce((sum, result) => sum + result.score, 0);
-      
+
       const userPointsRecord = await UserPoints.findOne({ userId: student.userId });
       const userPoints = userPointsRecord ? userPointsRecord.totalPoints : 0;
-      
+
       const dailyLoginRecords = await DailyLogin.find({ userId: student.userId });
       const totalDailyLoginPoints = dailyLoginRecords.reduce((sum, record) => sum + (record.pointsAwarded || 10), 0);
-      
+
       const dynamicTotalPoints = totalGamePoints + userPoints + totalDailyLoginPoints;
-      
-      // Update student's points
+
       const pointsChanged = student.totalPoints !== dynamicTotalPoints;
       student.totalPoints = dynamicTotalPoints;
-      
-      // Recalculate level
+
       const newLevel = await student.calculateLevel();
       const levelChanged = student.currentLevel !== newLevel;
       student.currentLevel = newLevel;
-      
-      // STEP 1: Award eligible badges (NO DUPLICATES)
+
       let badgesAwarded = 0;
       const newBadges = [];
       for (const badge of activeMilestoneBadges) {
         const qualifies = dynamicTotalPoints >= badge.pointsRequired;
         const alreadyHas = student.hasBadge(badge._id);
-        
+
         console.log(`🔍 ${user.username}: Checking "${badge.badgeName}" (${badge.pointsRequired} pts): qualifies=${qualifies}, alreadyHas=${alreadyHas}`);
-        
-        // ONLY award if qualifies AND doesn't have it yet
+
         if (qualifies && !alreadyHas) {
           student.addBadge(badge);
           await Badge.findByIdAndUpdate(badge._id, { $inc: { earnedCount: 1 } });
-          
-          // CREATE notification ONLY if it doesn't already exist (PREVENT DUPLICATES)
+
           const existingNotification = await BadgeNotification.findOne({
             userId: student.userId,
             badgeId: badge._id
           });
-          
+
           if (!existingNotification) {
             await BadgeNotification.createNotification(student.userId, badge);
             console.log(`  🎬 Created notification for "${badge.badgeName}"`);
           } else {
             console.log(`  ⏭️  Notification already exists for "${badge.badgeName}" - skipping duplicate`);
           }
-          
+
           badgesAwarded++;
           totalBadgesAwarded++;
           newBadges.push(badge.badgeName);
@@ -722,8 +572,7 @@ export const recalculateAllBadges = async (req, res) => {
           console.log(`  ✅ ${user.username}: Already has "${badge.badgeName}" - skipping (NO DUPLICATE)`);
         }
       }
-      
-      // STEP 2: Remove invalid badges
+
       const badgesBefore = student.badgesEarned.length;
       student.badgesEarned = student.badgesEarned.filter(badgeEntry => {
         const badge = activeMilestoneBadges.find(b => b._id.toString() === badgeEntry.badgeId.toString());
@@ -731,12 +580,11 @@ export const recalculateAllBadges = async (req, res) => {
       });
       const badgesRemoved = badgesBefore - student.badgesEarned.length;
       totalBadgesRemoved += badgesRemoved;
-      
+
       if (badgesRemoved > 0) {
         console.log(`  ⚠️ ${user.username}: Removed ${badgesRemoved} badge(s) - no longer qualified`);
       }
-      
-      // Save if anything changed
+
       if (pointsChanged || levelChanged || badgesAwarded > 0 || badgesRemoved > 0 || duplicatesRemoved > 0) {
         await student.save();
         studentsUpdated++;
@@ -753,14 +601,14 @@ export const recalculateAllBadges = async (req, res) => {
         console.log(`  ✅ ${user.username}: ${dynamicTotalPoints} pts, Level ${newLevel}, ${student.badgesEarned.length} badges\n`);
       }
     }
-    
+
     console.log(`\n📊 RECALCULATION COMPLETE:`);
     console.log(`   Students processed: ${allStudents.length}`);
     console.log(`   Students updated: ${studentsUpdated}`);
     console.log(`   Badges awarded: ${totalBadgesAwarded}`);
     console.log(`   Badges removed: ${totalBadgesRemoved}`);
     console.log(`   Duplicates removed: ${totalDuplicatesRemoved}\n`);
-    
+
     res.status(200).json({
       success: true,
       message: `Recalculated badges for ${allStudents.length} students`,
@@ -771,13 +619,8 @@ export const recalculateAllBadges = async (req, res) => {
       duplicatesRemoved: totalDuplicatesRemoved,
       details
     });
-    
   } catch (error) {
     console.error('Recalculate all badges error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: 'Internal server error', error: error.message });
   }
 };
