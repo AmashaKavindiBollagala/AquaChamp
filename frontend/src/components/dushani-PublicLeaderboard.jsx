@@ -172,7 +172,8 @@ export default function PublicLeaderboard() {
   // Show authentication required message
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-violet-100 via-sky-50 to-emerald-100 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center relative overflow-hidden"
+           style={{ background: "linear-gradient(160deg,#C8E6FA 0%,#B2EDD8 35%,#FEE9BF 70%,#C8E6FA 100%)" }}>
         <div className="text-center space-y-6 max-w-md mx-4">
           <div className="text-7xl animate-bounce">🔒</div>
           <div className="space-y-3">
@@ -197,7 +198,8 @@ export default function PublicLeaderboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-violet-100 via-sky-50 to-emerald-100 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center relative overflow-hidden"
+           style={{ background: "linear-gradient(160deg,#C8E6FA 0%,#B2EDD8 35%,#FEE9BF 70%,#C8E6FA 100%)" }}>
         <div className="text-center space-y-3">
           <div className="text-5xl animate-bounce">🏆</div>
           <p className="text-lg font-semibold text-gray-700">Loading leaderboard...</p>
@@ -208,14 +210,15 @@ export default function PublicLeaderboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-violet-100 via-sky-50 to-emerald-100 relative overflow-x-hidden">
+    <div className="min-h-screen relative overflow-x-hidden"
+         style={{ background: "linear-gradient(160deg,#C8E6FA 0%,#B2EDD8 35%,#FEE9BF 70%,#C8E6FA 100%)" }}>
 
       {/* Decorative blobs */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute -top-24 -left-24 w-96 h-96 bg-violet-300/30 rounded-full blur-3xl" />
-        <div className="absolute top-1/3 -right-32 w-[28rem] h-[28rem] bg-sky-300/25 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-1/4 w-80 h-80 bg-emerald-300/25 rounded-full blur-3xl" />
-        <div className="absolute top-2/3 left-1/2 w-64 h-64 bg-amber-200/20 rounded-full blur-2xl" />
+        <div className="absolute -top-24 -left-24 w-96 h-96 bg-[#185FA5]/10 rounded-full blur-3xl" />
+        <div className="absolute top-1/3 -right-32 w-[28rem] h-[28rem] bg-[#1D9E75]/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-1/4 w-80 h-80 bg-[#EF9F27]/10 rounded-full blur-3xl" />
+        <div className="absolute top-2/3 left-1/2 w-64 h-64 bg-[#4FC3F7]/15 rounded-full blur-2xl" />
       </div>
 
       {/* Header
