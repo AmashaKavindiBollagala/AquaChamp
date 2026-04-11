@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 
 const API_BASE = "http://localhost:4000";
 
@@ -13,6 +13,36 @@ const TOPIC_LABELS = {
   "toilet-and-sanpracticesitation-practices": "Toilet & Sanitation Practices",
   "water-borne-diseases-and-prevention":      "Water-Borne Diseases & Prevention",
   "water-conservation-and-environment-care":  "Water Conservation & Environment Care",
+};
+
+// Mapping from possible slug variations to the correct topicId
+// This handles cases where the URL slug might differ from the database topicId
+const TOPIC_SLUG_MAP = {
+  // Standard slugs (pass through)
+  "safe-drinking-water": "safe-drinking-water",
+  "hand-washing-and-personal-hygiene": "hand-washing-and-personal-hygiene",
+  "toilet-and-sanpracticesitation-practices": "toilet-and-sanpracticesitation-practices",
+  "water-borne-diseases-and-prevention": "water-borne-diseases-and-prevention",
+  "water-conservation-and-environment-care": "water-conservation-and-environment-care",
+  // Variations that might be generated from topic titles
+  "handwashing-and-personal-hygiene": "hand-washing-and-personal-hygiene",
+  "handwashing-personal-hygiene": "hand-washing-and-personal-hygiene",
+  "toilet-and-sanitation-practices": "toilet-and-sanpracticesitation-practices",
+  "toilet-sanitation-practices": "toilet-and-sanpracticesitation-practices",
+  "water-borne-diseases-prevention": "water-borne-diseases-and-prevention",
+  "water-conservation-environment-care": "water-conservation-and-environment-care",
+};
+
+// Function to normalize topicId from URL to match database
+const normalizeTopicId = (slug) => {
+  if (!slug) return slug;
+  const lowerSlug = slug.toLowerCase();
+  // Check if we have a mapping for this slug
+  if (TOPIC_SLUG_MAP[lowerSlug]) return TOPIC_SLUG_MAP[lowerSlug];
+  // If it's a MongoDB ObjectId, pass it through (backend will handle it)
+  if (/^[a-f\d]{24}$/i.test(slug)) return slug;
+  // Otherwise return the original slug
+  return slug;
 };
 
 const TOPIC_EMOJIS = {
@@ -79,30 +109,136 @@ const GLOBAL_CSS = `
 export default function GameSelectionPage() {
   const { topicId } = useParams();
   const navigate    = useNavigate();
+  const location    = useLocation();
 
-  const token    = localStorage.getItem("userToken") || localStorage.getItem("superAdminToken");
-  const username = localStorage.getItem("username") || localStorage.getItem("adminUsername") || "Player";
+  const token =
+    localStorage.getItem("aquachamp_token") ||
+    localStorage.getItem("userToken") ||
+    localStorage.getItem("superAdminToken");
 
-  const [ageGroup,  setAgeGroup]  = useState(null);
+  // Get username from multiple possible localStorage keys (student login uses different keys)
+  // IMPORTANT: Use username (not firstName) as userId for game scores
+  const getUsername = () => {
+    // Try to get user object first (student login stores user object)
+    const userStr = localStorage.getItem("aquachamp_user") || localStorage.getItem("user");
+    if (userStr) {
+      try {
+        const userObj = JSON.parse(userStr);
+        // IMPORTANT: Use username first for game scores database
+        if (userObj.username) return userObj.username;
+        if (userObj.firstName) return userObj.firstName;
+        if (userObj.name) return userObj.name;
+      } catch {}
+    }
+    // Try individual keys - prioritize username
+    return (
+      localStorage.getItem("aquachamp_username") ||
+      localStorage.getItem("username") ||
+      localStorage.getItem("aquachamp_firstName") ||
+      localStorage.getItem("firstName") ||
+      localStorage.getItem("adminUsername") ||
+      "Player"
+    );
+  };
+  const username = getUsername();
+
+  // Get ageGroup from multiple sources (navigation state, localStorage, user object)
+  // FIX: Changed from "6-10" to "5-10" to match game database ageGroup
+  const getInitialAgeGroup = () => {
+    // From navigation state - but ONLY if explicitly set (not from completing lessons)
+    // We want users to select age group themselves
+    if (location.state?.ageGroup && !location.state?.fromLessons) {
+      console.log("🎮 Using ageGroup from navigation state:", location.state.ageGroup);
+      return location.state.ageGroup;
+    }
+    // From localStorage (stored by student dashboard) - only use if NOT coming from lessons
+    if (!location.state?.fromLessons) {
+      const storedAgeGroup = localStorage.getItem("aquachamp_ageGroup") || localStorage.getItem("ageGroup");
+      if (storedAgeGroup) {
+        // FIX: If stored as "6-10", convert to "5-10" to match games
+        if (storedAgeGroup === "6-10") return "5-10";
+        console.log("🎮 Using ageGroup from localStorage:", storedAgeGroup);
+        return storedAgeGroup;
+      }
+      // From user object
+      const userStr = localStorage.getItem("aquachamp_user") || localStorage.getItem("user");
+      if (userStr) {
+        try {
+          const userObj = JSON.parse(userStr);
+          const age = userObj.age;
+          if (age >= 5 && age <= 10) return "5-10";
+          if (age >= 11 && age <= 15) return "11-15";
+        } catch {}
+      }
+    }
+    // Return null to show age selection screen
+    return null;
+  };
+
+  // Check if user came from completing lessons
+  const fromLessons = location.state?.fromLessons || false;
+
+  // Auto-read ageGroup from navigation state (set by KaveeshaSubtopicLearn)
+  const [ageGroup,  setAgeGroup]  = useState(getInitialAgeGroup());
   const [progress,  setProgress]  = useState(null);
   const [games,     setGames]     = useState([]);
   const [loading,   setLoading]   = useState(false);
   const [error,     setError]     = useState("");
 
-  const topicLabel    = TOPIC_LABELS[topicId]    || topicId;
-  const topicEmoji    = TOPIC_EMOJIS[topicId]    || "🎮";
-  const topicGradient = TOPIC_GRADIENTS[topicId] || ["#ec4899","#f472b6"];
+  // Normalize the topicId from URL to match database topicId format
+  const normalizedTopicId = normalizeTopicId(topicId);
+  const topicLabel    = TOPIC_LABELS[normalizedTopicId]    || topicId;
+  const topicEmoji    = TOPIC_EMOJIS[normalizedTopicId]    || "🎮";
+  const topicGradient = TOPIC_GRADIENTS[normalizedTopicId] || ["#ec4899","#f472b6"];
 
   useEffect(() => {
     if (!ageGroup) return;
     fetchProgress();
     fetchGames();
-  }, [ageGroup]);
+  }, [ageGroup, normalizedTopicId]);
+
+  // FIX: Fetch user profile if not in localStorage to get correct username and ageGroup
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      // Check if we need to fetch or fix user data
+      const userStr = localStorage.getItem("aquachamp_user");
+      const storedAgeGroup = localStorage.getItem("aquachamp_ageGroup");
+      
+      // Need to fetch if: no user data OR ageGroup is still "6-10" (old incorrect value)
+      const needFetch = !userStr || storedAgeGroup === "6-10";
+      
+      if (needFetch && token) {
+        try {
+          const res = await fetch(`${API_BASE}/api/users/profile/me`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const userData = data.user;
+            localStorage.setItem("aquachamp_user", JSON.stringify(userData));
+            // IMPORTANT: Store username (not firstName) for game scores database
+            localStorage.setItem("aquachamp_username", userData.username || userData.firstName || "Player");
+            const userAgeGroup = (userData?.age >= 5 && userData?.age <= 10) ? "5-10" : "11-15";
+            localStorage.setItem("aquachamp_ageGroup", userAgeGroup);
+            // Update state if current is wrong
+            if (ageGroup !== userAgeGroup) {
+              setAgeGroup(userAgeGroup);
+            }
+          }
+        } catch (e) {
+          console.error("Failed to fetch user profile:", e);
+        }
+      }
+    };
+    fetchUserProfile();
+  }, [token]);
 
   const fetchProgress = async () => {
     try {
-      const res  = await fetch(`${API_BASE}/api/games/progress/${topicId}?userId=${username}`,
-        { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch(
+        `${API_BASE}/api/games/progress/${normalizedTopicId}?userId=${username}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
       setProgress(await res.json());
     } catch {
       setProgress({ easyDone: false, mediumDone: false, hardDone: false });
@@ -112,12 +248,26 @@ export default function GameSelectionPage() {
   const fetchGames = async () => {
     setLoading(true); setError("");
     try {
-      const res  = await fetch(`${API_BASE}/api/games?topicId=${topicId}&ageGroup=${ageGroup}&active=true`,
-        { headers: { Authorization: `Bearer ${token}` } });
+      const url = `${API_BASE}/api/games?topicId=${normalizedTopicId}&ageGroup=${ageGroup}`;
+      console.log("🎮 Fetching games from:", url);
+      console.log("   normalizedTopicId:", normalizedTopicId);
+      console.log("   ageGroup:", ageGroup);
+      const res  = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();
-      setGames(data.games || []);
-    } catch { setError("Could not load games. Please try again."); }
-    finally  { setLoading(false); }
+      console.log("🎮 Games response:", data);
+      // Handle both { games: [] } and plain array responses
+      const list = Array.isArray(data) ? data : (data.games || []);
+      console.log("🎮 Games list:", list);
+      setGames(list);
+      if (list.length === 0) {
+        setError("No games found for this topic and age group. Please try a different topic or age group.");
+      }
+    } catch (err) {
+      console.error("🎮 Error fetching games:", err);
+      setError("Could not load games. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const isUnlocked = (diff) => {
@@ -127,17 +277,39 @@ export default function GameSelectionPage() {
     if (diff === "hard")   return progress.mediumDone;
     return false;
   };
+
   const isDone = (diff) => {
     if (!progress) return false;
     return progress[`${diff}Done`] || false;
   };
+
   const getGameForDiff = (diff) => games.find(g => g.difficulty === diff);
 
   const handlePlay = (diff) => {
-    if (!isUnlocked(diff)) return;
+    console.log('🎮 handlePlay called for:', diff);
+    console.log('   isUnlocked:', isUnlocked(diff));
+    console.log('   games:', games);
+    console.log('   game for diff:', getGameForDiff(diff));
+    
+    if (!isUnlocked(diff)) {
+      console.log('   ❌ Not unlocked');
+      return;
+    }
     const game = getGameForDiff(diff);
-    if (!game) { setError(`No ${diff} game found for this topic and age group.`); return; }
-    navigate(`/games/topic/${game.topicId}`);
+    if (!game) { 
+      console.log('   ❌ No game found');
+      setError(`No ${diff} game found for this topic and age group. Please contact your teacher or try another topic.`); 
+      return; 
+    }
+    console.log('   ✅ Navigating to game:', game._id);
+    // Navigate to the game play screen with the game ID
+    navigate(`/games/play/${game._id}`, {
+      state: {
+        ageGroup,
+        topicId: normalizedTopicId,
+        userId: username,
+      },
+    });
   };
 
   // ── AGE GROUP SCREEN ──────────────────────────────────────────────────────
@@ -229,11 +401,19 @@ export default function GameSelectionPage() {
         borderBottom:"3px solid #e5e7eb",
         display:"flex",alignItems:"center",gap:14,
       }}>
+        {/* Go Back to Lessons button */}
+        <button onClick={() => navigate('/student/dashboard')} style={{
+          padding:"8px 16px",background:"linear-gradient(135deg,#ec4899,#f472b6)",
+          border:"none",borderRadius:12,color:"#fff",
+          fontSize:13,cursor:"pointer",fontFamily:"'Nunito',sans-serif",fontWeight:800,
+          boxShadow:"0 2px 8px rgba(236,72,153,0.3)",
+        }}>📚 Lessons</button>
+        
         <button onClick={() => setAgeGroup(null)} style={{
           padding:"8px 16px",background:"#f3f4f6",
           border:"2px solid #d1d5db",borderRadius:12,color:"#374151",
           fontSize:13,cursor:"pointer",fontFamily:"'Nunito',sans-serif",fontWeight:800,
-        }}>← Back</button>
+        }}>← Age</button>
 
         <div style={{ flex:1 }}>
           <div style={{
@@ -241,7 +421,7 @@ export default function GameSelectionPage() {
             color: topicGradient[0],
           }}>{topicEmoji} {topicLabel}</div>
           <div style={{ fontSize:11,color:"#9ca3af",fontFamily:"'Nunito',sans-serif" }}>
-            Age {ageGroup} · Playing as <strong style={{ color:"#374151" }}>{username}</strong>
+            Age {ageGroup || "5-10"} · Playing as <strong style={{ color:"#374151" }}>{username}</strong>
           </div>
         </div>
 
@@ -428,8 +608,8 @@ export default function GameSelectionPage() {
 
             <div style={{ display:"flex",gap:12 }}>
               {["easy","medium","hard"].map(d => {
-                const cfg = DIFF_CONFIG[d];
-                const done = isDone(d);
+                const cfg      = DIFF_CONFIG[d];
+                const done     = isDone(d);
                 const unlocked = isUnlocked(d);
                 return (
                   <div key={d} style={{

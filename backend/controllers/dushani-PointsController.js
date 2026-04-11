@@ -2,7 +2,7 @@ import DailyLogin from '../models/dushani-points.js';
 import StudentProgress from '../models/dushani-StudentProgress.js';
 import User from '../models/dushani-User.js';
 import UserPoints from '../models/amasha-userPoints.js';
-import GameScore from '../models/dilshara-GameScore.js';
+import { GameScore } from '../models/dilshara-GameScore.js';
 import Game from '../models/dilshara-Game.js';
 import mongoose from 'mongoose';
 

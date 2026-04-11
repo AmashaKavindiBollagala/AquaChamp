@@ -19,11 +19,11 @@ export default function KaveeshaTopicDetail() {
   const [loading, setLoading] = useState(true);
   const [subtopicQuizMap, setSubtopicQuizMap] = useState({});
   const resolvedAgeGroup =
-    ageGroup || (user?.age >= 5 && user?.age <= 10 ? "6-10" : "11-15");
+    ageGroup || (user?.age >= 5 && user?.age <= 10 ? "5-10" : "11-15");
   const effectiveUserIdRaw = userId || user?.id || user?._id;
   const effectiveUserId =
     effectiveUserIdRaw != null ? String(effectiveUserIdRaw) : undefined;
-  const isYoung = resolvedAgeGroup === "6-10";
+  const isYoung = resolvedAgeGroup === "5-10" || resolvedAgeGroup === "6-10";
 
   useEffect(() => {
     const token =
@@ -61,27 +61,61 @@ export default function KaveeshaTopicDetail() {
   const fetchSubtopics = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API}/api/subtopics`, {
-        params: { topicId, ageGroup: resolvedAgeGroup },
+      // FIX: Query for both "5-10" AND "6-10" since database might have either
+      const [res5to10, res6to10] = await Promise.all([
+        axios.get(`${API}/api/subtopics`, {
+          params: { topicId, ageGroup: "5-10" },
+        }),
+        axios.get(`${API}/api/subtopics`, {
+          params: { topicId, ageGroup: "6-10" },
+        }),
+      ]);
+      
+      // Merge subtopics from both age group values
+      const subs5to10 = Array.isArray(res5to10.data)
+        ? res5to10.data
+        : res5to10.data?.subtopics || [];
+      const subs6to10 = Array.isArray(res6to10.data)
+        ? res6to10.data
+        : res6to10.data?.subtopics || [];
+      
+      // Combine and deduplicate by _id
+      const subsMap = new Map();
+      [...subs5to10, ...subs6to10].forEach(s => {
+        if (s._id) subsMap.set(String(s._id), s);
       });
-      const subs = Array.isArray(res.data)
-        ? res.data
-        : res.data?.subtopics || [];
+      const subs = Array.from(subsMap.values());
+      
+      console.log('📋 Fetched subtopics for topic:', { '5-10': subs5to10.length, '6-10': subs6to10.length, total: subs.length });
+      
       const sorted = [...subs].sort((a, b) => (a.order || 0) - (b.order || 0));
       setSubtopics(sorted);
 
       // Check quiz status for each subtopic
+      // FIX: Check for mini quiz with both "5-10" and "6-10" age groups
+      // since database might have either
       const quizMap = {};
       await Promise.all(
         sorted.map(async (sub) => {
-          try {
-            const quizRes = await axios.get(`${API}/api/kaveesha-miniquiz`, {
-              params: { subtopicId: sub._id, ageGroup: sub.ageGroup || resolvedAgeGroup },
-            });
-            quizMap[sub._id] = Array.isArray(quizRes.data?.questions) && quizRes.data.questions.length > 0;
-          } catch {
-            quizMap[sub._id] = false;
+          // Try "5-10" first, then "6-10" if not found
+          const ageGroupsToTry = ["5-10", "6-10"];
+          let hasQuiz = false;
+          
+          for (const ag of ageGroupsToTry) {
+            try {
+              const quizRes = await axios.get(`${API}/api/kaveesha-miniquiz`, {
+                params: { subtopicId: sub._id, ageGroup: ag },
+              });
+              if (Array.isArray(quizRes.data?.questions) && quizRes.data.questions.length > 0) {
+                hasQuiz = true;
+                break;
+              }
+            } catch {
+              // Continue to try next age group
+            }
           }
+          
+          quizMap[sub._id] = hasQuiz;
         })
       );
       setSubtopicQuizMap(quizMap);

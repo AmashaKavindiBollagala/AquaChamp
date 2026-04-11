@@ -1,7 +1,8 @@
 import Game      from '../models/dilshara-Game.js';
-import GameScore from '../models/dilshara-GameScore.js';
+import { GameScore, TopicCompletion } from '../models/dilshara-GameScore.js';
 import asyncHandler from 'express-async-handler';
 import axios from 'axios';
+import Topic from '../models/kaveesha-topicModel.js';
 
 // ─── Topic ID → display name map ──────────────────────────────────────────────
 const TOPIC_MAP = {
@@ -15,13 +16,13 @@ const TOPIC_MAP = {
 // ─── CREATE GAME ──────────────────────────────────────────────────────────────
 export const createGame = asyncHandler(async (req, res) => {
   const {
-  title, description, topicId, lessonTopic,
-  ageGroup, difficulty, questions,
-  pointsPerQuestion, timeLimit, passMark,
-  gameType, subType, createdBy,
-} = req.body;
+    title, description, topicId, lessonTopic,
+    ageGroup, difficulty, questions,
+    pointsPerQuestion, timeLimit, passMark,
+    gameType, subType, createdBy,
+  } = req.body;
 
-const resolvedTopic = TOPIC_MAP[topicId];
+  const resolvedTopic = TOPIC_MAP[topicId];
   if (!resolvedTopic) return res.status(400).json({ message: 'Valid topic is required' });
   if (!title?.trim()) return res.status(400).json({ message: 'Title is required' });
 
@@ -65,17 +66,124 @@ const resolvedTopic = TOPIC_MAP[topicId];
 });
 
 // ─── GET ALL GAMES ────────────────────────────────────────────────────────────
+// Flexible matching: searches by topicId AND lessonTopic so DB records with
+// mismatched fields are still found correctly.
+// Also handles MongoDB ObjectId as topicId by looking up the topic first.
 export const getAllGames = asyncHandler(async (req, res) => {
   const { topicId, ageGroup, difficulty, gameType, subType } = req.query;
+  
+  console.log('🎮 getAllGames called with:', { topicId, ageGroup, difficulty, gameType, subType });
+  
   const filter = { active: true };
 
-  if (topicId)    filter.topicId    = topicId;
+  if (topicId) {
+    // Check if topicId is a MongoDB ObjectId (24 char hex string)
+    const isObjectId = /^[a-f\d]{24}$/i.test(topicId);
+    
+    let labelForId = TOPIC_MAP[topicId];
+    console.log('🎮 topicId:', topicId, 'isObjectId:', isObjectId, 'labelForId:', labelForId);
+    
+    // If it's an ObjectId and not in TOPIC_MAP, try to look up the topic
+    if (isObjectId && !labelForId) {
+      try {
+        const topic = await Topic.findById(topicId);
+        console.log('🎮 Found topic:', topic?.title);
+        if (topic?.title) {
+          // Extract the topic name from title like "💧 1. Safe Drinking Water"
+          const topicName = topic.title
+            .replace(/[^a-zA-Z0-9\s]/g, '')
+            .replace(/^\d+\s*/, '')
+            .trim();
+          
+          console.log('🎮 Extracted topicName:', topicName);
+          
+          // Find the matching key in TOPIC_MAP
+          const norm = (str = '') =>
+            str.toLowerCase().replace(/[^a-z0-9]/g, ' ').replace(/\s+/g, ' ').trim();
+          
+          for (const [key, label] of Object.entries(TOPIC_MAP)) {
+            if (norm(label) === norm(topicName)) {
+              labelForId = label;
+              console.log('🎮 Matched to labelForId:', labelForId);
+              break;
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Error looking up topic:', e.message);
+      }
+    }
+
+    // Normalise: strip punctuation, lowercase, collapse spaces
+    const norm = (str = '') =>
+      str.toLowerCase().replace(/[^a-z0-9]/g, ' ').replace(/\s+/g, ' ').trim();
+
+    const normTarget = norm(labelForId || topicId);
+    console.log('🎮 normTarget:', normTarget);
+
+    // Every topicId whose label normalises to the same string
+    const relatedIds = Object.entries(TOPIC_MAP)
+      .filter(([, label]) => norm(label) === normTarget)
+      .map(([id]) => id);
+
+    // Every lessonTopic label that corresponds to a related topicId
+    const relatedLabels = relatedIds.map(id => TOPIC_MAP[id]).filter(Boolean);
+    
+    console.log('🎮 relatedIds:', relatedIds);
+    console.log('🎮 relatedLabels:', relatedLabels);
+
+    // Build flexible $or query that also matches partial strings
+    // This handles cases where topicId might be stored differently
+    const topicIdQueries = [
+      { topicId: { $in: [...new Set([topicId, ...relatedIds])] } },
+      // Also try matching by ObjectId if the topicId looks like it could be one
+      ...(isObjectId ? [{ topicId: topicId }] : []),
+    ];
+    
+    // Add lessonTopic matching
+    const lessonTopicQueries = relatedLabels.length 
+      ? [{ lessonTopic: { $in: relatedLabels } }]
+      : [];
+    
+    // Also try to match lessonTopic with normalized strings
+    const normalizedQueries = [];
+    for (const label of relatedLabels) {
+      normalizedQueries.push({ lessonTopic: { $regex: label, $options: 'i' } });
+      // Also match partial: "Safe Drinking Water" matches "Safe Drinking" etc.
+      const words = label.split(' ');
+      if (words.length > 1) {
+        normalizedQueries.push({ lessonTopic: { $regex: words.slice(0, 2).join(' '), $options: 'i' } });
+      }
+    }
+
+    filter.$or = [
+      ...topicIdQueries,
+      ...lessonTopicQueries,
+      ...normalizedQueries,
+    ];
+    
+    console.log('🎮 filter.$or:', JSON.stringify(filter.$or, null, 2));
+  }
+
   if (ageGroup)   filter.ageGroup   = ageGroup;
   if (difficulty) filter.difficulty = difficulty;
   if (gameType)   filter.gameType   = gameType;
   if (subType)    filter.subType    = subType;
 
-  const games = await Game.find(filter).sort({ createdAt: -1 });
+  console.log('🎮 Final filter:', JSON.stringify(filter, null, 2));
+
+  let games = await Game.find(filter).sort({ createdAt: -1 });
+  
+  // If no games found with topicId filter, try a broader search
+  if (games.length === 0 && topicId && ageGroup) {
+    console.log('🎮 No games found, trying broader search without topicId...');
+    const broaderFilter = { active: true, ageGroup };
+    if (difficulty) broaderFilter.difficulty = difficulty;
+    games = await Game.find(broaderFilter).sort({ createdAt: -1 });
+    console.log('🎮 Broader search found:', games.length, 'games');
+  }
+  
+  console.log('🎮 Found games:', games.length);
   res.status(200).json({ count: games.length, games });
 });
 
@@ -91,19 +199,19 @@ export const updateGame = asyncHandler(async (req, res) => {
   const game = await Game.findById(req.params.id);
   if (!game) return res.status(404).json({ message: 'Game not found' });
 
-const fields = [
-  'title','description','topicId','ageGroup',
-  'difficulty','questions','pointsPerQuestion','timeLimit',
-  'passMark','gameType','subType','active',
-];
-fields.forEach(f => { if (req.body[f] !== undefined) game[f] = req.body[f]; });
+  const fields = [
+    'title','description','topicId','ageGroup',
+    'difficulty','questions','pointsPerQuestion','timeLimit',
+    'passMark','gameType','subType','active',
+  ];
+  fields.forEach(f => { if (req.body[f] !== undefined) game[f] = req.body[f]; });
 
-// Always resolve lessonTopic from TOPIC_MAP so it matches the enum
-if (req.body.topicId && TOPIC_MAP[req.body.topicId]) {
-  game.lessonTopic = TOPIC_MAP[req.body.topicId];
-}
+  // Always resolve lessonTopic from TOPIC_MAP so it matches the enum
+  if (req.body.topicId && TOPIC_MAP[req.body.topicId]) {
+    game.lessonTopic = TOPIC_MAP[req.body.topicId];
+  }
 
-await game.save();
+  await game.save();
   res.status(200).json({ message: 'Game updated successfully', game });
 });
 
@@ -156,14 +264,12 @@ export const submitGameScore = asyncHandler(async (req, res) => {
   if (!game)        return res.status(404).json({ message: 'Game not found' });
   if (!game.active) return res.status(400).json({ message: 'This game is inactive' });
 
-  // ✅ FIX 1: Calculate maxScore correctly per game type
-  // Old code used game.totalPoints which is always 0 for quiz games
+  // Calculate maxScore correctly per game type
   const NON_QUIZ = ['germcatcher', 'waterdrop', 'memory'];
   const maxScore = NON_QUIZ.includes(game.subType)
     ? 100
     : (game.questions.length * (game.pointsPerQuestion || 10)) || 100;
 
-  // ✅ FIX 2: percentage and passed were missing — caused ReferenceError crash
   const percentage = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0;
   const passed     = percentage >= (game.passMark || 60);
 
@@ -174,12 +280,41 @@ export const submitGameScore = asyncHandler(async (req, res) => {
     maxScore,
     percentage,
     passed,
-    // ✅ FIX 3: topicId and difficulty now saved from the game document
-    // so getTopicProgress can correctly track which levels the user passed
     topicId:    game.topicId    || '',
     difficulty: game.difficulty || 'easy',
     playedAt:   new Date(),
   });
+
+  // FIX: use req.body.topicId first, fall back to game.topicId
+  // (previously used undefined variable `topicId` which caused a crash)
+  const resolvedTopicId = req.body.topicId || game.topicId;
+
+  const allScores = await GameScore.find({ userId, topicId: resolvedTopicId });
+
+  const easyPassed   = allScores.some(s => s.difficulty === 'easy'   && s.passed);
+  const mediumPassed = allScores.some(s => s.difficulty === 'medium' && s.passed);
+  const hardPassed   = allScores.some(s => s.difficulty === 'hard'   && s.passed);
+  const allGamesDone = easyPassed && mediumPassed && hardPassed;
+
+  if (allGamesDone) {
+    await TopicCompletion.findOneAndUpdate(
+      { userId, topicId: resolvedTopicId },
+      {
+        userId,
+        topicId:              resolvedTopicId,
+        topicLabel:           game.lessonTopic,
+        ageGroup:             game.ageGroup,
+        easyPassed,
+        mediumPassed,
+        hardPassed,
+        lessonsCompleted:     true,
+        completionPercentage: 100,
+        completedAt:          new Date(),
+        badgeIssued:          false,
+      },
+      { upsert: true, new: true }
+    );
+  }
 
   res.status(201).json({
     message: 'Score submitted successfully',
@@ -229,18 +364,93 @@ export const getScoresByUserId = asyncHandler(async (req, res) => {
 });
 
 // ─── GET TOPIC PROGRESS FOR A USER ───────────────────────────────────────────
-// GET /api/games/progress/:topicId?userId=Dilsha
+// GET /api/games/progress/:topicId?userId=xxx
 export const getTopicProgress = asyncHandler(async (req, res) => {
   const { topicId } = req.params;
   const userId      = req.query.userId || req.user;
 
+  console.log('🎮 getTopicProgress called with topicId:', topicId, 'userId:', userId);
+
+  // Build a list of possible topicIds to search for
+  // This handles the case where the topicId in URL doesn't match what's stored in GameScore
+  const possibleTopicIds = [topicId];
+  
+  // Add related IDs from TOPIC_MAP
+  const label = TOPIC_MAP[topicId];
+  if (label) {
+    // Find all keys in TOPIC_MAP that have the same normalized label
+    const norm = (str = '') =>
+      str.toLowerCase().replace(/[^a-z0-9]/g, ' ').replace(/\s+/g, ' ').trim();
+    const normLabel = norm(label);
+    
+    for (const [key, val] of Object.entries(TOPIC_MAP)) {
+      if (norm(val) === normLabel && !possibleTopicIds.includes(key)) {
+        possibleTopicIds.push(key);
+      }
+    }
+    
+    // Also add the label itself (lessonTopic)
+    possibleTopicIds.push(label);
+  }
+  
+  // Also check if topicId is a MongoDB ObjectId and look up related games
+  const isObjectId = /^[a-f\d]{24}$/i.test(topicId);
+  if (isObjectId) {
+    try {
+      const topic = await Topic.findById(topicId);
+      if (topic?.title) {
+        const topicName = topic.title
+          .replace(/[^a-zA-Z0-9\s]/g, '')
+          .replace(/^\d+\s*/, '')
+          .trim();
+        
+        const norm = (str = '') =>
+          str.toLowerCase().replace(/[^a-z0-9]/g, ' ').replace(/\s+/g, ' ').trim();
+        
+        for (const [key, val] of Object.entries(TOPIC_MAP)) {
+          if (norm(val) === norm(topicName) && !possibleTopicIds.includes(key)) {
+            possibleTopicIds.push(key);
+            possibleTopicIds.push(val);
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Error looking up topic for progress:', e.message);
+    }
+  }
+  
+  console.log('🎮 Searching for scores with topicIds:', possibleTopicIds);
+
+  // Search for passed scores matching any of the possible topicIds
   const passedScores = await GameScore.find({
     userId,
-    topicId,
-    passed: true,
+    $or: [
+      { topicId: { $in: possibleTopicIds } },
+      // Also search by gameId and lookup the game's lessonTopic
+    ],
+    passed: true
   });
+  
+  // Also search by games that have matching lessonTopic
+  const games = await Game.find({
+    $or: [
+      { topicId: { $in: possibleTopicIds } },
+      { lessonTopic: { $in: possibleTopicIds.filter(id => TOPIC_MAP[id] || id.includes(' ')) } },
+    ],
+    active: true
+  });
+  
+  const gameIds = games.map(g => g._id);
+  const additionalScores = await GameScore.find({
+    userId,
+    gameId: { $in: gameIds },
+    passed: true
+  });
+  
+  const allPassedScores = [...passedScores, ...additionalScores];
+  const passedDifficulties = [...new Set(allPassedScores.map(s => s.difficulty))];
 
-  const passedDifficulties = [...new Set(passedScores.map(s => s.difficulty))];
+  console.log('🎮 Found passed difficulties:', passedDifficulties);
 
   res.status(200).json({
     userId,
@@ -261,15 +471,50 @@ export const deleteGameScore = asyncHandler(async (req, res) => {
   res.status(200).json({ message: 'Score deleted' });
 });
 
+// ─── GET TOPIC COMPLETIONS ────────────────────────────────────────────────────
+// GET /api/games/completions — Progress Manager reads this
+export const getTopicCompletions = async (req, res) => {
+  try {
+    const filter = { completionPercentage: 100 };
+    if (req.query.badgeIssued !== undefined)
+      filter.badgeIssued = req.query.badgeIssued === 'true';
+    if (req.query.userId)
+      filter.userId = req.query.userId;
+    if (req.query.topicId)
+      filter.topicId = req.query.topicId;
+
+    const completions = await TopicCompletion.find(filter).sort({ completedAt: -1 });
+    res.json(completions);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// ─── MARK BADGE ISSUED ────────────────────────────────────────────────────────
+// PATCH /api/games/completions/:id/badge — Progress Manager marks badge issued
+export const markBadgeIssued = async (req, res) => {
+  try {
+    const updated = await TopicCompletion.findByIdAndUpdate(
+      req.params.id,
+      { badgeIssued: true },
+      { new: true }
+    );
+    if (!updated) return res.status(404).json({ message: 'Record not found' });
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 // ─── HTML entity decoder ──────────────────────────────────────────────────────
 function decodeHtmlEntities(str) {
   return str
-    .replace(/&amp;/g,   '&')
-    .replace(/&lt;/g,    '<')
-    .replace(/&gt;/g,    '>')
-    .replace(/&quot;/g,  '"')
-    .replace(/&#039;/g,  "'")
-    .replace(/&ldquo;/g, '"')
-    .replace(/&rdquo;/g, '"')
-    .replace(/&hellip;/g,'...');
+    .replace(/&amp;/g,    '&')
+    .replace(/&lt;/g,     '<')
+    .replace(/&gt;/g,     '>')
+    .replace(/&quot;/g,   '"')
+    .replace(/&#039;/g,   "'")
+    .replace(/&ldquo;/g,  '"')
+    .replace(/&rdquo;/g,  '"')
+    .replace(/&hellip;/g, '...');
 }

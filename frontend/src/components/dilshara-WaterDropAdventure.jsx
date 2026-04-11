@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  TOPIC WORD-BANK
@@ -76,7 +77,18 @@ const OPTION_TEXT   = ["#92400e","#9d174d","#075985","#065f46"];
 const OPTION_DROPS  = ["💧","🌊","⛲","🏞️"];
 
 // ─────────────────────────────────────────────────────────────────────────────
-export default function WaterDropAdventure({ game, username, onFinish }) {
+export default function WaterDropAdventure({ game, username, onFinish, onNavigateBack }) {
+  const navigate = useNavigate();
+  
+  // Navigate back to game selection page
+  const handleGoBack = () => {
+    if (onNavigateBack) {
+      onNavigateBack();
+    } else {
+      navigate(-1);
+    }
+  };
+  
   const questionCount = game.questions?.length > 0
     ? game.questions.length
     : (game.difficulty === "hard" ? 10 : game.difficulty === "medium" ? 8 : 5);
@@ -155,6 +167,16 @@ export default function WaterDropAdventure({ game, username, onFinish }) {
     <div style={fullScreen}>
       <link rel="stylesheet" href={FONT_LINK} />
       <style>{CSS}</style>
+      
+      {/* Go Back button */}
+      <button onClick={handleGoBack} style={{
+        position: "absolute", top: 16, left: 16,
+        padding: "10px 20px", background: "linear-gradient(135deg,#ec4899,#f472b6)",
+        border: "none", borderRadius: 14, color: "#fff",
+        fontSize: 14, cursor: "pointer", fontFamily: "'Nunito',sans-serif", fontWeight: 800,
+        boxShadow: "0 4px 12px rgba(236,72,153,0.3)", zIndex: 10,
+      }}>← Back to Games</button>
+      
       <div style={card}>
         <div style={{ fontSize: 70, marginBottom: 8, animation: "wfloat 2s ease-in-out infinite" }}>💧</div>
         <img src={AVATAR_URL(username)} alt="avatar" style={ava(100)} />
@@ -239,6 +261,14 @@ export default function WaterDropAdventure({ game, username, onFinish }) {
           animation: timeLeft <= 5 ? "pulse 0.5s infinite" : "none",
           boxShadow: `0 4px 12px ${timeLeft <= 8 ? "#dc262688" : "#0ea5e988"}`,
         }}>{timeLeft}</div>
+        
+        {/* Pause button */}
+        <button onClick={handleGoBack} style={{
+          marginLeft: 8, padding: "8px 14px", background: "linear-gradient(135deg,#f59e0b,#fbbf24)",
+          border: "none", borderRadius: 10, color: "#fff", fontSize: 12,
+          cursor: "pointer", fontFamily: "'Nunito',sans-serif", fontWeight: 800,
+          boxShadow: "0 2px 8px rgba(245,158,11,0.3)",
+        }}>⏸ Pause</button>
       </div>
 
       {/* River path — bright sky-blue theme */}

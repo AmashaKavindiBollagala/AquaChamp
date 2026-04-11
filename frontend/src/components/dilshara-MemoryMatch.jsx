@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  CARD LIBRARY
@@ -80,7 +81,18 @@ const AVATAR_URL = (seed) =>
 const FONT_LINK = "https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;800;900&display=swap";
 
 // ─────────────────────────────────────────────────────────────────────────────
-export default function MemoryMatch({ game, username, onFinish }) {
+export default function MemoryMatch({ game, username, onFinish, onNavigateBack }) {
+  const navigate = useNavigate();
+  
+  // Navigate back to game selection page
+  const handleGoBack = () => {
+    if (onNavigateBack) {
+      onNavigateBack();
+    } else {
+      navigate(-1);
+    }
+  };
+  
   const pairCount = game.difficulty === "hard" ? 8 : game.difficulty === "medium" ? 6 : 4;
   const topicId   = game.topicId || "default";
 
@@ -157,6 +169,16 @@ export default function MemoryMatch({ game, username, onFinish }) {
     <div style={screen}>
       <link rel="stylesheet" href={FONT_LINK} />
       <style>{CSS}</style>
+      
+      {/* Go Back button */}
+      <button onClick={handleGoBack} style={{
+        position: "absolute", top: 16, left: 16,
+        padding: "10px 20px", background: "linear-gradient(135deg,#ec4899,#f472b6)",
+        border: "none", borderRadius: 14, color: "#fff",
+        fontSize: 14, cursor: "pointer", fontFamily: "'Nunito',sans-serif", fontWeight: 800,
+        boxShadow: "0 4px 12px rgba(236,72,153,0.3)", zIndex: 10,
+      }}>← Back to Games</button>
+      
       <div style={cardS}>
         <div style={{ fontSize: 60, animation: "mspin 4s linear infinite" }}>🃏</div>
         <img src={AVATAR_URL(username)} alt="avatar" style={ava(100)} />
@@ -225,6 +247,13 @@ export default function MemoryMatch({ game, username, onFinish }) {
         <div style={{ background: "#f3f4f6", border: "2px solid #e5e7eb", borderRadius: 10, padding: "4px 10px", color: "#374151", fontSize: 12, fontWeight: 800 }}>
           {matched.length}/{totalPairs} pairs
         </div>
+        {/* Pause button */}
+        <button onClick={handleGoBack} style={{
+          padding: "6px 12px", background: "linear-gradient(135deg,#f59e0b,#fbbf24)",
+          border: "none", borderRadius: 10, color: "#fff", fontSize: 12,
+          cursor: "pointer", fontFamily: "'Nunito',sans-serif", fontWeight: 800,
+          boxShadow: "0 2px 8px rgba(245,158,11,0.3)",
+        }}>⏸ Pause</button>
       </div>
 
       {/* Stats bar */}

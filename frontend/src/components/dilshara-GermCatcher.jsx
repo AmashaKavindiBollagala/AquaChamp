@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  TOPIC WORD-BANK
@@ -130,7 +131,18 @@ function FloatingGerm({ option, index, onClick, state, position }) {
 // ─────────────────────────────────────────────────────────────────────────────
 //  MAIN COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
-export default function GermCatcher({ game, username, onFinish }) {
+export default function GermCatcher({ game, username, onFinish, onNavigateBack }) {
+  const navigate = useNavigate();
+  
+  // Navigate back to game selection page
+  const handleGoBack = () => {
+    if (onNavigateBack) {
+      onNavigateBack();
+    } else {
+      navigate(-1);
+    }
+  };
+  
   const questionCount = game.questions?.length > 0
     ? game.questions.length
     : (game.difficulty === "hard" ? 10 : game.difficulty === "medium" ? 8 : 5);
@@ -208,6 +220,16 @@ export default function GermCatcher({ game, username, onFinish }) {
     <div style={styles.screen}>
       <link rel="stylesheet" href={FONT_LINK} />
       <style>{CSS_ANIMATIONS}</style>
+      
+      {/* Go Back button in top-left corner */}
+      <button onClick={handleGoBack} style={{
+        position: "absolute", top: 16, left: 16,
+        padding: "10px 20px", background: "linear-gradient(135deg,#ec4899,#f472b6)",
+        border: "none", borderRadius: 14, color: "#fff",
+        fontSize: 14, cursor: "pointer", fontFamily: "'Nunito',sans-serif", fontWeight: 800,
+        boxShadow: "0 4px 12px rgba(236,72,153,0.3)", zIndex: 10,
+      }}>← Back to Games</button>
+      
       <div style={styles.card}>
         <img src={AVATAR_URL(username)} alt="avatar" style={styles.avatar(110)} />
         <h1 style={{ fontSize: 34, color: "#111827", margin: "14px 0 6px", fontFamily: "'Fredoka One', cursive" }}>
@@ -291,6 +313,14 @@ export default function GermCatcher({ game, username, onFinish }) {
           animation: timeLeft <= 5 ? "pulse 0.5s infinite" : "none",
           boxShadow: `0 4px 12px ${timeLeft <= 8 ? "#dc262699" : "#16a34a99"}`,
         }}>{timeLeft}</div>
+        
+        {/* Pause button */}
+        <button onClick={handleGoBack} style={{
+          marginLeft: 8, padding: "8px 14px", background: "linear-gradient(135deg,#f59e0b,#fbbf24)",
+          border: "none", borderRadius: 10, color: "#fff", fontSize: 12,
+          cursor: "pointer", fontFamily: "'Nunito',sans-serif", fontWeight: 800,
+          boxShadow: "0 2px 8px rgba(245,158,11,0.3)",
+        }}>⏸ Pause</button>
       </div>
 
       {/* Question text */}
@@ -360,12 +390,12 @@ export default function GermCatcher({ game, username, onFinish }) {
 //  SHARED STYLES
 // ─────────────────────────────────────────────────────────────────────────────
 const styles = {
-  screen: () => ({
+  screen: {
     minHeight: "100vh",
     background: "linear-gradient(135deg,#fef9c3 0%,#fce7f3 30%,#e0f2fe 60%,#d1fae5 100%)",
     display: "flex", flexDirection: "column",
     fontFamily: "'Nunito', sans-serif",
-  }),
+  },
   card: {
     margin: "auto", maxWidth: 420, width: "100%", padding: 32,
     display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center",

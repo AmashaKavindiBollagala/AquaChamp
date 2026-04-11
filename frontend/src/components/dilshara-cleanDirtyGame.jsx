@@ -1,6 +1,7 @@
 
 
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  🔑 UNSPLASH API KEY — replace with your own from https://unsplash.com/developers
@@ -219,7 +220,18 @@ function TipToast({ tip, visible }) {
 // ─────────────────────────────────────────────────────────────────────────────
 //  MAIN COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
-export default function cleanDirtyGame({ game, username, onFinish }) {
+export default function cleanDirtyGame({ game, username, onFinish, onNavigateBack }) {
+  const navigate = useNavigate();
+  
+  // Navigate back to game selection page
+  const handleGoBack = () => {
+    if (onNavigateBack) {
+      onNavigateBack();
+    } else {
+      navigate(-1);
+    }
+  };
+  
   const [phase, setPhase]           = useState("loading"); // loading | intro | playing | result
   const [cards, setCards]           = useState([]);
   const [cardIndex, setCardIndex]   = useState(0);
@@ -374,6 +386,15 @@ export default function cleanDirtyGame({ game, username, onFinish }) {
     <div style={STYLES.screen}>
       <link rel="stylesheet" href={FONT_LINK} />
       <style>{CSS_ANIMATIONS}</style>
+      
+      {/* Go Back button */}
+      <button onClick={handleGoBack} style={{
+        position: "absolute", top: 16, left: 16,
+        padding: "10px 20px", background: "linear-gradient(135deg,#ec4899,#f472b6)",
+        border: "none", borderRadius: 14, color: "#fff",
+        fontSize: 14, cursor: "pointer", fontFamily: "'Nunito',sans-serif", fontWeight: 800,
+        boxShadow: "0 4px 12px rgba(236,72,153,0.3)", zIndex: 10,
+      }}>← Back to Games</button>
 
       <div style={STYLES.card}>
         <img src={AVATAR_URL(username)} alt="avatar" style={STYLES.avatar(100)} />
@@ -590,6 +611,13 @@ export default function cleanDirtyGame({ game, username, onFinish }) {
         }}>
           {apiSource === "unsplash" ? "📸 Unsplash" : "🖼️ Offline"}
         </div>
+        {/* Pause button */}
+        <button onClick={handleGoBack} style={{
+          marginLeft: 6, padding: "6px 12px", background: "linear-gradient(135deg,#f59e0b,#fbbf24)",
+          border: "none", borderRadius: 10, color: "#fff", fontSize: 12,
+          cursor: "pointer", fontFamily: "'Nunito',sans-serif", fontWeight: 800,
+          boxShadow: "0 2px 8px rgba(245,158,11,0.3)",
+        }}>⏸ Pause</button>
       </div>
 
       {/* ── Main Play Area ── */}

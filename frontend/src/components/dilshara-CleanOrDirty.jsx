@@ -38,6 +38,7 @@
  */
 
 import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  ITEM LIBRARY  — keyed by topicId
@@ -291,7 +292,18 @@ function Bin({ type, shaking, accepted, onDragOver, onDrop }) {
 // ─────────────────────────────────────────────────────────────────────────────
 //  MAIN COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
-export default function CleanOrDirty({ game, username, onFinish }) {
+export default function CleanOrDirty({ game, username, onFinish, onNavigateBack }) {
+  const navigate = useNavigate();
+  
+  // Navigate back to game selection page
+  const handleGoBack = () => {
+    if (onNavigateBack) {
+      onNavigateBack();
+    } else {
+      navigate(-1);
+    }
+  };
+  
   const items = useRef(getItems(game.topicId, game.difficulty)).current;
   const total = items.length;
   const pts   = game.pointsPerQuestion || 10;
@@ -350,6 +362,16 @@ export default function CleanOrDirty({ game, username, onFinish }) {
     <div style={screen}>
       <link rel="stylesheet" href={FONT_LINK} />
       <style>{CSS}</style>
+      
+      {/* Go Back button */}
+      <button onClick={handleGoBack} style={{
+        position: "absolute", top: 16, left: 16,
+        padding: "10px 20px", background: "linear-gradient(135deg,#ec4899,#f472b6)",
+        border: "none", borderRadius: 14, color: "#fff",
+        fontSize: 14, cursor: "pointer", fontFamily: "'Nunito',sans-serif", fontWeight: 800,
+        boxShadow: "0 4px 12px rgba(236,72,153,0.3)", zIndex: 10,
+      }}>← Back to Games</button>
+      
       <div style={centerCard}>
         <div style={{ fontSize: 80, animation: "float 2s ease-in-out infinite" }}>🫧</div>
         <img src={AVATAR_URL(username)} alt="avatar"
@@ -484,6 +506,13 @@ export default function CleanOrDirty({ game, username, onFinish }) {
             }} />
           </div>
         </div>
+        {/* Pause button */}
+        <button onClick={handleGoBack} style={{
+          padding: "6px 12px", background: "linear-gradient(135deg,#f59e0b,#fbbf24)",
+          border: "none", borderRadius: 10, color: "#fff", fontSize: 12,
+          cursor: "pointer", fontFamily: "'Nunito',sans-serif", fontWeight: 800,
+          boxShadow: "0 2px 8px rgba(245,158,11,0.3)",
+        }}>⏸ Pause</button>
       </div>
 
       {/* Feedback bar */}
