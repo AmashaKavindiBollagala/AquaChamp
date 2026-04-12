@@ -15,8 +15,18 @@ import { securitySendEmail } from "../utils/securitySendEmail.js";
 import { generateOTP } from "../utils/securityGenerateOTP.js";
 
 
- // CHANGE PASSWORD (direct change)
- 
+// ─── Helper: send email without blocking the response ───────────────────────
+const sendEmailSafely = (to, subject, html, label = "Email") => {
+  securitySendEmail(to, subject, html)
+    .then(() => console.log(`✅ ${label} sent to: ${to}`))
+    .catch((err) =>
+      console.error(`⚠️ ${label} failed (non-blocking): ${err.message}`)
+    );
+};
+
+
+// CHANGE PASSWORD (direct change)
+
 export const securityChangePassword = async (req, res) => {
   try {
     const userId = req.params.id;
@@ -62,8 +72,8 @@ export const securityResetPassword = async (req, res) => {
 };
 
 
- // VERIFY EMAIL
- 
+// VERIFY EMAIL
+
 export const verifyEmail = async (req, res) => {
   try {
     const { token } = req.params;
@@ -119,8 +129,9 @@ export const verifyEmail = async (req, res) => {
   }
 };
 
- //RESEND EMAIL VERIFICATION
- //POST /api/security/resend-verification
+
+// RESEND EMAIL VERIFICATION
+// POST /api/security/resend-verification
 
 export const resendVerificationEmail = async (req, res) => {
   try {
@@ -153,7 +164,7 @@ export const resendVerificationEmail = async (req, res) => {
       );
     });
 
-    // Delete any existing verification tokens for this user - use deleteMany with await
+    // Delete any existing verification tokens for this user
     const deleteResult = await SecurityEmailVerification.deleteMany({
       userId: user._id,
     });
@@ -185,8 +196,6 @@ export const resendVerificationEmail = async (req, res) => {
     console.log(`🔗 Full verification link:`);
     console.log(`   ${verifyLink}`);
 
-    // Send the verification email
-    console.log(`📧 Sending verification email...`);
     const html = `
 <div style="font-family: Arial, sans-serif; background:#EAF5FF; padding:40px 0;">
   <div style="max-width:500px;margin:auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.1);">
@@ -226,7 +235,7 @@ export const resendVerificationEmail = async (req, res) => {
       </p>
 
       <p style="margin-top:10px;font-size:12px;color:#94a3b8;">
-        If you didn’t create this account, you can safely ignore this email.
+        If you didn't create this account, you can safely ignore this email.
       </p>
     </div>
 
@@ -239,9 +248,11 @@ export const resendVerificationEmail = async (req, res) => {
 </div>
 `;
 
+    // Send the verification email — await here so user gets clear success/failure
+    console.log(`📧 Sending verification email...`);
     await securitySendEmail(email, "Verify Your Email", html);
-
     console.log(`✅ Verification email sent successfully to: ${email}\n`);
+
     res.json({ message: "Verification email sent!" });
   } catch (error) {
     console.error(`❌ Resend verification error:`, error.message);
@@ -251,8 +262,8 @@ export const resendVerificationEmail = async (req, res) => {
 };
 
 
- // LOGIN USER
- 
+// LOGIN USER
+
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -280,20 +291,20 @@ export const loginUser = async (req, res) => {
 };
 
 
- // STEP 1: Request OTP for changing password
- 
+// STEP 1: Request OTP for changing password
+
 export const requestChangePasswordOTP = async (req, res) => {
   try {
     console.log("\n🔐 Request Change Password OTP");
-    
+
     // Get username from JWT token (set by verifyJWT middleware)
     const username = req.user;
     console.log("   Username from token:", username);
-    
+
     if (!username) {
       return res.status(401).json({ message: "Not authenticated" });
     }
-    
+
     const { currentPassword, newPassword } = req.body;
     console.log("   Validating passwords...");
 
@@ -303,7 +314,7 @@ export const requestChangePasswordOTP = async (req, res) => {
       console.log("❌ User not found:", username);
       return res.status(404).json({ message: "User not found" });
     }
-    
+
     console.log("   User found:", user.email);
 
     // Verify current password
@@ -395,13 +406,13 @@ export const requestChangePasswordOTP = async (req, res) => {
 </div>
 `;
 
-    await securitySendEmail(user.email, "OTP for Password Change", html);
-    console.log(`✅ OTP email sent to: ${user.email}`);
-
-    res.json({ 
+    // ✅ FIX: Respond immediately, send email in background (non-blocking)
+    res.json({
       message: `OTP sent to ${user.email}`,
-      email: user.email 
+      email: user.email,
     });
+
+    sendEmailSafely(user.email, "OTP for Password Change", html, "Change Password OTP");
   } catch (error) {
     console.error("❌ Request OTP error:", error.message);
     console.error(error.stack);
@@ -415,15 +426,15 @@ export const requestChangePasswordOTP = async (req, res) => {
 export const verifyChangePasswordOTP = async (req, res) => {
   try {
     console.log("\n✅ Verify Change Password OTP");
-    
+
     // Get username from JWT token
     const username = req.user;
     console.log("   Username from token:", username);
-    
+
     if (!username) {
       return res.status(401).json({ message: "Not authenticated" });
     }
-    
+
     const { otp, newPassword } = req.body;
     console.log("   Verifying OTP...");
 
@@ -497,21 +508,21 @@ export const verifyChangePasswordOTP = async (req, res) => {
 };
 
 
- //RESEND OTP for changing password
- //POST /api/security/change-password/resend-otp
- 
+// RESEND OTP for changing password
+// POST /api/security/change-password/resend-otp
+
 export const resendChangePasswordOTP = async (req, res) => {
   try {
     console.log("\n🔄 Resend Change Password OTP");
-    
+
     // Get username from JWT token
     const username = req.user;
     console.log("   Username from token:", username);
-    
+
     if (!username) {
       return res.status(401).json({ message: "Not authenticated" });
     }
-    
+
     const { newPassword } = req.body;
     console.log("   Resending OTP...");
 
@@ -521,7 +532,7 @@ export const resendChangePasswordOTP = async (req, res) => {
       console.log("❌ User not found");
       return res.status(404).json({ message: "User not found" });
     }
-    
+
     console.log("   User found:", user.email);
 
     // Validate new password strength
@@ -605,13 +616,13 @@ export const resendChangePasswordOTP = async (req, res) => {
 </div>
 `;
 
-    await securitySendEmail(user.email, "New OTP for Password Change", html);
-    console.log(`✅ New OTP email sent to: ${user.email}`);
-
-    res.json({ 
+    // ✅ FIX: Respond immediately, send email in background (non-blocking)
+    res.json({
       message: `New OTP sent to ${user.email}`,
-      email: user.email 
+      email: user.email,
     });
+
+    sendEmailSafely(user.email, "New OTP for Password Change", html, "Resend Change Password OTP");
   } catch (error) {
     console.error("❌ Resend OTP error:", error.message);
     console.error(error.stack);
@@ -620,8 +631,8 @@ export const resendChangePasswordOTP = async (req, res) => {
 };
 
 
- // STEP 1 (Forgot Password): Request password reset link
- 
+// STEP 1 (Forgot Password): Request password reset link
+
 export const requestPasswordReset = async (req, res) => {
   try {
     console.log("\n📧 Forgot Password Request");
@@ -635,7 +646,7 @@ export const requestPasswordReset = async (req, res) => {
         .status(200)
         .json({ message: "If this email exists, a reset link has been sent" });
     }
-    
+
     console.log("   ✅ User found:", user.email);
 
     // Delete any existing reset tokens for this user
@@ -705,10 +716,10 @@ export const requestPasswordReset = async (req, res) => {
 </div>
 `;
 
-    await securitySendEmail(email, "Reset Your Password", html);
-    console.log(`✅ Reset email sent to: ${email}`);
-
+    // ✅ FIX: Respond immediately, send email in background (non-blocking)
     res.json({ message: "If this email exists, a reset link has been sent" });
+
+    sendEmailSafely(email, "Reset Your Password", html, "Password Reset");
   } catch (error) {
     console.error("❌ Forgot password error:", error.message);
     console.error(error.stack);
@@ -717,8 +728,8 @@ export const requestPasswordReset = async (req, res) => {
 };
 
 
- // STEP 2: Verify reset token from link
- 
+// STEP 2: Verify reset token from link
+
 export const verifyPasswordResetToken = async (req, res) => {
   try {
     console.log("\n🔐 Verify Reset Token");
@@ -730,7 +741,7 @@ export const verifyPasswordResetToken = async (req, res) => {
       console.log("❌ Invalid or expired token");
       return res.status(400).json({ message: "Invalid or expired reset token" });
     }
-    
+
     console.log("✅ Token valid");
     console.log("   User ID:", record.userId);
 
@@ -742,9 +753,9 @@ export const verifyPasswordResetToken = async (req, res) => {
 };
 
 
- //STEP 3: Reset password with token
- //POST /api/security/forgot-password/reset
- 
+// STEP 3: Reset password with token
+// POST /api/security/forgot-password/reset
+
 export const resetPasswordWithToken = async (req, res) => {
   try {
     console.log("\n🔄 Reset Password with Token");
@@ -757,7 +768,7 @@ export const resetPasswordWithToken = async (req, res) => {
       console.log("❌ Invalid or expired token");
       return res.status(400).json({ message: "Invalid or expired reset token" });
     }
-    
+
     console.log("✅ Token found");
 
     // Validate password strength
@@ -775,7 +786,7 @@ export const resetPasswordWithToken = async (req, res) => {
       console.log("❌ User not found");
       return res.status(404).json({ message: "User not found" });
     }
-    
+
     console.log("   User found:", user.email);
 
     // Update password
@@ -797,8 +808,8 @@ export const resetPasswordWithToken = async (req, res) => {
 };
 
 
- // STEP 3: Request OTP after clicking reset link
- 
+// STEP 3: Request OTP after clicking reset link
+
 export const requestResetPasswordOTP = async (req, res) => {
   try {
     const { userId, newPassword } = req.body;
@@ -819,21 +830,20 @@ export const requestResetPasswordOTP = async (req, res) => {
       expiresAt,
     });
 
-    await securitySendEmail(
-      user.email,
-      "OTP for Password Reset",
-      `<h2>Your OTP for password reset is:</h2><p>${otp}</p><p>It expires in 5 minutes</p>`,
-    );
+    const html = `<h2>Your OTP for password reset is:</h2><p>${otp}</p><p>It expires in 5 minutes</p>`;
 
+    // ✅ FIX: Respond immediately, send email in background (non-blocking)
     res.json({ message: "OTP sent to your email" });
+
+    sendEmailSafely(user.email, "OTP for Password Reset", html, "Reset Password OTP");
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
 
- // STEP 4: Verify OTP and set new password
- 
+// STEP 4: Verify OTP and set new password
+
 export const verifyResetPasswordOTP = async (req, res) => {
   try {
     const { userId, otp, newPassword } = req.body;
