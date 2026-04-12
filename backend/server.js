@@ -16,8 +16,6 @@ import pointsRoutes from './routes/dushani-pointsRoutes.js';
 import levelRoutes from './routes/dushani-levelRoutes.js';
 import badgeNotificationRoutes from './routes/dushani-badgeNotificationRoutes.js';
 import analyticsRoutes from './routes/dilshara-analytics.js';
-
-//dilshara
 import adminRoutes from './routes/dilshara-adminRoutes.js';
 import gameRoutes from './routes/dilshara-gameRoutes.js';
 import quizRoutes from './routes/dilshara-quizRoutes.js';
@@ -32,21 +30,20 @@ import kaveeshaMiniQuizRoutes from "./routes/kaveesha-miniquizRoutes.js";
 import './kaveesha-delete-unverified-users.js';
 
 const app = express();
-const port = 4000;
+const port = process.env.PORT || 4000;
 
-//  Middleware 
+// Middleware
 app.use(logger);
 app.use(cors({
-  origin: "http://localhost:5173",
+  origin: process.env.CLIENT_URL || "http://localhost:5173",
   credentials: true
 }));
 app.use(express.json());
-app.use(express.urlencoded({extended: true}));
-app.use(cookieParser()); 
-app.use('/uploads', express.static('uploads')); 
-app.use("/uploads", express.static("uploads"));
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+app.use('/uploads', express.static('uploads'));
 
-//  Routes
+// Routes
 app.use('/auth', authRoutes);
 app.use('/notes', notesRoutes);
 app.use('/api/users', userRoutes);
@@ -55,40 +52,33 @@ app.use('/api/progress', progressRoutes);
 app.use('/api/points', pointsRoutes);
 app.use('/api/levels', levelRoutes);
 app.use('/api/badge-notifications', badgeNotificationRoutes);
-//dilshara
 app.use('/api/admin', adminRoutes);
-//app.use('/games', gameRoutes);
 app.use('/quizzes', quizRoutes);
 app.use('/truefalse', trueFalseRoutes);
 app.use('/api/security', securityRoutes);
-app.use('/api/games', gameRoutes)
-
-// Component 4 routes
+app.use('/api/games', gameRoutes);
 app.use('/api/activities', activityRoutes);
 app.use('/api/water', waterRoutes);
 app.use('/api/amasha-points', amashapointsRoutes);
-//kaveesha use routes
-app.use("/api/security", securityRoutes);
 app.use("/api/topics", topicRoutes);
 app.use("/api/subtopics", subtopicRoutes);
 app.use("/api/kaveesha-miniquiz", kaveeshaMiniQuizRoutes);
-
-//game admin analysis
 app.use("/api/analytics", analyticsRoutes);
 
-// DB
-connectDB().then(() => {
-  console.log('Database connected successfully');
-}).catch((err) => {
-  console.error('Database connection failed:', err);
-});
-
-
-// APP PORT AND LISTEN
+// Health check
 app.get('/', (req, res) => {
-    res.send('API WORKING');
+  res.send('API WORKING');
 });
 
-app.listen(port, () => {
-    console.log(`Server started on http://localhost:${port}`);
-});
+// DB + Server Start
+connectDB()
+  .then(() => {
+    console.log('Database connected successfully');
+    app.listen(port, () => {
+      console.log(`Server started on port ${port}`);
+    });
+  })
+  .catch((err) => {
+    console.error('Database connection failed:', err);
+    process.exit(1);
+  });
