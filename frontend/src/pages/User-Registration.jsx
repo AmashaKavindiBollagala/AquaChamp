@@ -425,7 +425,7 @@ export default function UserRegistration() {
         password: form.password,
         confirmPassword: form.confirmPassword,
       }, {
-        timeout: 60000, // 10 second timeout
+        timeout: 10000, // 10 second timeout
       });
 
       if (response.data.success) {
