@@ -32,7 +32,7 @@ export default function ProgressPage() {
     const fetchStudents = async () => {
       try {
         const token = localStorage.getItem('token') || localStorage.getItem('superAdminToken');
-        const res = await fetch('http://localhost:4000/api/levels/monitoring/students', {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/levels/monitoring/students`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -57,7 +57,7 @@ export default function ProgressPage() {
   async function viewStudent(id) {
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('superAdminToken');
-      const res = await fetch(`http://localhost:4000/api/levels/monitoring/student/${id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/levels/monitoring/student/${id}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

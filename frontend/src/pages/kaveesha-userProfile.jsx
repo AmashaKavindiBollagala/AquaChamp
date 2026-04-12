@@ -621,7 +621,7 @@ export default function KaveeshaUserProfile() {
       console.log("   Update data:", updateData);
       
       const res = await axios.put(
-        `http://localhost:4000/api/users/profile/${userId}`,
+        `${import.meta.env.VITE_API_URL}/api/users/profile/${userId}`,
         updateData,
         { 
           headers: { 

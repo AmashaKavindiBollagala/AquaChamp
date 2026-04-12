@@ -227,7 +227,7 @@ export default function UserRegistration() {
     setCheckingUsername(true);
     try {
       // Try to find if user exists with this username
-      const response = await axios.get(`http://localhost:4000/api/users/check-username/${username}`);
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/users/check-username/${username}`);
       setUsernameAvailable(response.data.available);
     } catch (error) {
       // If endpoint doesn't exist, we'll rely on registration error
@@ -261,7 +261,7 @@ export default function UserRegistration() {
     setCheckingEmail(true);
     try {
       // Try to find if user exists with this email
-      const response = await axios.get(`http://localhost:4000/api/users/check-email/${email}`);
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/users/check-email/${email}`);
       setEmailAvailable(response.data.available);
       // Clear any previous email errors if domain is valid
       setErrors((prev) => ({

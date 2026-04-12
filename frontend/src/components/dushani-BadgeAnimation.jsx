@@ -189,7 +189,7 @@ export default function BadgeAnimation() {
       };
 
       const response = await axios.put(
-        `http://localhost:4000/api/badge-notifications/${notificationId}/triggered`,
+        `${import.meta.env.VITE_API_URL}/api/badge-notifications/${notificationId}/triggered`,
         {},
         config
       );

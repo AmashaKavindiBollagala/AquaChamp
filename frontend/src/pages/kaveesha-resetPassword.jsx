@@ -31,7 +31,7 @@ export default function ResetPassword() {
       try {
         console.log("🔐 Verifying reset token...");
         const response = await axios.get(
-          `http://localhost:4000/api/security/forgot-password/verify-token/${token}`
+          `${import.meta.env.VITE_API_URL}/api/security/forgot-password/verify-token/${token}`
         );
         console.log("✅ Token valid:", response.data);
         setTokenValid(true);

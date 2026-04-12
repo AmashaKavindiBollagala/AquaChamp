@@ -44,7 +44,7 @@ export default function DushaniBadgesPage() {
   const fetchBadges = async () => {
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('superAdminToken');
-      const res = await fetch('http://localhost:4000/api/badges/', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/badges/`, {
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       });
       const data = await res.json();
@@ -82,7 +82,7 @@ export default function DushaniBadgesPage() {
         badgeIcon: form.icon || '⭐', description: form.desc, status: form.status,
       };
       const res = await fetch(
-        editingId ? `http://localhost:4000/api/badges/${editingId}` : 'http://localhost:4000/api/badges/',
+        editingId ? `${import.meta.env.VITE_API_URL}/api/badges/${editingId}` : `${import.meta.env.VITE_API_URL}/api/badges/`,
         { method: editingId ? 'PUT' : 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(badgeData) }
       );
       const data = await res.json();
@@ -98,7 +98,7 @@ export default function DushaniBadgesPage() {
     if (!confirm('Are you sure you want to delete this badge?')) return;
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('superAdminToken');
-      const res = await fetch(`http://localhost:4000/api/badges/${id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/badges/${id}`, {
         method: 'DELETE', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       });
       const data = await res.json();
