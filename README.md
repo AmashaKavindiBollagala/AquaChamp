@@ -20,28 +20,20 @@ The system integrates four key modules:
 
 ---
 
-## 📊 Project Status  
+## 📄 Project Documentation & Reports
 
-⏳ **80% Completed**  
-📅 Assignment 01 – Evaluation (2026.02.28)  
+📘 **Testing Report**  
+👉 [View PDF](https://drive.google.com/file/d/1QEMajkj1CsFyMwfRUgyy23r1ArlnJQYS/view?usp=sharing)
 
+📘 **Deployment Report**  
+👉 [View PDF](https://drive.google.com/file/d/1xqzpU3uFYhK1Lq6dBzTHzUiHdFIg91fh/view?usp=sharing)
 ---
 
-## 📑 Table of Contents  
-
-- 📌 Project Overview  
-- 🛠️ Tech Stack  
-- 👥 Team Members & Components  
-- 📂 Project Structure  
-- ✅ Prerequisites  
-- ⚙️ Backend Setup  
-- 🎨 Frontend Setup  
-- 🗄️ MongoDB Setup  
-- 🔐 Environment Variables  
-- ▶️ Running the Application  
-- 🔑 Authentication  
-- 🌐 API Base URL  
-- ❗ Error Responses  
+### 🧪 Includes:
+- System Testing Report
+- Unit Testing Evidence
+- API Testing Results
+- Project Documentation
 
 ---
 
@@ -85,14 +77,31 @@ AquaChamp teaches children about:
 
 ---
 
+### 🧑‍💻 Development Team  
 ## 👥 Team Members & Components  
 
-| Member   | Component | Description |
-|----------|----------|------------|
-| Amasha   | Daily Activity Tracker | Water usage tracking, activity points |
-| Dushani  | Gamification & Rewards | Badges, leaderboard, levels |
-| Kaveesha | Lessons & Progress | Lesson management & tracking |
-| Dilshara | Games & Assessments | Quizzes, true/false, scoring |
+> 💡 Core development team responsible for building different modules of AquaChamp
+
+---
+
+### 🧑‍💻 Development Team  
+
+| 👤 Member | 🧩 Component | 📌 Description |
+|-----------|-------------|----------------|
+| **Amasha Bollagala** | 💧 Daily Activity Tracker | Tracks water usage, daily activities, and rewards activity points |
+| **Dushani Naveendhya** | 🏆 Gamification & Rewards | Manages badges, leaderboard system, levels, and motivational rewards |
+| **Kaveesha Divyanjali** | 📚 Lesson Management System | Admin Lesson Management Dashboard, Student Lesson Learning Dashboard, progress tracking and completion monitoring |
+| **Dilshara Thilakarathna** | 🎮 Games & Assessments | Develops quizzes, true/false games, and score evaluation system |
+
+---
+
+### 🌟 Team Contribution Summary  
+
+- 💧 Real-life water & hygiene tracking  
+- 📚 Full lesson lifecycle management (Admin + Student)  
+- 🎮 Gamified learning experience  
+- 📊 Progress tracking & analytics  
+- 🧠 Interactive educational assessments  
 
 ---
 
@@ -121,149 +130,361 @@ AquaChamp/
 
 ---
 
-## ✅ Prerequisites  
-
-Before starting, install:
-
-Node.js (v18+)
-npm
-MongoDB (v6+)
-Git
-
+## ⚙️ Setup Instructions  
 
 ---
 
-# ⚙️ Backend Setup  
+## 1️⃣ Clone Repository  
 
-### ➤ Step 1: Navigate  
+```bash
+git clone https://github.com/your-username/aquachamp.git
+cd aquachamp
+````
+
+---
+
+## 🔙 Backend Setup
+
+### 📦 Install Dependencies
 
 ```bash
 cd server
-▶️ Running the Application
-
-🔑 Authentication
-
-🌐 API Base URL
-
-❗ Error Responses
-
-📌 Project Overview
-
-AquaChamp teaches children about:
-
-🧼 Handwashing and personal hygiene
-
-🚰 Safe drinking water
-
-🚽 Toilet and sanitation practices
-
-🗑️ Waste disposal and environmental hygiene
-
-Using:
-
-🎮 Mini-games and challenges
-
-📝 Games and assessments
-
-🏆 Rewards, badges, and leaderboards
-
-📊 Progress tracking and lesson completion
-
-🔥 Daily login rewards and streak tracking
-
-📒 Hygiene and water tracker
-
-🛠️ Tech Stack
-🔙 Backend
-
-Node.js – Runtime environment
-
-Express.js – Web framework
-
-MongoDB – Database
-
-Mongoose – ODM for MongoDB
-
-JWT – Authentication
-
-bcryptjs – Password hashing
-
-🎨 Frontend
-
-React – UI library
-
-Vite – Build tool
-
-React Router – Routing
-
-Axios – HTTP client
-
-Tailwind CSS – Styling
-
-Lottie – Celebration animations
-
-👥 Team Members & Components
-Member	Component	Description
-Amasha	Daily Activity Tracker	Water usage tracker, completed activity points, motivational quotes
-Dushani	Gamification & Rewards	Badges, leaderboard, daily login points, level system, Lottie animations
-Kaveesha	Lessons & Progress Tracking	Lesson management, lesson completion, progress monitoring
-Dilshara	Games & Assessments	Educational games, true/false assessments, score and result tracking
-
-✅ Prerequisites
-
-Before you begin, ensure you have the following installed:
-
-🟢 Node.js (v18 or higher)
-
-📦 npm
-
-🗄️ MongoDB (v6 or higher)
-
-🌱 Git
-
-⚙️ Backend Setup
-➤ Step 1: Navigate to Server Directory
-cd server
-➤ Step 2: Install Dependencies
 npm install
-➤ Step 3: Configure Environment Variables
+```
 
-Create a .env file in the server directory.
+---
 
-➤ Step 4: Start the Server
-npm run dev
-🎨 Frontend Setup
-➤ Step 1: Navigate to Client Directory
-cd client
-➤ Step 2: Install Dependencies
-npm install
-➤ Step 3: Environment Variables (Optional)
-VITE_API_URL=http://localhost:4000
-➤ Step 4: Start the Frontend
-npm run dev
-🗄️ MongoDB Database Setup
-🖥️ Option 1: Local MongoDB
-☁️ Option 2: MongoDB Atlas (Cloud)
-🔐 Environment Variables
+### 🔐 Create `.env` File
+
+```env
 PORT=4000
 NODE_ENV=development
 JWT_SECRET=your_secret_key_here
 JWT_EXPIRE=7d
-CLIENT_URL=http://localhost:4000
-▶️ Running the Application
-🧪 Development Mode
-🚀 Production Mode
-🔑 Authentication
-Authorization: Bearer <your_jwt_token>
-🌐 API Base URL
+CLIENT_URL=http://localhost:5173
+MONGO_URI=your_mongodb_connection
+```
+
+---
+
+### ▶️ Run Backend
+
+```bash
+npm run dev
+```
+
+👉 Server running at:
+`http://localhost:4000`
+
+---
+
+## 🎨 Frontend Setup
+
+### 📦 Install Dependencies
+
+```bash
+cd client
+npm install
+```
+
+---
+
+### ▶️ Run Frontend
+
+```bash
+npm run dev
+```
+
+👉 Client running at:
+`http://localhost:5173`
+
+---
+
+## 🗄️ MongoDB Setup
+
+### 🖥️ Local Setup
+
+Start MongoDB server:
+
+```bash
+mongod
+```
+
+👉 This will start the MongoDB service on default port `27017`.
+
+---
+
+### 📂 Connect to MongoDB
+
+Make sure your backend `.env` file includes:
+
+```env
+MONGO_URI=mongodb://localhost:27017/your-database-name
+```
+
+---
+
+### ▶️ Check if MongoDB is running
+
+```bash
+mongo
+```
+
+or
+
+```bash
+mongosh
+```
+
+---
+
+### ☁️ MongoDB Atlas Setup
+
+* Create cluster
+* Copy connection string
+* Add to `.env`
+
+---
+
+## 🔐 Environment Variables
+
+```env
+PORT=4000
+NODE_ENV=development
+JWT_SECRET=your_secret_key_here
+JWT_EXPIRE=7d
+CLIENT_URL=http://localhost:5173
+MONGO_URI=your_mongodb_connection
+```
+
+---
+
+## ▶️ Running the Application
+
+### 🧪 Development Mode
+
+```bash
+npm run dev
+```
+
+### 🚀 Production Mode
+
+```bash
+npm start
+```
+
+---
+
+## 🔑 Authentication
+
+All protected APIs require JWT token:
+
+```http
+Authorization: Bearer <your_token>
+```
+
+---
+
+## 🌐 API Documentation
+
+### 🔹 Base URL
+
+```
 http://localhost:4000
-❗ Error Responses
-Status	Meaning
-400	Bad Request
-401	Unauthorized
-403	Forbidden
-404	Not Found
-500	Internal Server Error
+```
+
+---
+
+## 🔑 AUTH APIs
+
+### Register User
+
+```http
+POST /auth/register
+```
+
+```json
 {
-  "message": "Error description here"
+  "name": "John",
+  "email": "john@example.com",
+  "password": "123456"
 }
+```
+
+---
+
+### Login User
+
+```http
+POST /auth/login
+```
+
+```json
+{
+  "email": "john@example.com",
+  "password": "123456"
+}
+```
+
+---
+
+## 👤 USER APIs
+
+| Method | Endpoint       |
+| ------ | -------------- |
+| GET    | /api/users     |
+| GET    | /api/users/:id |
+| PUT    | /api/users/:id |
+| DELETE | /api/users/:id |
+
+---
+
+## 🏆 GAMIFICATION APIs
+
+| Method | Endpoint    |
+| ------ | ----------- |
+| GET    | /api/badges |
+| POST   | /api/badges |
+| GET    | /api/points |
+| POST   | /api/points |
+| GET    | /api/levels |
+
+---
+
+## 📊 PROGRESS APIs
+
+| Method | Endpoint      |
+| ------ | ------------- |
+| GET    | /api/progress |
+| POST   | /api/progress |
+
+---
+
+## 🎮 GAME & QUIZ APIs
+
+| Method | Endpoint   |
+| ------ | ---------- |
+| GET    | /api/games |
+| GET    | /quizzes   |
+| POST   | /quizzes   |
+| GET    | /truefalse |
+| POST   | /truefalse |
+
+---
+
+## 📚 LESSON APIs
+
+| Method | Endpoint               |
+| ------ | ---------------------- |
+| GET    | /api/topics            |
+| POST   | /api/topics            |
+| GET    | /api/subtopics         |
+| POST   | /api/subtopics         |
+| GET    | /api/kaveesha-miniquiz |
+
+---
+
+## 💧 ACTIVITY APIs
+
+| Method | Endpoint        |
+| ------ | --------------- |
+| GET    | /api/activities |
+| POST   | /api/activities |
+| GET    | /api/water      |
+| POST   | /api/water      |
+
+---
+
+## 📈 ANALYTICS API
+
+| Method | Endpoint       |
+| ------ | -------------- |
+| GET    | /api/analytics |
+
+---
+
+## 🔒 SECURITY API
+
+| Method | Endpoint      |
+| ------ | ------------- |
+| POST   | /api/security |
+
+---
+
+## ❗ Error Handling
+
+```json
+{
+  "message": "Error occurred"
+}
+```
+
+| Status Code | Meaning               |
+| ----------- | --------------------- |
+| 400         | Bad Request           |
+| 401         | Unauthorized          |
+| 403         | Forbidden             |
+| 404         | Not Found             |
+| 500         | Internal Server Error |
+
+```
+
+```
+## 🌟 Project Highlights
+
+💧 AquaChamp is a modern full-stack platform built to promote **safe water education, learning progress tracking, and gamified engagement**.
+
+It combines:
+- 📚 Educational content modules  
+- 🎮 Interactive quizzes & games  
+- 🏆 Gamification system (points, badges, levels)  
+- 📊 Progress tracking & analytics  
+- 🔐 Secure authentication system  
+
+---
+
+## 🚀 Built With Passion
+
+This project was developed as part of an academic assignment with a focus on:
+
+✔ Real-world full-stack architecture  
+✔ Scalable backend design  
+✔ Clean UI/UX experience  
+✔ RESTful API development  
+✔ Testing and quality assurance  
+
+---
+
+## 👨‍💻 Team & Contribution
+
+All contributors worked collaboratively across:
+
+- 🎨 Frontend Development  
+- ⚙️ Backend API Development  
+- 🗄️ Database Design  
+- 🧪 Testing & QA  
+- 📄 Documentation  
+
+---
+
+## 💙 Special Thanks
+
+We would like to thank our instructors and peers for their continuous support, feedback, and guidance throughout this project journey.
+
+---
+
+## 📌 Project Status
+
+🚧 Version: 1.0.0  
+✅ Backend: Completed  
+✅ Frontend: Completed  
+🧪 Testing: Completed  
+🚀 Deployment: Ready
+
+---
+
+## ⭐ Final Note
+
+If you like this project, feel free to ⭐ the repository and explore the codebase.
+
+> “Small steps in learning today create big waves of knowledge tomorrow.” 🌊
