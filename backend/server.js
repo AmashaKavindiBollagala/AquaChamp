@@ -35,7 +35,10 @@ const port = process.env.PORT || 4000;
 // Middleware
 app.use(logger);
 app.use(cors({
-  origin: process.env.CLIENT_URL || "http://localhost:5173",
+  origin: [
+    "http://localhost:5173",
+    "https://aquachamp.vercel.app"
+  ],
   credentials: true
 }));
 app.use(express.json());
