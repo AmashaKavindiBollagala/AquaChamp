@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
-const API = "http://localhost:4000";
+const API = import.meta.env.VITE_API_URL;
 
 const getToken = () =>
   localStorage.getItem("aquachamp_token") ||

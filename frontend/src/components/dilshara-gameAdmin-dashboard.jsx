@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-const API_BASE = "http://localhost:4000";
+const API_BASE = import.meta.env.VITE_API_URL;
 
 const MAIN_TOPICS = [
   { id: "safe-drinking-water",                      name: "Safe Drinking Water" },

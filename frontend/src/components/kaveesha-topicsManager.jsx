@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 
-const API = "http://localhost:4000";
+const API = import.meta.env.VITE_API_URL;
 
 const TOPIC_COLORS = [
   { bg: "#fff0f6", border: "#f9a8d4", icon: "#ec4899", badge: "#fce7f3", badgeText: "#9d174d", accent: "#db2777" },

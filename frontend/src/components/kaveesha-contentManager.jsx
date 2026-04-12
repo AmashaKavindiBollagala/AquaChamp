@@ -3,7 +3,7 @@ import axios from "axios";
 import { API_KEYS } from "../kaveesha-services/kaveesha-apiConfig";
 import { geminiAPI } from "../kaveesha-services/kaveesha-lessonsService";
 
-const API = "http://localhost:4000";
+const API = import.meta.env.VITE_API_URL;
 
 const TABS = [
   { id: "video", label: "Video", icon: "🎬", color: "#ef4444", light: "#fff0f0", border: "#fca5a5", grad: "linear-gradient(135deg,#ef4444,#dc2626)" },
