@@ -85,7 +85,7 @@ const ForgotPasswordModal = memo(function ForgotPasswordModal({ onClose }) {
     setError("");
 
     try {
-      await axios.post("http://localhost:4000/api/security/forgot-password", {
+      await axios.post(`${import.meta.env.VITE_API_URL}/api/security/forgot-password`, {
         email: email.trim().toLowerCase(),
       });
       setStep("sent");
@@ -191,7 +191,7 @@ export default function UserLogin() {
   const [userData, setUserData] = useState(null);
   const navigate = useNavigate();
 
-  const API_URL = "http://localhost:4000/auth/login";
+  const API_URL = `${import.meta.env.VITE_API_URL}/auth/login`;
 
   const validate = () => {
     const e = {};
@@ -271,7 +271,7 @@ export default function UserLogin() {
         try {
           console.log("🎁 Attempting to claim daily login reward...");
           const dailyLoginRes = await axios.post(
-            "http://localhost:4000/api/points/daily-login",
+           `${import.meta.env.VITE_API_URL}/api/points/daily-login`,
             {},
             {
               headers: {

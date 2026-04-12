@@ -11,7 +11,7 @@ export default function VerifyEmail() {
   const handleResend = async () => {
     setResending(true);
     try {
-      const res = await fetch("http://localhost:4000/api/security/resend-verification", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/security/resend-verification`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
