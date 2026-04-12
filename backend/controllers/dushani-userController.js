@@ -118,7 +118,7 @@ export const registerUser = async (req, res) => {
     });
 
     // create verification link
-    const verificationLink = `http://localhost:4000/api/security/verify-email/${token}`;
+   const verificationLink = `${process.env.BACKEND_URL}/api/security/verify-email/${token}`;
 
     // send email
     const html = `
