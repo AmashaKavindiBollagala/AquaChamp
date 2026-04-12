@@ -239,7 +239,7 @@ export default function UserLogin() {
         },
         { 
           withCredentials: true,
-          timeout: 10000
+          timeout: 60000
         }
       );
 
