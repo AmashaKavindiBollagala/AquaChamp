@@ -156,7 +156,7 @@ export default function UserRegistration() {
   });
 
   // 🔗 Backend API URL
-  const API_URL = "http://localhost:4000/api/users/register";
+  const API_URL = `${import.meta.env.VITE_API_URL}/api/users/register`;
 
   const validate = () => {
     const e = {};

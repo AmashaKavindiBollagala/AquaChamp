@@ -59,7 +59,7 @@ export default function DushaniStudentProgress() {
           timeout: 10000
         };
 
-        const response = await axios.get("http://localhost:4000/api/points/my-status", config);
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/points/my-status`, config);
 
         if (response.data.success) {
           setProgressData(response.data.data);

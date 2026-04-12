@@ -84,7 +84,7 @@ export default function ResetPassword() {
 
     try {
       console.log("🔄 Resetting password...");
-      await axios.post("http://localhost:4000/api/security/forgot-password/reset", {
+      await axios.post(`${import.meta.env.VITE_API_URL}/api/security/forgot-password/reset`, {
         token,
         newPassword: form.newPassword,
       });

@@ -125,7 +125,7 @@ export default function BadgeAnimation() {
       };
 
       const response = await axios.get(
-        "http://localhost:4000/api/badge-notifications/animations",
+        `${import.meta.env.VITE_API_URL}/api/badge-notifications/animations`,
         config
       );
 

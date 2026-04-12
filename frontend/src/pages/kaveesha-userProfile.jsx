@@ -225,7 +225,7 @@ const ChangePasswordPanel = ({ navigate }) => {
       console.log("📨 Requesting OTP...");
       
       const response = await axios.post(
-        "http://localhost:4000/api/security/change-password/request-otp",
+        `${import.meta.env.VITE_API_URL}/api/security/change-password/request-otp`,
         { 
           currentPassword: form.currentPassword, 
           newPassword: form.newPassword 
@@ -261,7 +261,7 @@ const ChangePasswordPanel = ({ navigate }) => {
       console.log("🔄 Resending OTP...");
       
       const response = await axios.post(
-        "http://localhost:4000/api/security/change-password/resend-otp",
+       `${import.meta.env.VITE_API_URL}/api/security/change-password/resend-otp`,
         { newPassword: form.newPassword },
         { 
           headers: { 
@@ -296,7 +296,7 @@ const ChangePasswordPanel = ({ navigate }) => {
       console.log("✅ Verifying OTP...");
       
       await axios.post(
-        "http://localhost:4000/api/security/change-password/verify-otp",
+        `${import.meta.env.VITE_API_URL}/api/security/change-password/verify-otp`,
         { otp, newPassword: form.newPassword },
         { 
           headers: { 
@@ -516,7 +516,7 @@ export default function KaveeshaUserProfile() {
         
         console.log("   Request config headers:", config.headers);
         
-        const response = await axios.get("http://localhost:4000/api/users/profile/me", config);
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/users/profile/me`, config);
 
         console.log("✅ [Profile] Success:", response.data.user);
         setUser(response.data.user);
@@ -553,7 +553,7 @@ export default function KaveeshaUserProfile() {
         timeout: 10000
       };
       
-      const response = await axios.get("http://localhost:4000/api/points/my-status", config);
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/points/my-status`, config);
       
       if (response.data.success) {
         console.log("✅ [Stats] Success:", response.data.data);
