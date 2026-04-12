@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import KaveeshaStudentNav from "./kaveesha-studentNav";
 
-const API = "http://localhost:4000";
+const API = import.meta.env.VITE_API_URL;
 
 export default function KaveeshaStudentDashboard() {
   const navigate = useNavigate();
@@ -321,7 +321,7 @@ function TopicCard({ topic, subtopics, progress, index, onClick }) {
   // Debug log to see what subtopics are passed
   console.log(`📋 TopicCard "${topic?.title}":`, { subtopicsCount: subtopics?.length, subtopics });
   
-  const API = "http://localhost:4000";
+  const API = import.meta.env.VITE_API_URL;
   const CARD_COLORS = [
     { from: "#ec4899", to: "#db2777", accent: "#db2777", hover: "#fce7f3", emoji: "💧" },
     { from: "#3b82f6", to: "#2563eb", accent: "#2563eb", hover: "#dbeafe", emoji: "🚰" },

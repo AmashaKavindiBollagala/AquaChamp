@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 
-const API = "http://localhost:4000";
+const API = import.meta.env.VITE_API_URL;
 const AGE_GROUPS = ["6-10", "11-15"];
 
 const TOPIC_COLORS = [

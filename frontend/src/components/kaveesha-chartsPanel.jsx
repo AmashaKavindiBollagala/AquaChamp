@@ -21,7 +21,7 @@ ChartJS.register(
   Title, Tooltip, Legend, RadialLinearScale, PointElement, LineElement
 );
 
-const API = "http://localhost:4000";
+const API = import.meta.env.VITE_API_URL;
 
 function ChartCard({ title, subtitle, children, action, accent = "#6366f1", accentLight = "#ede9fe" }) {
   return (

@@ -8,7 +8,7 @@ import MemoryMatch        from "./dilshara-MemoryMatch";
 import CleanOrDirty       from "./dilshara-CleanOrDirty"; 
 import CleanDirtyGame from "./dilshara-cleanDirtyGame"; 
 
-const API_BASE = "http://localhost:4000";
+const API_BASE = import.meta.env.VITE_API_URL;
 const FONTS    = "https://fonts.googleapis.com/css2?family=Bubblegum+Sans&family=Nunito:wght@400;700;800;900;1000&display=swap";
 
 const DIFF_NEXT = { easy: "medium", medium: "hard", hard: null };
