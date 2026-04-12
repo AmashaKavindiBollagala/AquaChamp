@@ -1,28 +1,144 @@
-💧 AquaChamp — Gamified Clean Water & Sanitation Learning Platform for Children
+# 💧 AquaChamp  
+### 🎮 Gamified Clean Water & Sanitation Learning Platform for Children  
 
-🎮 AquaChamp is a gamified learning application designed to educate children about clean water, sanitation, and hygiene through interactive and engaging methods. The system integrates four key modules: a learning module that delivers sanitation lessons, a quiz and assessment system that evaluates understanding, a rewards and leaderboard system that motivates progress through badges and points, and a hygiene activity tracker that encourages real-life healthy practices. By combining education, assessment, motivation, and daily habit tracking, AquaQuest creates a complete learning cycle that promotes knowledge, behavioral change, and continuous improvement in water and hygiene practices.
+---
 
-⏳ 80% Completed For Assignment 01 – Evaluation. (Date: 2026.02.28)
-📑 Table of Contents
+## 🌟 Overview  
 
-📌 Project Overview
+🎮 **AquaChamp** is a gamified learning application designed to educate children about **clean water, sanitation, and hygiene** through interactive and engaging methods.  
 
-🛠️ Tech Stack
+The system integrates four key modules:  
+- 📚 Learning Module  
+- 📝 Quiz & Assessment System  
+- 🏆 Rewards & Leaderboard System  
+- 📒 Hygiene Activity Tracker  
 
-👥 Team Members & Components
+✨ By combining education, assessment, motivation, and real-life habit tracking, AquaChamp creates a **complete learning cycle** that promotes:
+- Knowledge  
+- Behavioral change  
+- Continuous improvement  
 
-📂 Project Structure
+---
 
-✅ Prerequisites
+## 📊 Project Status  
 
-⚙️ Backend Setup
+⏳ **80% Completed**  
+📅 Assignment 01 – Evaluation (2026.02.28)  
 
-🎨 Frontend Setup
+---
 
-🗄️ MongoDB Database Setup
+## 📑 Table of Contents  
 
-🔐 Environment Variables
+- 📌 Project Overview  
+- 🛠️ Tech Stack  
+- 👥 Team Members & Components  
+- 📂 Project Structure  
+- ✅ Prerequisites  
+- ⚙️ Backend Setup  
+- 🎨 Frontend Setup  
+- 🗄️ MongoDB Setup  
+- 🔐 Environment Variables  
+- ▶️ Running the Application  
+- 🔑 Authentication  
+- 🌐 API Base URL  
+- ❗ Error Responses  
 
+---
+
+## 📌 Project Overview  
+
+AquaChamp teaches children about:
+
+- 🧼 Handwashing and personal hygiene  
+- 🚰 Safe drinking water  
+- 🚽 Toilet and sanitation practices  
+- 🗑️ Waste disposal and environmental hygiene  
+
+### 🎯 Learning Methods  
+
+- 🎮 Mini-games and challenges  
+- 📝 Quizzes and assessments  
+- 🏆 Rewards, badges, and leaderboards  
+- 📊 Progress tracking  
+- 🔥 Daily login streak system  
+- 📒 Hygiene & water tracking  
+
+---
+
+## 🛠️ Tech Stack  
+
+### 🔙 Backend  
+- Node.js – Runtime environment  
+- Express.js – Web framework  
+- MongoDB – Database  
+- Mongoose – ODM  
+- JWT – Authentication  
+- bcryptjs – Password hashing  
+
+### 🎨 Frontend  
+- React – UI library  
+- Vite – Build tool  
+- React Router – Routing  
+- Axios – HTTP client  
+- Tailwind CSS – Styling  
+- Lottie – Animations  
+
+---
+
+## 👥 Team Members & Components  
+
+| Member   | Component | Description |
+|----------|----------|------------|
+| Amasha   | Daily Activity Tracker | Water usage tracking, activity points |
+| Dushani  | Gamification & Rewards | Badges, leaderboard, levels |
+| Kaveesha | Lessons & Progress | Lesson management & tracking |
+| Dilshara | Games & Assessments | Quizzes, true/false, scoring |
+
+---
+
+## 📂 Project Structure  
+AquaChamp/
+│
+├── server/
+│ ├── config/ # Database configuration
+│ ├── controllers/ # Route controllers
+│ ├── middleware/ # Authentication middleware
+│ ├── models/ # Mongoose models
+│ ├── routes/ # API routes
+│ ├── index.js # Server entry point
+│ └── package.json
+│
+├── client/
+│ ├── src/
+│ │ ├── components/ # UI components
+│ │ ├── pages/ # Page components
+│ │ ├── services/ # API calls
+│ │ └── main.jsx # Entry point
+│ └── package.json
+│
+└── README.md
+
+
+---
+
+## ✅ Prerequisites  
+
+Before starting, install:
+
+Node.js (v18+)
+npm
+MongoDB (v6+)
+Git
+
+
+---
+
+# ⚙️ Backend Setup  
+
+### ➤ Step 1: Navigate  
+
+```bash
+cd server
 ▶️ Running the Application
 
 🔑 Authentication
@@ -92,27 +208,7 @@ Amasha	Daily Activity Tracker	Water usage tracker, completed activity points, mo
 Dushani	Gamification & Rewards	Badges, leaderboard, daily login points, level system, Lottie animations
 Kaveesha	Lessons & Progress Tracking	Lesson management, lesson completion, progress monitoring
 Dilshara	Games & Assessments	Educational games, true/false assessments, score and result tracking
-📂 Project Structure
-AquaChamp/
-│
-├── server/
-│   ├── config/           # Database configuration
-│   ├── controllers/      # Route controllers (prefixed by member name)
-│   ├── middleware/       # JWT auth, role verification
-│   ├── models/           # Mongoose models (prefixed by member name)
-│   ├── routes/           # API routes (prefixed by member name)
-│   ├── index.js          # Server entry point
-│   └── package.json
-│
-├── client/
-│   ├── src/
-│   │   ├── components/   # Reusable UI components
-│   │   ├── pages/        # Page components
-│   │   ├── services/     # API service calls
-│   │   └── main.jsx      # App entry point
-│   └── package.json
-│
-└── README.md
+
 ✅ Prerequisites
 
 Before you begin, ensure you have the following installed:
