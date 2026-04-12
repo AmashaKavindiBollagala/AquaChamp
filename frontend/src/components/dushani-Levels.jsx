@@ -46,7 +46,7 @@ export default function DushaniLevelsPage() {
   const fetchLevels = async () => {
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('superAdminToken');
-      const res = await fetch('http://localhost:4000/api/levels/', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/levels/`, {
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       });
       const data = await res.json();
@@ -80,7 +80,7 @@ export default function DushaniLevelsPage() {
         description: form.desc,
       };
       const res = await fetch(
-        editingId ? `http://localhost:4000/api/levels/${editingId}` : 'http://localhost:4000/api/levels/',
+        editingId ? `${import.meta.env.VITE_API_URL}/api/levels/${editingId}` : `${import.meta.env.VITE_API_URL}/api/levels/`,
         { method: editingId ? 'PUT' : 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(levelData) }
       );
       const data = await res.json();
@@ -96,7 +96,7 @@ export default function DushaniLevelsPage() {
     if (!confirm(`Are you sure you want to delete "${levelName}"? This will recalculate all student levels.`)) return;
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('superAdminToken');
-      const res = await fetch(`http://localhost:4000/api/levels/${id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/levels/${id}`, {
         method: 'DELETE', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       });
       const data = await res.json();

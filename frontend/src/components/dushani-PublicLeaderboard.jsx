@@ -26,11 +26,11 @@ export default function PublicLeaderboard() {
       try {
         let res;
         try {
-          res = await fetch('http://localhost:4000/api/points/leaderboard', {
+          res = await fetch(`${import.meta.env.VITE_API_URL}/api/points/leaderboard`, {
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
           });
         } catch {
-          res = await fetch('http://localhost:4000/api/progress/leaderboard?limit=100', {
+          res = await fetch(`${import.meta.env.VITE_API_URL}/api/progress/leaderboard?limit=100`, {
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
           });
         }

@@ -60,9 +60,9 @@ export default function DushaniOverviewPage() {
         };
 
         const [progressRes, levelsRes, badgesRes] = await Promise.all([
-          fetch('http://localhost:4000/api/levels/monitoring/students', { headers }),
-          fetch('http://localhost:4000/api/levels/', { headers }),
-          fetch('http://localhost:4000/api/badges/', { headers }),
+          fetch(`${import.meta.env.VITE_API_URL}/api/levels/monitoring/students`, { headers }),
+          fetch(`${import.meta.env.VITE_API_URL}/api/levels/`, { headers }),
+          fetch(`${import.meta.env.VITE_API_URL}/api/badges/`, { headers }),
         ]);
 
         const [progressData, levelsData, badgesData] = await Promise.all([
