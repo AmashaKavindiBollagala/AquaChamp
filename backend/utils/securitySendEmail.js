@@ -1,28 +1,28 @@
 import nodemailer from "nodemailer";
+import dotenv from "dotenv";
+dotenv.config();
 
-// Create transporter once (not on every call)
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp-relay.brevo.com",
+  port: 587,
+  secure: false,
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
+    user: process.env.BREVO_USER,
+    pass: process.env.BREVO_PASS,
   },
-  connectionTimeout: 5000,
-  greetingTimeout: 5000,
-  socketTimeout: 10000,
 });
 
 export const securitySendEmail = async (to, subject, html) => {
-  const emailPromise = transporter.sendMail({
-    from: `"AquaChamp" <${process.env.EMAIL_USER}>`,
+  console.log("📧 Attempting to send to:", to);
+  console.log("🔑 BREVO_USER exists:", !!process.env.BREVO_USER);
+  console.log("🔑 BREVO_PASS exists:", !!process.env.BREVO_PASS);
+
+  await transporter.sendMail({
+    from: '"AquaChamp" <amashakav23@gmail.com>',
     to,
     subject,
     html,
   });
 
-  const timeoutPromise = new Promise((_, reject) =>
-    setTimeout(() => reject(new Error("Email sending timed out after 8s")), 8000)
-  );
-
-  await Promise.race([emailPromise, timeoutPromise]);
+  console.log("✅ Email sent successfully");
 };
